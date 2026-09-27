@@ -98,6 +98,7 @@ setup(
     entry_points={
         'console_scripts': [
             'r1_stress_autotune_v2 = platoon_tuning.r1_stress_autotune_v2:main',
+            'r1_stress_autotune_v3 = platoon_tuning.r1_stress_autotune_v3:main',
             'r1_stress_autotune = platoon_tuning.r1_stress_autotune:main',
 
             (

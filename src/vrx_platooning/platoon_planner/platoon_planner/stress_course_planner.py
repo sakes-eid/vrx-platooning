@@ -70,21 +70,21 @@ class StressCoursePlanner(Node):
 
             # Speed-profile limits.
             'max_speed': 2.0,
-            'minimum_turn_speed': 0.65,
-            'lateral_accel_limit': 0.30,
-            'accel_limit': 0.45,
-            'decel_limit': 0.55,
+            'minimum_turn_speed': 0.5746954085623049,
+            'lateral_accel_limit': 0.12838915122320071,
+            'accel_limit': 0.34026720191765825,
+            'decel_limit': 0.7876767806502798,
 
             # Planner preview / advisory.
             'preview_distance': 20.0,
             'turn_curvature_threshold': 0.040,
             'tight_curvature_threshold': 0.140,
             'medium_curvature_threshold': 0.070,
-            'lookahead_min': 2.2,
-            'lookahead_max': 7.0,
-            'lookahead_speed_gain': 1.8,
-            'tight_lookahead': 2.6,
-            'medium_lookahead': 3.6,
+            'lookahead_min': 2.0921571205428977,
+            'lookahead_max': 5.322629111496128,
+            'lookahead_speed_gain': 0.8863601910512493,
+            'tight_lookahead': 1.9166273984905706,
+            'medium_lookahead': 4.322629111496128,
             'advisory_rate_hz': 10.0,
         }
 
@@ -466,10 +466,14 @@ class StressCoursePlanner(Node):
                 0.0,
                 self.path_s[next_turn_i] - self.path_s[index],
             )
-            k = self.curvature[next_turn_i]
-            if k >= self.tight_curvature_threshold:
+            # Classify the whole upcoming preview by its most severe
+            # curvature, not only by the first point that crosses the
+            # generic turn threshold. This prevents a connected turn
+            # complex from being announced as MEDIUM when a TIGHT
+            # section is already visible inside the same preview.
+            if max_k >= self.tight_curvature_threshold:
                 severity = 'TIGHT'
-            elif k >= self.medium_curvature_threshold:
+            elif max_k >= self.medium_curvature_threshold:
                 severity = 'MEDIUM'
             else:
                 severity = 'WIDE'

@@ -230,7 +230,7 @@ class LeaderPIDController(Node):
                 1.0,
 
             'heading_slowdown_angle':
-                0.8,
+                0.5283476090300474,
 
             # -------------------------------------------------
             # Stress-course integration ONLY
@@ -267,13 +267,13 @@ class LeaderPIDController(Node):
             # -------------------------------------------------
 
             'speed_kp':
-                250.0,
+                77.49640833032895,
 
             'speed_ki':
-                30.0,
+                16.564166376336193,
 
             'speed_kd':
-                50.0,
+                49.19260599818982,
 
             'speed_integral_limit':
                 3.0,
@@ -283,13 +283,13 @@ class LeaderPIDController(Node):
             # -------------------------------------------------
 
             'heading_kp':
-                300.0,
+                1388.5269897997275,
 
             'heading_ki':
-                15.0,
+                26.45969942764789,
 
             'heading_kd':
-                60.0,
+                201.59814882921654,
 
             'heading_integral_limit':
                 1.5,
@@ -299,13 +299,13 @@ class LeaderPIDController(Node):
             # -------------------------------------------------
 
             'brake_kp':
-                450.0,
+                177.8935198208073,
 
             'brake_ki':
-                0.0,
+                60.634764417119634,
 
             'brake_kd':
-                0.0,
+                10.647182804717701,
 
             'brake_integral_limit':
                 1.0,

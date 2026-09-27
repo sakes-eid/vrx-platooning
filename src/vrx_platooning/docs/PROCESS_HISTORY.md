@@ -1049,3 +1049,662 @@ importance of planner/controller compatibility.
 The final leader controller remains unchanged and is now frozen for the
 leader-follower stage.
 
+
+---
+
+# 2026-09-27 — R1 Leader Finalization / PDF Q1–Q18 Checkpoint
+
+## Purpose
+
+This checkpoint freezes the current Robot 1 (R1) leader implementation before development of Robot 2.
+
+The project PDF is organized progressively as:
+
+Single Robot -> Control -> Trajectory Tracking -> Leader-Follower -> Three-Robot Platoon
+
+Questions Q1-Q18 correspond to the ROS 2 fundamentals, robot modeling/control, and single-robot trajectory-tracking stages.
+
+Q19 begins the two-robot leader-follower stage.
+
+---
+
+## PDF QUESTION STATUS — Q1 TO Q18
+
+### Q1 — Create a ROS 2 workspace
+STATUS: COMPLETE
+
+Workspace:
+
+    ~/vrx_ws
+
+Environment:
+
+    Ubuntu 24.04
+    ROS 2 Jazzy
+    Gazebo Sim / VRX
+
+---
+
+### Q2 — Create a dedicated project package
+STATUS: COMPLETE
+
+The authored platooning project is located under:
+
+    ~/vrx_ws/src/vrx_platooning
+
+The architecture has been separated into functional ROS 2 packages including:
+
+    platoon_state
+    platoon_planner
+    platoon_control
+    platoon_monitor
+    platoon_bringup
+    platoon_tuning
+
+The upstream VRX packages remain separate from the project-specific code.
+
+---
+
+### Q3 — Identify the main ROS 2 concepts used
+STATUS: COMPLETE
+
+The implementation uses:
+
+    Nodes
+    Topics
+    ROS 2 messages
+    Publishers
+    Subscribers
+    Launch files
+    ROS parameters
+
+Main information flow for R1:
+
+    VRX sensors
+        |
+        v
+    multi_vehicle_state
+        |
+        v
+    /r1/vehicle_state
+        |
+        +----------------------+
+        |                      |
+        v                      v
+    stress_course_planner   leader_stress_controller
+        |                      |
+        | speed/lookahead      |
+        +--------------------->|
+                               |
+                               v
+                     left/right differential thrust
+
+The planner and controller therefore operate as separate ROS 2 nodes.
+
+---
+
+### Q4 — Launch a robot in the simulation environment
+STATUS: COMPLETE
+
+The VRX WAM-V was successfully launched in the Sydney Regatta Gazebo environment.
+
+The final system can be launched through the project bringup package rather than starting each node manually.
+
+---
+
+### Q5 — Identify robot command and state topics
+STATUS: COMPLETE
+
+Important WAM-V command interfaces include:
+
+    /wamv/thrusters/left/thrust
+    /wamv/thrusters/right/thrust
+
+The thruster steering positions remain fixed straight.
+
+Turning is performed ONLY through differential left/right thrust, as required by the instructor.
+
+Important state/sensor information includes simulated GPS and IMU data.
+
+The project state-estimation node converts these measurements into the project state topic:
+
+    /r1/vehicle_state
+
+The working navigation frame is:
+
+    world_ned
+
+The controller therefore does not use Gazebo-local position as its primary navigation state.
+
+---
+
+### Q6 — Manually command the robot and verify motion
+STATUS: COMPLETE
+
+Manual WAM-V motion and thruster interfaces were investigated during the initial VRX setup.
+
+Subsequent controller tests verified forward motion and differential-thrust turning.
+
+---
+
+### Q7 — Implement the robot model in the simulation environment
+STATUS: COMPLETE
+
+The project uses the WAM-V model and its physical dynamics provided by VRX/Gazebo.
+
+The robot motion is represented in the horizontal plane using:
+
+    x / North
+    y / East
+    psi / yaw
+
+The simulated GPS and IMU provide the measurements used by the project state-estimation layer.
+
+The LIGHT simulation profile removes unnecessary high-cost sensors for control testing but retains the WAM-V physical simulation and required GPS/IMU information.
+
+---
+
+### Q8 — Identify robot inputs and outputs
+STATUS: COMPLETE
+
+CONTROL INPUTS:
+
+    Left thruster force
+    Right thruster force
+
+Thruster steering angle:
+
+    fixed at 0 rad / straight
+
+Yaw control is therefore generated through:
+
+    T_left != T_right
+
+STATE OUTPUTS USED BY THE CONTROLLER:
+
+    position x
+    position y
+    yaw / heading
+    velocity components
+    vehicle speed
+
+These are packaged into the ROS 2 vehicle-state interface.
+
+---
+
+### Q9 — Define a reference trajectory
+STATUS: COMPLETE
+
+The trajectory-planning system supports reference-path generation and publishes the reference path for the controller.
+
+A demanding stress trajectory was additionally developed for controller tuning and validation.
+
+It contains:
+
+    long straight section
+    90-degree tight turn
+    180-degree turns
+    directly connected turns
+    short connector
+    coverage lanes
+    tight hairpin
+    wider opposite hairpin
+    final straight
+
+The stress course deliberately combines straight and strongly curved motion so that the controller is tested under more difficult conditions than a simple isolated line or circle.
+
+Reference frame:
+
+    world_ned
+
+---
+
+### Q10 — Select a suitable trajectory-tracking control method
+STATUS: COMPLETE
+
+Selected method:
+
+    PID-based trajectory tracking
+
+The R1 controller contains separate control functions for:
+
+    heading
+    forward speed
+    braking / terminal stop
+
+The planner additionally generates:
+
+    speed limits
+    curvature information
+    lookahead distance
+    turn preview information
+
+The controller uses differential thrust for heading control and common thrust for longitudinal motion.
+
+---
+
+### Q11 — Briefly justify the selected method from literature
+STATUS: PARTIALLY COMPLETE
+
+Engineering justification:
+
+PID control was selected because the WAM-V trajectory-tracking problem can be separated into heading and longitudinal control loops, while differential thrust provides a direct yaw-control mechanism.
+
+The method is computationally lightweight, interpretable, and can be experimentally tuned in simulation.
+
+IMPORTANT:
+
+Formal literature references still need to be added to the final report to fully satisfy Q11.
+
+Do not mark the literature portion complete until references are included.
+
+---
+
+### Q12 — Implement the controller as a ROS 2 node
+STATUS: COMPLETE
+
+Main R1 controller:
+
+    platoon_control/
+    platoon_control/
+    leader_stress_controller.py
+
+ROS executable:
+
+    leader_stress_controller
+
+Node name used by launch system:
+
+    leader_pid_controller
+
+The controller subscribes to vehicle state and planner guidance and publishes WAM-V thruster commands.
+
+---
+
+### Q13 — Test trajectory tracking using a single robot
+STATUS: COMPLETE
+
+R1 was extensively tested as a single WAM-V.
+
+Tests progressed from:
+
+    basic movement
+    straight path
+    waypoint tracking
+    curved motion
+    chronological waypoint tracking
+    terminal stopping
+    stress-course tracking
+
+The stress course became the main benchmark used for final controller optimization.
+
+---
+
+### Q14 — Implement the trajectory-tracking node
+STATUS: COMPLETE
+
+Trajectory tracking is implemented through the combined planner/controller architecture.
+
+Planner:
+
+    stress_course_planner.py
+
+Controller:
+
+    leader_stress_controller.py
+
+The planner determines the path progression, curvature-aware speed profile and lookahead guidance.
+
+The controller tracks the resulting trajectory using the measured vehicle state.
+
+---
+
+### Q15 — Test the system on straight and curved trajectories
+STATUS: FUNCTIONALLY COMPLETE / REPORT EVIDENCE TO ORGANIZE
+
+Straight and curved motion have both been tested during development.
+
+The final stress course contains both long straight portions and multiple curved sections with radii and direction changes considerably more demanding than a simple circular trajectory.
+
+For the final report, dedicated straight and curved figures should still be preserved separately if the instructor expects literal separate demonstrations for Q15.
+
+---
+
+### Q16 — Record simulation data
+STATUS: COMPLETE
+
+A dedicated logger records the R1 experiments.
+
+Recorded fields include:
+
+    time
+    North position
+    East position
+    yaw
+    vx
+    vy
+    speed
+    controller state
+    target speed
+    speed error
+    desired heading
+    heading error
+    cross-track error
+    planner lookahead
+    planner speed limit
+    upcoming curvature
+    distance to turn
+    turn severity
+    left thrust
+    right thrust
+    active waypoint
+
+Each important run produces CSV data and a summary JSON file.
+
+---
+
+### Q17 — Compute the tracking error
+STATUS: PARTIALLY COMPLETE
+
+The current monitoring system computes:
+
+    cross-track error
+    heading error
+    speed error
+
+These metrics were used throughout controller tuning.
+
+The PDF explicitly defines position error as:
+
+    ep = sqrt((x - xd)^2 + (y - yd)^2)
+
+The final report pipeline should therefore also calculate and plot this exact PDF-defined position error using the chosen desired trajectory point.
+
+This should be added even though cross-track error is already available.
+
+---
+
+### Q18 — Evaluate controller performance
+STATUS: COMPLETE FOR R1 CONTROL / FINAL REPORT PLOTS STILL TO PREPARE
+
+Final selected autotuning solution:
+
+    Tune 06
+    Trial 026
+    Stage: joint
+    Score: 5.4760059
+
+Tuning-result headline metrics:
+
+    Cross-track RMSE: approximately 0.344 m
+    Cross-track P95: approximately 0.575 m
+    Maximum cross-track error: approximately 0.934 m
+    Heading RMSE: approximately 2.41 deg
+
+A separate final visible Gazebo validation was then performed using the final configuration.
+
+FINAL VISIBLE VALIDATION:
+
+    Result: SUCCESS
+
+    Tracking duration:
+        approximately 240.8 s
+
+    Mean vehicle speed:
+        0.551 m/s
+
+    Maximum measured speed:
+        1.094 m/s
+
+    Cross-track MAE:
+        approximately 0.326 m
+
+    Cross-track RMSE:
+        0.409 m
+
+    Cross-track P95:
+        approximately 0.683 m
+
+    Maximum absolute cross-track error:
+        0.980 m
+
+    Heading RMSE:
+        2.56 deg
+
+The map showed the measured R1 trajectory remaining close to the reference path through the straight sections, connected turns and hairpins.
+
+The robot reached the terminal portion of the trajectory and entered:
+
+    BRAKE
+    HOLD
+    SUCCESS
+
+without requiring a recovery state during the final validation.
+
+---
+
+## FINAL R1 CONTROLLER PARAMETERS
+
+### Speed PID
+
+    Kp = 77.49640833032895
+    Ki = 16.564166376336193
+    Kd = 49.19260599818982
+
+### Heading PID
+
+    Kp = 1388.5269897997275
+    Ki = 26.45969942764789
+    Kd = 201.59814882921654
+
+### Heading slowdown angle
+
+    0.5283476090300474 rad
+
+### Brake PID
+
+    Kp = 177.8935198208073
+    Ki = 60.634764417119634
+    Kd = 10.647182804717701
+
+---
+
+## FINAL R1 PLANNER PARAMETERS
+
+    minimum_turn_speed   = 0.5746954085623049
+    lateral_accel_limit  = 0.12838915122320071
+    accel_limit          = 0.34026720191765825
+    decel_limit          = 0.7876767806502798
+
+    lookahead_min        = 2.0921571205428977
+    lookahead_max        = 5.322629111496128
+    lookahead_speed_gain = 0.8863601910512493
+
+    tight_lookahead      = 1.9166273984905706
+    medium_lookahead     = 4.322629111496128
+
+---
+
+## IMPORTANT DEBUGGING RESULT — CONFIGURATION OVERRIDE
+
+After Tune 06, the final gains were initially written into the Python controller defaults.
+
+The first full GUI validation behaved extremely poorly and produced strong lateral oscillation.
+
+The cause was NOT a failure of the Tune 06 optimizer.
+
+The bringup launch file loaded:
+
+    platoon_control/config/leader_pid.yaml
+
+which still contained the original values:
+
+    speed_kp   = 250
+    heading_kp = 300
+    brake_kp   = 450
+
+These ROS parameters overrode the newly tuned Python defaults.
+
+The YAML configuration was updated with the final Trial 026 values and the platoon_control package was rebuilt.
+
+After correcting the YAML override, R1 returned to stable trajectory tracking.
+
+LESSON:
+
+For all future R2/R3 tuning, verify the parameters loaded by the launch system, not only the defaults inside the Python node.
+
+---
+
+## SIMULATION PERFORMANCE NOTE
+
+The full Gazebo simulation profile caused real-time factor to fall to approximately:
+
+    RTF = 0.09
+
+on the WSL laptop.
+
+This is too slow for useful controller validation.
+
+The final controller validation therefore used the LIGHT simulation profile.
+
+The LIGHT profile keeps the sensors and dynamics required by the controller while avoiding unnecessary high-cost simulation components.
+
+For controller development:
+
+    simulation_profile := light
+
+is therefore the preferred configuration.
+
+---
+
+## R1 DESIGN DECISIONS NOW FROZEN
+
+1. Navigation state is based on simulated GPS/IMU data.
+
+2. Planner/controller coordinates use:
+
+       world_ned
+
+3. Thruster steering angles remain fixed straight.
+
+4. Turning is performed only through differential thrust.
+
+5. R1 uses separate heading, speed and braking PID functions.
+
+6. Planner speed is curvature-aware.
+
+7. Lookahead changes according to speed and upcoming curvature.
+
+8. Waypoint progression is chronological to prevent path-loop jumps.
+
+9. Controller owns authoritative active-waypoint progress.
+
+10. Terminal behavior uses the state sequence:
+
+        TRACK -> BRAKE -> HOLD -> SUCCESS
+
+11. The stress course is retained as the principal R1 robustness benchmark.
+
+12. R1 is now considered sufficiently stable to begin R2 development unless later three-robot testing exposes a specific leader-side problem.
+
+---
+
+## ITEMS STILL NEEDED FOR THE FINAL REPORT
+
+Before submission, retain or generate:
+
+    - literature references supporting the PID choice for Q11
+    - dedicated straight-trajectory figure
+    - dedicated curved-trajectory figure
+    - x(t)
+    - y(t)
+    - psi(t)
+    - PDF-defined position error ep(t)
+    - final R1 tracking-error plots
+    - controller/planner architecture diagram
+
+These are documentation tasks and do not currently require retuning R1.
+
+---
+
+## NEXT DEVELOPMENT STAGE — PDF Q19
+
+Next project stage:
+
+    Part 4 — Leader-Follower System
+
+Robot 2 will follow Robot 1 while maintaining the required:
+
+    d* = 5 m
+
+Planned R2 architecture:
+
+    predecessor velocity
+            |
+            v
+    base follower speed
+            +
+    5 m gap error -> distance PID correction
+            |
+            v
+    follower target speed
+            |
+            v
+    speed PID
+            |
+            v
+    forward thrust
+
+Lateral guidance will follow the predecessor's travelled breadcrumb/path rather than simply aiming at the predecessor's instantaneous position.
+
+The 5 m spacing will be controlled primarily as along-path spacing so that hairpins and tight turns do not cause the follower to cut directly across the trajectory.
+
+R2 will be developed before R3.
+
+
+
+---
+
+# 2026-09-27 — R1 Documentation Closed
+
+The documentation corresponding to PDF questions Q1-Q18 was reviewed and consolidated into:
+
+    docs/QUESTIONS_ANSWERS.md
+
+Q11 is now supported by literature covering:
+
+    marine heading/autopilot control
+    USV PID speed and heading control
+    hierarchical guidance + PID control
+    adaptive lookahead for USV path following
+
+The final visible R1 validation remains the principal demonstration result:
+
+    SUCCESS
+    Cross-track MAE  = 0.326 m
+    Cross-track RMSE = 0.409 m
+    Cross-track P95  = 0.683 m
+    Maximum CTE      = 0.980 m
+    Heading RMSE     = 2.56 deg
+
+Important reporting limitation:
+
+The final logger does not explicitly record xd(t) and yd(t). Therefore the exact PDF-defined:
+
+    ep = sqrt((x - xd)^2 + (y - yd)^2)
+
+has not been independently reconstructed from the final CSV.
+
+This will be handled during final report/plot generation and does not require R1 controller retuning.
+
+R1 IMPLEMENTATION STATUS:
+
+    FROZEN
+
+Next stage:
+
+    Q19-Q24
+    Two-robot leader-follower development
+    R1 -> R2
+    desired spacing = 5 m
+

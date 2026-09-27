@@ -10,6 +10,8 @@ import sys
 import time
 from pathlib import Path
 
+import yaml
+
 try:
     import optuna
     optuna.logging.set_verbosity(optuna.logging.WARNING)
@@ -617,6 +619,8 @@ def main():
     parser.add_argument('--wall-timeout', type=float, default=260.0)
     parser.add_argument('--study-name', default='r1_stress_tune_02')
     parser.add_argument('--workspace', default=str(Path.home() / 'vrx_ws'))
+    parser.add_argument('--seed-controller', default=None)
+    parser.add_argument('--seed-planner', default=None)
     parser.add_argument(
         '--overwrite',
         action='store_true',
@@ -646,6 +650,20 @@ def main():
 
     controller_best = dict(BASE_CONTROLLER)
     planner_best = dict(BASE_PLANNER)
+
+    if args.seed_controller:
+        seed_path = Path(args.seed_controller).expanduser()
+        data = yaml.safe_load(seed_path.read_text())
+        controller_best.update(
+            data.get('leader_pid_controller', {}).get('ros__parameters', {})
+        )
+
+    if args.seed_planner:
+        seed_path = Path(args.seed_planner).expanduser()
+        data = yaml.safe_load(seed_path.read_text())
+        planner_best.update(
+            data.get('trajectory_planner', {}).get('ros__parameters', {})
+        )
 
     history_path = out / 'history.csv'
     history_fields = [
