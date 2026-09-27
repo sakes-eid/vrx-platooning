@@ -1,0 +1,94 @@
+autotune:
+  scenarios:
+  - curved
+  - straight
+  require_success: true
+  maximum_sim_time: 90.0
+  divergence_error: 4.0
+  wall_timeout: 180.0
+  random_seed: 42
+  baseline:
+    heading_kp: 521.936305
+    heading_ki: 1.132945
+    heading_kd: 53.658735
+    speed_kp: 275.194653
+    speed_ki: 2.611967
+    speed_kd: 25.339928
+    brake_kp: 533.947644
+    brake_ki: 44.207972
+    brake_kd: 0.954594
+    lookahead_distance: 2.40681
+  acceptance:
+    capture_error: 1.0
+    capture_hold_time: 0.5
+    maximum_capture_time: 5.0
+    maximum_tracking_error: 1.0
+    tracking_rmse: 0.6
+  weights:
+    position_rmse: 0.45
+    maximum_position_error: 0.3
+    heading_rmse: 0.15
+    speed_rmse: 0.1
+    capture_time_penalty: 0.03
+    recovery_count_penalty: 0.1
+    recovery_time_penalty: 0.01
+  leader:
+    stages:
+    - heading
+    - speed
+    - brake
+    - refinement
+    heading:
+      trials: 40
+      parameters:
+        heading_kp:
+          min: 150.0
+          max: 850.0
+        heading_ki:
+          min: 0.0
+          max: 40.0
+        heading_kd:
+          min: 20.0
+          max: 250.0
+        lookahead_distance:
+          min: 1.5
+          max: 6.0
+    speed:
+      trials: 30
+      parameters:
+        speed_kp:
+          min: 100.0
+          max: 500.0
+        speed_ki:
+          min: 0.0
+          max: 80.0
+        speed_kd:
+          min: 0.0
+          max: 120.0
+    brake:
+      trials: 25
+      parameters:
+        brake_kp:
+          min: 200.0
+          max: 800.0
+        brake_ki:
+          min: 0.0
+          max: 60.0
+        brake_kd:
+          min: 0.0
+          max: 120.0
+    refinement:
+      trials: 20
+      relative_range: 0.15
+  follower_1:
+    initial_from: leader_best
+  follower_2:
+    initial_from: follower_1_best
+  platoon:
+    final_refinement: true
+    relative_range: 0.1
+  smart_trials:
+    heading: 12
+    speed: 15
+    brake: 10
+    refinement: 20

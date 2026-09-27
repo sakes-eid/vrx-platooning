@@ -1,0 +1,631 @@
+<?xml version="1.0"?>
+
+<!--
+  Lightweight WAM-V for the VRX platooning project.
+
+  Objective:
+  - Preserve WAM-V physical dynamics.
+  - Preserve GPS and IMU.
+  - Preserve sensor masses, inertias, collisions and mounting structures.
+  - Disable expensive camera rendering.
+  - Disable expensive 3D lidar simulation.
+
+  The original VRX files are NOT modified.
+-->
+
+<robot
+  xmlns:xacro="http://ros.org/wiki/xacro"
+  name="WAM-V">
+
+  <!-- ====================================================== -->
+  <!-- Standard WAM-V arguments                              -->
+  <!-- ====================================================== -->
+
+  <xacro:arg
+    name="locked"
+    default="false"
+  />
+
+  <xacro:arg
+    name="thruster_config"
+    default="H"
+  />
+
+  <xacro:arg
+    name="camera_enabled"
+    default="false"
+  />
+
+  <xacro:arg
+    name="gps_enabled"
+    default="false"
+  />
+
+  <xacro:arg
+    name="imu_enabled"
+    default="false"
+  />
+
+  <xacro:arg
+    name="lidar_enabled"
+    default="false"
+  />
+
+  <xacro:arg
+    name="ground_truth_enabled"
+    default="false"
+  />
+
+  <xacro:arg
+    name="vrx_sensors_enabled"
+    default="false"
+  />
+
+  <xacro:arg
+    name="pinger_enabled"
+    default="false"
+  />
+
+  <xacro:arg
+    name="ball_shooter_enabled"
+    default="false"
+  />
+
+  <xacro:arg
+    name="thruster_namespace"
+    default="thrusters/"
+  />
+
+  <xacro:arg
+    name="camera_namespace"
+    default="cameras/"
+  />
+
+  <xacro:arg
+    name="sensor_namespace"
+    default="sensors/"
+  />
+
+  <xacro:arg
+    name="acoustic_namespace"
+    default="acoustics/"
+  />
+
+  <xacro:arg
+    name="shooter_namespace"
+    default="shooters/"
+  />
+
+  <!--
+    Some VRX sensors use this namespace directly rather
+    than the sensor-specific namespace arguments.
+  -->
+
+  <xacro:arg
+    name="namespace"
+    default="wamv"
+  />
+
+  <!-- ====================================================== -->
+  <!-- Global namespace properties                           -->
+  <!-- ====================================================== -->
+
+  <xacro:property
+    name="thruster_namespace"
+    value="$(arg thruster_namespace)"
+    scope="global"
+  />
+
+  <xacro:property
+    name="camera_namespace"
+    value="$(arg camera_namespace)"
+    scope="global"
+  />
+
+  <xacro:property
+    name="sensor_namespace"
+    value="$(arg sensor_namespace)"
+    scope="global"
+  />
+
+  <xacro:property
+    name="acoustic_namespace"
+    value="$(arg acoustic_namespace)"
+    scope="global"
+  />
+
+  <xacro:property
+    name="shooter_namespace"
+    value="$(arg shooter_namespace)"
+    scope="global"
+  />
+
+  <xacro:property
+    name="namespace"
+    value="$(arg namespace)"
+    scope="global"
+  />
+
+  <!-- ====================================================== -->
+  <!-- Optional component generation                         -->
+  <!-- ====================================================== -->
+
+  <xacro:arg
+    name="yaml_component_generation"
+    default="false"
+  />
+
+  <xacro:arg
+    name="component_xacro_file"
+    default=""
+  />
+
+  <!-- ====================================================== -->
+  <!-- Optional thruster generation                          -->
+  <!-- ====================================================== -->
+
+  <xacro:arg
+    name="yaml_thruster_generation"
+    default="false"
+  />
+
+  <xacro:arg
+    name="thruster_xacro_file"
+    default=""
+  />
+
+  <!-- ====================================================== -->
+  <!-- WAM-V platform                                        -->
+  <!-- ====================================================== -->
+
+  <xacro:arg
+    name="macros_file"
+    default="$(find wamv_gazebo)/urdf/macros.xacro"
+  />
+
+  <xacro:include
+    filename="$(find wamv_gazebo)/urdf/wamv_gazebo.xacro"
+  />
+
+  <!-- ====================================================== -->
+  <!-- Lightweight physical sensor shells                    -->
+  <!--                                                       -->
+  <!-- These preserve the camera and lidar links, masses,    -->
+  <!-- inertias, collisions and mounting geometry, but their -->
+  <!-- Gazebo sensor blocks have been removed.               -->
+  <!-- ====================================================== -->
+
+  <xacro:include
+    filename="$(find platoon_bringup)/urdf/components/wamv_camera_shell.xacro"
+  />
+
+  <xacro:include
+    filename="$(find platoon_bringup)/urdf/components/wamv_3d_lidar_shell.xacro"
+  />
+
+  <!-- ====================================================== -->
+  <!-- Batteries                                             -->
+  <!-- ====================================================== -->
+
+  <xacro:include
+    filename="$(find wamv_description)/urdf/battery.xacro"
+  />
+
+  <xacro:battery
+    prefix="left"
+    position="0 1 0.45"
+    orientation="0 0 0"
+  />
+
+  <xacro:battery
+    prefix="right"
+    position="0 -1 0.45"
+    orientation="0 0 0"
+  />
+
+  <!-- ====================================================== -->
+  <!-- Thrusters                                             -->
+  <!-- ====================================================== -->
+
+  <!-- Use a generated thruster YAML/Xacro if requested. -->
+
+  <xacro:if
+    value="$(arg yaml_thruster_generation)">
+
+    <xacro:wamv_gazebo
+      thruster_layout="$(arg thruster_xacro_file)"
+    />
+
+  </xacro:if>
+
+  <!-- Otherwise use one of the standard WAM-V layouts. -->
+
+  <xacro:unless
+    value="$(arg yaml_thruster_generation)">
+
+    <xacro:property
+      name="thruster_conf"
+      value="$(arg thruster_config)"
+    />
+
+    <!-- H configuration:
+         two aft thrusters.
+         This is the configuration used by our project. -->
+
+    <xacro:if
+      value="${thruster_conf == 'H'}">
+
+      <xacro:wamv_gazebo
+        thruster_layout="$(find wamv_gazebo)/urdf/thruster_layouts/wamv_aft_thrusters.xacro"
+      />
+
+    </xacro:if>
+
+    <!-- T configuration -->
+
+    <xacro:if
+      value="${thruster_conf == 'T'}">
+
+      <xacro:wamv_gazebo
+        thruster_layout="$(find wamv_gazebo)/urdf/thruster_layouts/wamv_t_thrusters.xacro"
+      />
+
+    </xacro:if>
+
+    <!-- X configuration -->
+
+    <xacro:if
+      value="${thruster_conf == 'X'}">
+
+      <xacro:wamv_gazebo
+        thruster_layout="$(find wamv_gazebo)/urdf/thruster_layouts/wamv_x_thrusters.xacro"
+      />
+
+    </xacro:if>
+
+  </xacro:unless>
+
+  <!-- ====================================================== -->
+  <!-- Detachable world lock                                 -->
+  <!-- ====================================================== -->
+
+  <gazebo>
+
+    <plugin
+      filename="gz-sim-detachable-joint-system"
+      name="gz::sim::systems::DetachableJoint">
+
+      <parent_link>
+        $(arg namespace)/base_link
+      </parent_link>
+
+      <child_model>
+        platform
+      </child_model>
+
+      <child_link>
+        dummy_upper
+      </child_link>
+
+      <topic>
+        /vrx/release
+      </topic>
+
+      <suppress_child_warning>
+        true
+      </suppress_child_warning>
+
+    </plugin>
+
+  </gazebo>
+
+  <!-- ====================================================== -->
+  <!-- Pose / joint publishers                               -->
+  <!-- ====================================================== -->
+
+  <gazebo>
+
+    <plugin
+      filename="libgz-sim-pose-publisher-system.so"
+      name="gz::sim::systems::PosePublisher">
+
+      <publish_link_pose>
+        false
+      </publish_link_pose>
+
+      <publish_sensor_pose>
+        true
+      </publish_sensor_pose>
+
+      <publish_collision_pose>
+        false
+      </publish_collision_pose>
+
+      <publish_visual_pose>
+        false
+      </publish_visual_pose>
+
+      <publish_nested_model_pose>
+        false
+      </publish_nested_model_pose>
+
+      <publish_model_pose>
+        false
+      </publish_model_pose>
+
+      <use_pose_vector_msg>
+        true
+      </use_pose_vector_msg>
+
+      <static_publisher>
+        false
+      </static_publisher>
+
+      <static_update_frequency>
+        1
+      </static_update_frequency>
+
+    </plugin>
+
+    <plugin
+      filename="gz-sim-joint-state-publisher-system"
+      name="gz::sim::systems::JointStatePublisher">
+    </plugin>
+
+  </gazebo>
+
+  <!-- ====================================================== -->
+  <!-- Sensors                                               -->
+  <!-- ====================================================== -->
+
+  <!--
+    YAML-generated component mode is left unchanged so this
+    custom WAM-V remains compatible with standard VRX tooling.
+  -->
+
+  <xacro:if
+    value="$(arg yaml_component_generation)">
+
+    <xacro:include
+      filename="$(arg component_xacro_file)"
+    />
+
+    <xacro:yaml_components />
+
+    <!-- CPU cases -->
+
+    <xacro:include
+      filename="$(find wamv_description)/urdf/cpu_cases.xacro"
+    />
+
+    <xacro:cpu_cases
+      position="-0.15 0 1.53"
+      orientation="0 0 0"
+    />
+
+  </xacro:if>
+
+  <!-- ====================================================== -->
+  <!-- Standard individually enabled sensors                 -->
+  <!-- ====================================================== -->
+
+  <xacro:unless
+    value="$(arg yaml_component_generation)">
+
+    <!--
+      These individual arguments retain their normal VRX
+      behavior. They are not normally used by our LIGHT
+      profile because VRX calls vrx_sensors_enabled:=true.
+    -->
+
+    <xacro:if
+      value="$(arg camera_enabled)">
+
+      <xacro:wamv_camera
+        name="front_camera"
+        y="0.3"
+        x="0.75"
+        P="${radians(15)}"
+      />
+
+    </xacro:if>
+
+    <xacro:if
+      value="$(arg gps_enabled)">
+
+      <xacro:wamv_gps
+        name="gps_wamv"
+        x="-0.85"
+      />
+
+    </xacro:if>
+
+    <xacro:if
+      value="$(arg imu_enabled)">
+
+      <xacro:wamv_imu
+        name="imu_wamv"
+        y="-0.2"
+      />
+
+    </xacro:if>
+
+    <xacro:if
+      value="$(arg lidar_enabled)">
+
+      <xacro:lidar
+        name="lidar_wamv"
+        y="-0.3"
+        type="16_beam"
+      />
+
+    </xacro:if>
+
+    <xacro:if
+      value="$(arg ground_truth_enabled)">
+
+      <xacro:wamv_p3d
+        name="p3d_wamv"
+      />
+
+    </xacro:if>
+
+    <xacro:if
+      value="$(arg pinger_enabled)">
+
+      <xacro:wamv_pinger
+        sensor_name="receiver"
+        position="-528 191 -2.0"
+      />
+
+    </xacro:if>
+
+    <xacro:if
+      value="$(arg ball_shooter_enabled)">
+
+      <xacro:wamv_ball_shooter
+        name="ball_shooter"
+        x="0.54"
+        y="0.30"
+        z="1.296"
+        pitch="-1.04"
+      />
+
+    </xacro:if>
+
+    <!-- ==================================================== -->
+    <!-- LIGHT VRX sensor configuration                       -->
+    <!--                                                     -->
+    <!-- VRX model.py currently starts the WAM-V using:       -->
+    <!--                                                     -->
+    <!--     vrx_sensors_enabled:=true                        -->
+    <!--                                                     -->
+    <!-- Therefore this is the important branch for the       -->
+    <!-- project lightweight profile.                         -->
+    <!-- ==================================================== -->
+
+    <xacro:if
+      value="$(arg vrx_sensors_enabled)">
+
+      <!-- ================================================== -->
+      <!-- CPU cases                                         -->
+      <!-- ================================================== -->
+
+      <xacro:include
+        filename="$(find wamv_description)/urdf/cpu_cases.xacro"
+      />
+
+      <xacro:cpu_cases
+        position="-0.15 0 1.53"
+        orientation="0 0 0"
+      />
+
+      <!-- ================================================== -->
+      <!-- Front-left camera physical shell                  -->
+      <!--                                                   -->
+      <!-- Same link, mount, collision, mass and inertia.    -->
+      <!-- Camera rendering sensor is disabled.              -->
+      <!-- ================================================== -->
+
+      <xacro:wamv_camera_shell
+        name="front_left_camera"
+        y="0.1"
+        x="0.75"
+        P="${radians(15)}"
+      />
+
+      <!-- ================================================== -->
+      <!-- Front-right camera physical shell                 -->
+      <!-- ================================================== -->
+
+      <xacro:wamv_camera_shell
+        name="front_right_camera"
+        y="-0.1"
+        x="0.75"
+        P="${radians(15)}"
+      />
+
+      <!-- ================================================== -->
+      <!-- Right-facing camera physical shell                -->
+      <!-- ================================================== -->
+
+      <xacro:wamv_camera_shell
+        name="middle_right_camera"
+        y="-0.45"
+        P="${radians(15)}"
+        Y="${radians(-90)}"
+        post_Y="${radians(-90)}"
+      />
+
+      <!-- ================================================== -->
+      <!-- GPS                                               -->
+      <!--                                                   -->
+      <!-- REQUIRED. Remains fully active.                   -->
+      <!-- ================================================== -->
+
+      <xacro:wamv_gps
+        name="gps_wamv"
+        x="-0.85"
+      />
+
+      <!-- ================================================== -->
+      <!-- IMU                                               -->
+      <!--                                                   -->
+      <!-- REQUIRED. Remains fully active.                   -->
+      <!-- ================================================== -->
+
+      <xacro:wamv_imu
+        name="imu_wamv"
+        y="-0.2"
+      />
+
+      <!-- ================================================== -->
+      <!-- 16-beam lidar physical shell                      -->
+      <!--                                                   -->
+      <!-- Same default geometry as the original             -->
+      <!-- 16-beam lidar:                                    -->
+      <!--                                                   -->
+      <!-- x = 0.7                                           -->
+      <!-- y = 0                                             -->
+      <!-- z = 1.8                                           -->
+      <!-- vertical beams = 16                               -->
+      <!--                                                   -->
+      <!-- GPU ray sensor is disabled.                       -->
+      <!-- ================================================== -->
+
+      <xacro:wamv_3d_lidar_shell
+        name="lidar_wamv"
+        vertical_lasers="16"
+      />
+
+      <!-- ================================================== -->
+      <!-- Pinger                                            -->
+      <!--                                                   -->
+      <!-- Retained for this first controlled optimization.  -->
+      <!-- We are changing only cameras and lidar first.     -->
+      <!-- ================================================== -->
+
+      <xacro:wamv_pinger
+        sensor_name="receiver"
+        position="-528 191 -2.0"
+      />
+
+      <!-- ================================================== -->
+      <!-- Ball shooter                                      -->
+      <!--                                                   -->
+      <!-- Retained for the first A/B performance test.      -->
+      <!-- ================================================== -->
+
+      <xacro:wamv_ball_shooter
+        name="ball_shooter"
+        x="0.54"
+        y="0.30"
+        z="1.296"
+        pitch="-1.04"
+      />
+
+    </xacro:if>
+
+  </xacro:unless>
+
+</robot>

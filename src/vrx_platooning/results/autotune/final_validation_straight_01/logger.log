@@ -1,0 +1,16 @@
+[INFO] [1790445528.970033935] [trajectory_logger]: Trajectory logger started.
+[INFO] [1790445528.970472640] [trajectory_logger]: CSV output: /home/sajed/vrx_ws/src/vrx_platooning/results/autotune/final_validation_straight_01/trajectory.csv
+
+============================================
+ TRAJECTORY LOGGER SUMMARY
+============================================
+Completion reason       : SUCCESS
+CSV                     : /home/sajed/vrx_ws/src/vrx_platooning/results/autotune/final_validation_straight_01/trajectory.csv
+Samples                 : 683
+Mean position error     : 0.169 m
+Max position error      : 1.430 m
+Position RMSE           : 0.307 m
+Mean |heading error|    : 0.055 rad
+Mean speed              : 0.616 m/s
+============================================
+

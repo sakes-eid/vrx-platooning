@@ -1,0 +1,165 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+  - Class: rviz_common/Views
+    Name: Views
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Alpha: 0.45
+      Cell Size: 10
+      Class: rviz_default_plugins/Grid
+      Color: 120; 120; 120
+      Enabled: true
+      Name: World grid
+      Plane: XY
+      Plane Cell Count: 80
+      Reference Frame: world_ned
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz_default_plugins/Path
+      Color: 80; 255; 80
+      Enabled: true
+      Head Diameter: 0.3
+      Head Length: 0.2
+      Length: 0.3
+      Line Style: Lines
+      Line Width: 0.12
+      Name: R1 reference course
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 255; 255
+      Pose Style: None
+      Radius: 0.03
+      Shaft Diameter: 0.1
+      Shaft Length: 0.1
+      Topic:
+        Depth: 5
+        Durability Policy: Transient Local
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /planner/reference_path
+      Value: true
+    - Alpha: 0.95
+      Buffer Length: 1
+      Class: rviz_default_plugins/Path
+      Color: 255; 190; 40
+      Enabled: true
+      Line Style: Lines
+      Line Width: 0.20
+      Name: Planner preview / heads-up
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0.05
+      Pose Style: None
+      Topic:
+        Depth: 5
+        Durability Policy: Transient Local
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /planner/r1/preview_path
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz_default_plugins/Path
+      Color: 70; 150; 255
+      Enabled: true
+      Line Style: Lines
+      Line Width: 0.16
+      Name: R1 actual trail
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0.10
+      Pose Style: None
+      Topic:
+        Depth: 5
+        Durability Policy: Transient Local
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /viz/r1/trail
+      Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: R1 live marker + advisory
+      Namespaces:
+        r1: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /viz/r1/markers
+      Value: true
+    - Class: rviz_default_plugins/Pose
+      Enabled: true
+      Name: Closest reference point
+      Shape: Sphere
+      Color: 255; 255; 255
+      Alpha: 1
+      Axes Length: 0.5
+      Axes Radius: 0.1
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /r1/control/reference_point
+      Value: true
+    - Class: rviz_default_plugins/Pose
+      Enabled: true
+      Name: R1 lookahead target
+      Shape: Sphere
+      Color: 255; 70; 70
+      Alpha: 1
+      Axes Length: 0.7
+      Axes Radius: 0.12
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /r1/control/target_point
+      Value: true
+  Enabled: true
+  Global Options:
+    Background Color: 35; 35; 35
+    Fixed Frame: world_ned
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz_default_plugins/Interact
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+    - Class: rviz_default_plugins/FocusCamera
+    - Class: rviz_default_plugins/Measure
+  Transformation:
+    Current:
+      Class: rviz_default_plugins/TF
+  Value: true
+  Views:
+    Current:
+      Angle: 0
+      Class: rviz_default_plugins/TopDownOrtho
+      Name: Top-down stress map
+      Near Clip Distance: 0.01
+      Scale: 180
+      Target Frame: world_ned
+      X: 0
+      Y: 0
+    Saved: ~
+Window Geometry:
+  Height: 900
+  Width: 1300
+  X: 40
+  Y: 40

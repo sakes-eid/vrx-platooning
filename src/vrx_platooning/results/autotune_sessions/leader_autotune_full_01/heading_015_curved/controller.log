@@ -1,0 +1,20 @@
+[INFO] [1790441410.142434403] [leader_pid_controller]: Leader PID controller started.
+[INFO] [1790441410.142992879] [leader_pid_controller]: Control rate: 10.00 Hz
+[INFO] [1790441410.143520863] [leader_pid_controller]: Controller state: TRACK
+[INFO] [1790441414.175462409] [leader_pid_controller]: Controller state: TRACK
+[INFO] [1790441414.175762553] [leader_pid_controller]: New reference path received: 64 waypoints.
+[INFO] [1790441426.885111088] [leader_pid_controller]: Controller state: BRAKE
+[INFO] [1790441426.885444105] [leader_pid_controller]: Goal braking started. Total speed=0.740 m/s, surge=0.740 m/s.
+[INFO] [1790441428.239420211] [leader_pid_controller]: Boat stopped outside goal tolerance. Distance=1.322 m. Entering RECOVER.
+[INFO] [1790441428.240073099] [leader_pid_controller]: Controller state: RECOVER
+[INFO] [1790441428.240292668] [leader_pid_controller]: RECOVER mode: ALIGN
+[INFO] [1790441428.267448202] [leader_pid_controller]: RECOVER alignment complete. Beginning slow approach.
+[INFO] [1790441429.205535642] [leader_pid_controller]: RECOVER capture distance reached. Distance=0.741 m. Entering BRAKE.
+[INFO] [1790441429.206152300] [leader_pid_controller]: Controller state: BRAKE
+[INFO] [1790441429.206388033] [leader_pid_controller]: Goal braking started. Total speed=0.205 m/s, surge=0.205 m/s.
+[INFO] [1790441429.349267875] [leader_pid_controller]: Controller state: HOLD
+[INFO] [1790441429.349578628] [leader_pid_controller]: Boat stopped inside target zone. Speed=0.026 m/s, distance=0.687 m.
+[INFO] [1790441429.349816750] [leader_pid_controller]: Holding for 5.0 simulated seconds.
+[INFO] [1790441430.733488793] [leader_pid_controller]: ========================================
+[INFO] [1790441430.733737803] [leader_pid_controller]: EXPERIMENT SUCCESS
+[INFO] [1790441430.733940477] [leader_pid_controller]: Goal distance: 0.817 m

@@ -1,0 +1,17 @@
+[INFO] [1790443441.474344947] [trajectory_logger]: Trajectory logger started.
+[INFO] [1790443441.474808565] [trajectory_logger]: CSV output: /home/sajed/vrx_ws/src/vrx_platooning/results/autotune_sessions/leader_smart_01/heading_036_straight/trajectory.csv
+
+============================================
+ TRAJECTORY LOGGER SUMMARY
+============================================
+Completion reason       : SUCCESS
+CSV                     : /home/sajed/vrx_ws/src/vrx_platooning/results/autotune_sessions/leader_smart_01/heading_036_straight/trajectory.csv
+Samples                 : 861
+Mean position error     : 0.287 m
+Max position error      : 1.430 m
+Position RMSE           : 0.372 m
+Mean |heading error|    : 0.067 rad
+Mean speed              : 0.518 m/s
+============================================
+
+[ros2run]: Interrupt

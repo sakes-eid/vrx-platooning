@@ -1,0 +1,15 @@
+{
+  "run_name": "accelerated_validation_curved_01",
+  "scenario": "curved",
+  "status": "FAILED",
+  "reason": "WALL_TIMEOUT | ANALYSIS_ERROR: CSV contains no data: /home/sajed/vrx_ws/src/vrx_platooning/results/autotune/accelerated_validation_curved_01/trajectory.csv",
+  "candidate": {
+    "heading_kp": 300.0,
+    "heading_ki": 15.0,
+    "heading_kd": 60.0,
+    "lookahead_distance": 3.0
+  },
+  "wall_duration_s": 180.00144770300176,
+  "effective_end_to_end_rtf": null,
+  "analysis": null
+}

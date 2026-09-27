@@ -1,0 +1,95 @@
+{
+  "run_name": "deterministic_baseline_curved_01",
+  "scenario": "curved",
+  "status": "SUCCESS",
+  "reason": "SUCCESS",
+  "candidate": {
+    "heading_kp": 300.0,
+    "heading_ki": 15.0,
+    "heading_kd": 60.0,
+    "lookahead_distance": 3.0
+  },
+  "wall_duration_s": 26.606757953999477,
+  "effective_end_to_end_rtf": 2.3130965488694133,
+  "analysis": {
+    "csv_file": "/home/sajed/vrx_ws/src/vrx_platooning/results/autotune/deterministic_baseline_curved_01/trajectory.csv",
+    "success": true,
+    "final_state": "SUCCESS",
+    "samples_total": 1232,
+    "samples_track": 791,
+    "total_time_s": 61.544,
+    "track_time_s": 39.544,
+    "tracking": {
+      "samples": 791,
+      "mean_position_error_m": 0.8205178527246039,
+      "maximum_position_error_m": 1.7007381485873243,
+      "position_rmse_m": 0.9567799742341606,
+      "mean_abs_heading_error_rad": 0.1500359190721051,
+      "heading_rmse_rad": 0.21122990901891842,
+      "mean_speed_mps": 0.8892272480424778,
+      "speed_rmse_mps": 0.14974179400822257
+    },
+    "capture": {
+      "success": true,
+      "threshold_m": 1.0,
+      "required_hold_time_s": 0.5,
+      "initial_position_error_m": 1.4258545104034421,
+      "capture_time_s": 1.0,
+      "confirmation_time_s": 1.5
+    },
+    "post_capture_tracking": {
+      "samples": 771,
+      "mean_position_error_m": 0.8089223540804606,
+      "maximum_position_error_m": 1.7007381485873243,
+      "position_rmse_m": 0.9471177635191614,
+      "mean_abs_heading_error_rad": 0.13849400341747223,
+      "heading_rmse_rad": 0.1912483791328866,
+      "mean_speed_mps": 0.9023532293729787,
+      "speed_rmse_mps": 0.10843209323786174
+    },
+    "recovery": {
+      "count": 1,
+      "total_time_s": 9.100000000000001
+    },
+    "brake": {
+      "duration_s": 7.9040000000000035,
+      "minimum_speed_mps": 0.04720784299231678,
+      "episodes": 2
+    },
+    "hold": {
+      "duration_s": 4.995999999999995
+    },
+    "state_durations_s": {
+      "TRACK": 39.544,
+      "BRAKE": 7.9040000000000035,
+      "RECOVER": 9.100000000000001,
+      "HOLD": 4.995999999999995
+    },
+    "transitions": [
+      {
+        "time_s": 0.0,
+        "state": "TRACK"
+      },
+      {
+        "time_s": 39.544,
+        "state": "BRAKE"
+      },
+      {
+        "time_s": 44.748,
+        "state": "RECOVER"
+      },
+      {
+        "time_s": 53.848,
+        "state": "BRAKE"
+      },
+      {
+        "time_s": 56.548,
+        "state": "HOLD"
+      },
+      {
+        "time_s": 61.544,
+        "state": "SUCCESS"
+      }
+    ]
+  }
+}

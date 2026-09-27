@@ -1,0 +1,25 @@
+[INFO] [1790441355.323534271] [trajectory_planner]: Trajectory planner started: curved
+[INFO] [1790441355.323868373] [trajectory_planner]: Frame: world_ned (x=North, y=East)
+Traceback (most recent call last):
+  File "/home/sajed/vrx_ws/install/platoon_planner/lib/platoon_planner/trajectory_planner", line 33, in <module>
+    sys.exit(load_entry_point('platoon-planner', 'console_scripts', 'trajectory_planner')())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/sajed/vrx_ws/build/platoon_planner/platoon_planner/trajectory_planner.py", line 455, in main
+    rclpy.spin(node)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py", line 247, in spin
+    executor.spin_once()
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 926, in spin_once
+    self._spin_once_impl(timeout_sec)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 918, in _spin_once_impl
+    raise handler.exception()
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/task.py", line 286, in _execute_coroutine_step
+    result = coro.send(None)
+             ^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 584, in handler
+    call_coroutine = take_from_wait_list(entity)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 470, in _take_subscription
+    msg_info = sub.handle.take_message(sub.msg_type, sub.raw)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Unable to convert call argument '0' to Python object (#define PYBIND11_DETAILED_ERROR_MESSAGES or compile in debug mode for details)
+[ros2run]: Process exited with failure 1

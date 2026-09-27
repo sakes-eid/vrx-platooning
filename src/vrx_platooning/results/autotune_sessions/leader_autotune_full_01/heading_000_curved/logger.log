@@ -1,0 +1,16 @@
+[INFO] [1790440660.697764423] [trajectory_logger]: Trajectory logger started.
+[INFO] [1790440660.698140244] [trajectory_logger]: CSV output: /home/sajed/vrx_ws/src/vrx_platooning/results/autotune_sessions/leader_autotune_full_01/heading_000_curved/trajectory.csv
+
+============================================
+ TRAJECTORY LOGGER SUMMARY
+============================================
+Completion reason       : SUCCESS
+CSV                     : /home/sajed/vrx_ws/src/vrx_platooning/results/autotune_sessions/leader_autotune_full_01/heading_000_curved/trajectory.csv
+Samples                 : 1363
+Mean position error     : 0.753 m
+Max position error      : 1.674 m
+Position RMSE           : 0.844 m
+Mean |heading error|    : 0.169 rad
+Mean speed              : 0.556 m/s
+============================================
+

@@ -1,0 +1,15 @@
+vehicle_state_node:
+  ros__parameters:
+
+    # Sydney Regatta world geographic origin
+    origin_latitude: -33.724223
+    origin_longitude: 150.679736
+
+    gps_topic: "/wamv/sensors/gps/gps/fix"
+    imu_topic: "/wamv/sensors/imu/imu/data"
+
+    world_position_topic: "/wamv/state/world_position"
+    vehicle_state_topic: "/wamv/state/vehicle"
+
+    velocity_filter_alpha: 0.35
+    minimum_course_speed: 0.05

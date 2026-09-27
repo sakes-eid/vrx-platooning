@@ -1,0 +1,16 @@
+[INFO] [1790440439.662370220] [trajectory_logger]: Trajectory logger started.
+[INFO] [1790440439.663113408] [trajectory_logger]: CSV output: /home/sajed/vrx_ws/src/vrx_platooning/results/autotune/deterministic_previous_best_straight_01/trajectory.csv
+
+============================================
+ TRAJECTORY LOGGER SUMMARY
+============================================
+Completion reason       : SUCCESS
+CSV                     : /home/sajed/vrx_ws/src/vrx_platooning/results/autotune/deterministic_previous_best_straight_01/trajectory.csv
+Samples                 : 873
+Mean position error     : 0.355 m
+Max position error      : 1.430 m
+Position RMSE           : 0.445 m
+Mean |heading error|    : 0.101 rad
+Mean speed              : 0.519 m/s
+============================================
+

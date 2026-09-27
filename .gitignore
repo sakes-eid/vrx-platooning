@@ -1,0 +1,26 @@
+# ROS 2 generated directories
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# IDE/editor
+.vscode/
+.idea/
+*~
+
+# Gazebo / simulation caches
+.gz/
+.gazebo/
+
+# Temporary runtime output
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db

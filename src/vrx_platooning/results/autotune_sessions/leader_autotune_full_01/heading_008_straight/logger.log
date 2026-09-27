@@ -1,0 +1,30 @@
+[INFO] [1790441074.575140758] [trajectory_logger]: Trajectory logger started.
+[INFO] [1790441074.575609269] [trajectory_logger]: CSV output: /home/sajed/vrx_ws/src/vrx_platooning/results/autotune_sessions/leader_autotune_full_01/heading_008_straight/trajectory.csv
+
+============================================
+ TRAJECTORY LOGGER SUMMARY
+============================================
+Completion reason       : SUCCESS
+CSV                     : /home/sajed/vrx_ws/src/vrx_platooning/results/autotune_sessions/leader_autotune_full_01/heading_008_straight/trajectory.csv
+Samples                 : 855
+Mean position error     : 0.303 m
+Max position error      : 1.430 m
+Position RMSE           : 0.387 m
+Mean |heading error|    : 0.066 rad
+Mean speed              : 0.522 m/s
+============================================
+
+Traceback (most recent call last):
+  File "/home/sajed/vrx_ws/install/platoon_monitor/lib/platoon_monitor/trajectory_logger", line 33, in <module>
+    sys.exit(load_entry_point('platoon-monitor', 'console_scripts', 'trajectory_logger')())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/sajed/vrx_ws/build/platoon_monitor/platoon_monitor/trajectory_logger.py", line 1049, in main
+    node.destroy_node()
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/node.py", line 1962, in destroy_node
+    self.destroy_service(self._services[0])
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/node.py", line 1886, in destroy_service
+    service.destroy()
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/service.py", line 123, in destroy
+    self.__service.destroy_when_not_in_use()
+KeyboardInterrupt
+[ros2run]: Interrupt

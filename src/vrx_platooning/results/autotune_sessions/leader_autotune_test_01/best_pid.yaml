@@ -1,0 +1,12 @@
+leader_pid_controller:
+  ros__parameters:
+    brake_kd: 0.9545944230398503
+    brake_ki: 44.20797209569005
+    brake_kp: 533.9476443768864
+    heading_kd: 53.65873451039718
+    heading_ki: 1.1329452505974538
+    heading_kp: 521.9363050393206
+    lookahead_distance: 2.406809587862091
+    speed_kd: 25.339928357224426
+    speed_ki: 2.611967103619957
+    speed_kp: 275.1946527257573

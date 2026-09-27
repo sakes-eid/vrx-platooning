@@ -1,0 +1,1051 @@
+
+## Phase 1 - State System
+
+### Step 1 - Sensor identification
+- GPS source: /wamv/sensors/gps/gps/fix
+- GPS type: sensor_msgs/msg/NavSatFix
+- GPS update rate: approximately 1.94 Hz
+- IMU source: /wamv/sensors/imu/imu/data
+- IMU type: sensor_msgs/msg/Imu
+- IMU update rate: approximately 10.6 Hz
+- Gazebo /wamv/pose is not a global ground-truth position topic.
+
+### Step 2 - Repository structure
+- Created vrx_platooning repository.
+- Created platoon_state ROS 2 Python package.
+- Added docs and results directories.
+
+### Step 3 - Fixed GPS reference frame
+- Fixed origin:
+  latitude: -33.72275000
+  longitude: 150.67400000
+- GPS coordinates converted to local metric coordinates.
+- Coordinate convention:
+  +X = East
+  +Y = North
+- Test WAM-V position:
+  x = -0.813 m
+  y = -2.082 m
+- Origin is independent of robot spawn position.
+
+### Control constraint
+- Thruster steering/rudder angles must remain fixed straight at 0 rad.
+- Vehicle steering will use differential left/right thrust only.
+
+## Phase 1 - State System Progress
+
+### Step 4 - Custom VehicleState interface
+Created the custom ROS 2 message:
+
+platoon_interfaces/msg/VehicleState.msg
+
+Fields:
+- header
+- x
+- y
+- vx
+- vy
+- speed
+- course_angle
+- body_yaw
+
+Purpose:
+- Provide one unified state message for planner, controller, followers, monitoring and logging.
+- Keep actual direction of travel separate from body orientation.
+
+The interface was successfully built and verified using:
+ros2 interface show platoon_interfaces/msg/VehicleState
+
+---
+
+### Step 5 - Unified vehicle state node
+
+Created:
+
+platoon_state/vehicle_state_node.py
+
+Inputs:
+- /wamv/sensors/gps/gps/fix
+- /wamv/sensors/imu/imu/data
+
+Outputs:
+- /wamv/state/local_position
+- /wamv/state/vehicle
+
+The node performs:
+
+1. GPS latitude/longitude -> local X/Y coordinates in metres.
+2. X axis = East.
+3. Y axis = North.
+4. Velocity estimation from consecutive GPS measurements.
+5. Ground speed calculation.
+6. Course-angle calculation from inertial velocity.
+7. IMU quaternion -> body yaw conversion.
+
+Important distinction:
+
+course_angle
+= direction in which the robot is actually travelling.
+
+body_yaw
+= direction in which the WAM-V body/bow is pointing.
+
+These values are deliberately kept separate because the robot may drift sideways due to water current, wind or dynamics.
+
+---
+
+### Step 6 - Dynamic state validation
+
+The vehicle-state system was tested while the WAM-V was moving.
+
+Example moving state:
+
+x = 1.803 m
+y = 2.371 m
+
+vx = 0.101 m/s
+vy = 0.149 m/s
+
+speed = 0.180 m/s
+
+course_angle = 0.977 rad
+body_yaw = 1.095 rad
+
+Equivalent approximate angles:
+
+course_angle = 56.0 degrees
+body_yaw = 62.7 degrees
+
+This confirmed that:
+
+- GPS-derived position works.
+- Velocity increases when the vehicle moves.
+- Speed is calculated correctly.
+- Course angle represents actual motion.
+- Body yaw remains independent of course angle.
+
+---
+
+### Step 7 - Velocity filtering
+
+Decision:
+Add a first-order low-pass filter to GPS-derived vx and vy before calculating speed and course angle.
+
+Filter:
+
+filtered_velocity =
+alpha * new_velocity
++ (1 - alpha) * previous_filtered_velocity
+
+Initial parameter:
+
+velocity_filter_alpha = 0.35
+
+Reason:
+The GPS publishes at approximately 1.94 Hz, so raw position differences can introduce noise into velocity and course estimates.
+
+The filter is applied to vx and vy rather than directly to course_angle in order to avoid angular wraparound problems at +/- pi.
+
+Course angle is only updated when:
+
+speed >= 0.05 m/s
+
+Below this threshold, the last valid course angle is retained because motion direction is not meaningful when the robot is nearly stationary.
+
+Filtering implementation prepared but still requires final rebuild and validation test.
+
+---
+
+## Simulation / Workspace Recovery
+
+During development, the following command was previously executed:
+
+rm -rf install build log
+
+This removed compiled ROS workspace outputs but did not remove source code.
+
+The entire workspace was rebuilt successfully using:
+
+colcon build --symlink-install
+
+Packages successfully rebuilt included:
+- vrx_gazebo
+- vrx_ros
+- control
+- planner
+- platoon_state
+- vrx_gz
+- wamv_description
+- wamv_gazebo
+
+The old group planner and control packages are still present in the workspace but will not be used as the architecture for the individual project.
+
+---
+
+## Gazebo Resource Path Fix
+
+After the clean rebuild, Gazebo initially failed to resolve WAM-V meshes such as:
+
+model://wamv_description/...
+model://wamv_gazebo/...
+
+The issue was fixed by explicitly setting:
+
+GZ_SIM_RESOURCE_PATH
+
+using:
+
+export GZ_SIM_RESOURCE_PATH="$(ros2 pkg prefix wamv_description)/share:$(ros2 pkg prefix wamv_gazebo)/share:$(ros2 pkg prefix vrx_gz)/share:${GZ_SIM_RESOURCE_PATH}"
+
+After this correction, VRX launched successfully with no mesh-loading errors.
+
+---
+
+## Control Constraint
+
+Professor requirement:
+
+Both thruster steering angles must remain fixed straight.
+
+Confirmed from Gazebo:
+
+left thruster initial position = 0 rad
+right thruster initial position = 0 rad
+
+Therefore:
+
+/wamv/thrusters/left/pos = 0.0
+/wamv/thrusters/right/pos = 0.0
+
+for the entire project.
+
+All steering will be performed using differential thrust:
+
+Left thrust != Right thrust
+
+while both steering angles remain fixed at 0 rad.
+
+
+## Phase 1 - Final Coordinate System Correction
+
+### World NED requirement
+
+The original local coordinate convention was replaced after clarification from the professor.
+
+Final navigation frame:
+
+- Frame name: world_ned
+- X = North [m]
+- Y = East [m]
+- Positive heading is clockwise from North
+- 0 rad = North
+- +pi/2 rad = East
+- +/-pi rad = South
+- -pi/2 rad = West
+
+The previous arbitrary local origin near the WAM-V spawn position is no longer used.
+
+The official Sydney Regatta geographic world origin is used instead:
+
+- Latitude: -33.724223
+- Longitude: 150.679736
+
+GPS remains the authoritative navigation source.
+
+Input topic:
+
+/wamv/sensors/gps/gps/fix
+
+The GPS latitude and longitude are converted directly into world NED coordinates.
+
+The Gazebo world pose is not used as the navigation source.
+
+---
+
+### GPS to world NED conversion
+
+The horizontal conversion is:
+
+North = R * delta_latitude
+
+East =
+R * cos(origin_latitude)
+* delta_longitude
+
+where:
+
+R = 6378137 m
+
+The VehicleState convention is now:
+
+x = North position [m]
+y = East position [m]
+
+vx = North velocity [m/s]
+vy = East velocity [m/s]
+
+course_angle =
+atan2(East velocity, North velocity)
+
+body_yaw =
+vehicle bow heading in NED convention
+
+---
+
+### World NED validation
+
+Raw GPS sample:
+
+latitude =
+-33.722768757528755
+
+longitude =
+150.67399048700395
+
+Converted VehicleState:
+
+frame_id = world_ned
+
+x =
+161.88014479808356 m North
+
+y =
+-531.973829974782 m East
+
+This agreed with the expected Sydney world position.
+
+---
+
+### Dynamic NED validation
+
+The WAM-V was commanded with equal thrust on both sides while both steering joints remained fixed at 0 rad.
+
+Moving VehicleState sample:
+
+x =
+163.12208517731682 m North
+
+y =
+-531.1777024033836 m East
+
+vx =
+0.6954825701216978 m/s North
+
+vy =
+0.43849423051815273 m/s East
+
+speed =
+0.8221758908778517 m/s
+
+course_angle =
+0.5625368513885165 rad
+
+body_yaw =
+0.5628944565140588 rad
+
+The difference between course angle and body heading was approximately 0.00036 rad, confirming that the NED heading and velocity conventions were consistent during straight motion.
+
+---
+
+## Phase 2 - Reference Trajectory Planner
+
+Created ROS 2 package:
+
+platoon_planner
+
+Published topic:
+
+/planner/reference_path
+
+Message type:
+
+nav_msgs/msg/Path
+
+Final planner frame:
+
+world_ned
+
+Coordinate convention:
+
+x = North [m]
+y = East [m]
+
+The planner supports the two trajectories required by the project specification:
+
+- straight trajectory
+- curved / circular trajectory
+
+---
+
+### Straight trajectory
+
+Initial test path:
+
+Start:
+North = 163 m
+East = -531 m
+
+End:
+North = 183 m
+East = -531 m
+
+Waypoint spacing:
+
+0.5 m
+
+The path was successfully published in the world_ned frame and verified using:
+
+ros2 topic echo /planner/reference_path --once
+
+---
+
+### Curved trajectory
+
+A semicircular reference path was implemented and successfully published in world NED coordinates.
+
+Example geometry:
+
+Center:
+North = 173 m
+East = -531 m
+
+Radius:
+10 m
+
+The generated path starts near:
+
+North = 163 m
+East = -531 m
+
+passes approximately through:
+
+North = 173 m
+East = -521 m
+
+and finishes near:
+
+North = 183 m
+East = -531 m
+
+The curved path was successfully verified using:
+
+ros2 topic echo /planner/reference_path --once
+
+---
+
+### Path heading
+
+Each PoseStamped waypoint now contains a heading aligned with the local trajectory direction.
+
+The heading is calculated in NED convention:
+
+heading =
+atan2(East delta, North delta)
+
+Therefore:
+
+0 rad = North
+
++pi/2 rad = East
+
+Waypoint orientation is stored as a quaternion in the world_ned frame.
+
+---
+
+## Phase 2 - Sydney Regatta Visualization
+
+Created ROS 2 package:
+
+platoon_monitor
+
+The old planner occupancy data was reused:
+
+sydney_local_occupancy.npy
+
+The occupancy map was originally generated from the Sydney Regatta shoreline mesh.
+
+Original Gazebo map convention:
+
+- horizontal = East
+- vertical = North
+- ENU coordinates
+
+The occupancy array is transposed for visualization so the final project map uses:
+
+- horizontal axis = North
+- vertical axis = East
+
+This matches the world_ned state and planner coordinate system.
+
+---
+
+### Live map
+
+Created:
+
+platoon_monitor/live_map.py
+
+The live map displays:
+
+- Sydney Regatta shoreline / river boundaries
+- planner reference trajectory
+- robot position
+- robot travelled trail
+
+Axis convention:
+
+X axis = North [m]
+
+Y axis = East [m]
+
+The map refresh period is intentionally limited to:
+
+5 seconds
+
+to reduce computational load while running Gazebo under Ubuntu / WSL.
+
+ROS subscriptions continue receiving data continuously; only the graphical display is refreshed every 5 seconds.
+
+---
+
+### Map validation
+
+The straight NED reference path was successfully displayed on the Sydney Regatta occupancy map.
+
+Observed location:
+
+North approximately 163 to 183 m
+
+East approximately -531 m
+
+The path appeared in the free-water region of the map.
+
+---
+
+### Live GPS robot tracking validation
+
+Gazebo, the GPS-derived state node, the planner and the live map were run together.
+
+The complete data chain was successfully validated:
+
+GPS
+-> VehicleState world NED
+-> live map
+
+The WAM-V marker appeared at approximately:
+
+North = 162 m
+
+East = -532 m
+
+The vehicle was then manually moved using equal left and right thrust.
+
+The live map correctly updated the vehicle marker and recorded its travelled trail.
+
+This confirmed that:
+
+- GPS position is correctly converted to world NED
+- planner and robot state share the same coordinate frame
+- the Sydney occupancy map is correctly aligned
+- live WAM-V movement is correctly represented on the map
+
+---
+
+## Control Constraint - Final Confirmation
+
+Professor requirement:
+
+Both thruster steering / azimuth angles must remain fixed straight.
+
+Therefore:
+
+/wamv/thrusters/left/pos = 0.0 rad
+
+/wamv/thrusters/right/pos = 0.0 rad
+
+Vehicle turning must use differential thrust only.
+
+The control architecture must therefore generate:
+
+left_thrust
+
+right_thrust
+
+while keeping both thruster steering angles permanently at 0 rad.
+
+---
+
+## Current Project Status
+
+Completed:
+
+- GPS sensor identification
+- IMU sensor identification
+- GPS-derived world NED state
+- NED velocity estimation
+- velocity filtering
+- NED course angle
+- NED body heading
+- unified VehicleState message
+- dynamic state validation
+- straight trajectory planner
+- curved trajectory planner
+- world NED waypoint headings
+- Sydney Regatta occupancy map visualization
+- live GPS robot tracking
+- 5-second low-load map refresh
+- fixed-straight thruster steering constraint validation
+
+Next phase:
+
+Phase 3 - Leader Trajectory Tracking Controller
+
+Planned controller:
+
+- ROS 2 control node
+- PID-based trajectory tracking
+- planner path input
+- VehicleState input
+- forward thrust control
+- differential thrust heading control
+- steering angles fixed at 0 rad
+- straight-path tracking test
+- curved-path tracking test
+- tracking error recording and evaluation
+
+
+---
+
+## Leader PID optimization and final validation
+
+### Motivation
+
+The initial leader controller was manually selected and then evaluated on both
+straight and curved trajectories. The curved trajectory was consistently the
+more difficult case and therefore became the primary discriminator during
+controller optimization.
+
+The controller was separated into three functional control problems:
+
+- heading/path tracking;
+- forward-speed control;
+- terminal braking.
+
+A separate RECOVER state remained available if braking overshoot caused the
+vehicle to leave the final goal region.
+
+This separation was useful because a poor braking controller did not simply
+increase stopping distance: it could force the WAM-V into RECOVER, increasing
+mission time and adding recovery penalties to the optimization objective.
+
+### Deterministic automated trials
+
+An automated trial framework was developed around the normal ROS 2 PID
+controller.
+
+Each candidate controller was tested in a fresh headless Gazebo simulation.
+The simulation was launched paused. The framework waited for:
+
+- Gazebo /clock and required sensor topics;
+- vehicle_state_node;
+- trajectory_planner;
+- trajectory_logger;
+- leader_pid_controller.
+
+Only after all required nodes were ready was the simulation unpaused.
+
+This eliminated the startup race observed in earlier experiments and made
+repeated trials highly reproducible.
+
+The accelerated project-owned VRX world retained the physical simulation,
+including hydrodynamics, buoyancy, vehicle inertia and thruster dynamics.
+Only unnecessary visual/sensor workload was reduced. The original VRX files
+were not modified.
+
+### Capture-aware tracking metrics
+
+The initial position of the WAM-V is not exactly located on the first reference
+point of the planned trajectory.
+
+This is particularly visible at the beginning of the curved trajectory, where
+the first samples contain a relatively large position error before the vehicle
+has had sufficient time to move onto the reference path.
+
+The robot was intentionally NOT repositioned before each experiment. Moving
+the robot or modifying the trajectory purely to reduce this initial error would
+alter the common initial condition and artificially improve the reported
+tracking statistics.
+
+For this reason, two sets of trajectory metrics were retained:
+
+1. Full-trial metrics, covering the mission from the original spawn condition.
+2. Post-capture metrics, beginning after the vehicle first enters and remains
+   within the 1.0 m tracking threshold for at least 0.5 s.
+
+The full-trial maximum error in the final validation was approximately 1.43 m,
+which corresponds to this initial geometric offset. After capture, the maximum
+tracking error was below 1.0 m in all six validation runs.
+
+Therefore the post-capture metric is used to assess steady trajectory-following
+performance, while the full-trial metric remains available and is not hidden.
+
+### Initial automated search
+
+The first automated optimizer used staged random exploration for:
+
+1. heading PID and lookahead;
+2. speed PID;
+3. brake PID;
+4. final joint refinement.
+
+This generated useful experimental data, but uniform random sampling did not
+make efficient use of previous trials.
+
+After 29 heading-stage evaluations, the best score was:
+
+    1.167604
+
+The best heading gains were also very close to the upper boundaries of the
+original search region. This indicated that the original heading search space
+was probably too restrictive.
+
+### Smart optimizer
+
+The random optimizer was replaced by an Optuna multivariate TPE optimizer.
+
+The smart optimizer reused the 29 completed heading experiments as prior
+observations instead of discarding them.
+
+The heading search range was expanded because the best previous solution was
+located close to the former upper limits.
+
+The optimizer then performed staged optimization of:
+
+- heading PID and lookahead;
+- speed PID;
+- braking PID;
+- joint refinement of all optimized parameters.
+
+Candidate selection was model-guided rather than uniform random sampling.
+
+### Curved-first pruning
+
+For each candidate, the curved trajectory was evaluated first.
+
+The combined controller objective is defined using the worst scenario:
+
+    objective = max(curved_score, straight_score)
+
+Therefore, if the curved score alone was already greater than or equal to the
+current best complete score, the straight trajectory mathematically could not
+make that candidate better.
+
+Such trials were pruned immediately.
+
+This reduced unnecessary simulation work while preserving the optimization
+criterion.
+
+### Braking optimization
+
+Brake tuning produced one of the most important behavioral improvements.
+
+Earlier controllers could overshoot the terminal region, enter RECOVER, return
+toward the goal and brake a second time.
+
+The brake PID was therefore optimized not only for stopping performance but
+also for avoiding unnecessary recovery maneuvers.
+
+The optimized controller reduced the final sequence to:
+
+    TRACK -> BRAKE -> HOLD -> SUCCESS
+
+for both final straight and curved validation trajectories.
+
+No RECOVER state occurred in any of the six final validation experiments.
+
+This also reduced simulated mission duration because successful controllers
+spent less time performing corrective maneuvers.
+
+The observed reduction in trial duration was an indirect consequence of
+improved tracking, braking and convergence. Simulation runtime itself was not
+used as the primary optimization objective.
+
+### Final optimized leader controller
+
+Final parameters:
+
+    Heading:
+      Kp = 911.400744
+      Ki = 25.651651
+      Kd = 98.104932
+
+    Speed:
+      Kp = 127.838779
+      Ki = 18.383775
+      Kd = 49.388692
+
+    Brake:
+      Kp = 177.893520
+      Ki = 60.634764
+      Kd = 10.647183
+
+    Lookahead distance = 5.103256 m
+
+The smart-optimization objective improved from:
+
+    1.167604 -> 0.757925
+
+corresponding to an improvement of approximately 35%.
+
+### Final six-run validation
+
+The final controller was evaluated independently three times on the curved
+trajectory and three times on the straight trajectory.
+
+All six experiments completed successfully.
+
+#### Curved trajectory
+
+Run 1:
+    Post-capture RMSE       = 0.2999 m
+    Post-capture max error  = 0.9856 m
+    Heading RMSE            = 0.0370 rad
+    Capture time            = 1.496 s
+    Recoveries              = 0
+    Brake duration          = 3.900 s
+    Completion time         = 51.492 s
+
+Run 2:
+    Post-capture RMSE       = 0.3000 m
+    Post-capture max error  = 0.9857 m
+    Heading RMSE            = 0.0370 rad
+    Capture time            = 1.444 s
+    Recoveries              = 0
+    Brake duration          = 3.900 s
+    Completion time         = 51.444 s
+
+Run 3:
+    Post-capture RMSE       = 0.3003 m
+    Post-capture max error  = 0.9856 m
+    Heading RMSE            = 0.0368 rad
+    Capture time            = 1.500 s
+    Recoveries              = 0
+    Brake duration          = 3.900 s
+    Completion time         = 51.496 s
+
+Curved mean:
+    Post-capture RMSE       = 0.3000 m
+    Post-capture max error  = 0.9856 m
+    Heading RMSE            = 0.0369 rad
+    Capture time            = 1.480 s
+    Recovery count          = 0 / 3
+    Completion time         = 51.477 s
+
+#### Straight trajectory
+
+Run 1:
+    Post-capture RMSE       = 0.1702 m
+    Post-capture max error  = 0.9732 m
+    Heading RMSE            = 0.0179 rad
+    Capture time            = 1.352 s
+    Recoveries              = 0
+    Brake duration          = 1.200 s
+    Completion time         = 34.096 s
+
+Run 2:
+    Post-capture RMSE       = 0.1751 m
+    Post-capture max error  = 0.9998 m
+    Heading RMSE            = 0.0184 rad
+    Capture time            = 1.296 s
+    Recoveries              = 0
+    Brake duration          = 1.200 s
+    Completion time         = 34.100 s
+
+Run 3:
+    Post-capture RMSE       = 0.1698 m
+    Post-capture max error  = 0.9731 m
+    Heading RMSE            = 0.0180 rad
+    Capture time            = 1.348 s
+    Recoveries              = 0
+    Brake duration          = 1.256 s
+    Completion time         = 34.092 s
+
+Straight mean:
+    Post-capture RMSE       = 0.1717 m
+    Post-capture max error  = 0.9820 m
+    Heading RMSE            = 0.0181 rad
+    Capture time            = 1.332 s
+    Recovery count          = 0 / 3
+    Completion time         = 34.096 s
+
+### Final leader acceptance
+
+Acceptance requirements:
+
+    post-capture RMSE <= 0.60 m
+    post-capture maximum error <= 1.00 m
+    capture time <= 5.0 s
+    successful mission completion
+
+Final result:
+
+    Curved validation:  3 / 3 PASS
+    Straight validation: 3 / 3 PASS
+    Total:              6 / 6 PASS
+
+The leader controller is therefore frozen as the validated baseline for the
+leader-follower and platooning stages.
+
+
+---
+
+## Additional leader stress test — coverage trajectory
+
+Before beginning the multi-robot stage, the final validated leader controller
+was tested on a trajectory substantially more complex than the straight and
+single-curve validation cases.
+
+### Coverage planner
+
+A coverage planner was implemented using the same general principle as the
+original project planner: alternating back-and-forth sweep lines
+(boustrophedon / lawnmower coverage).
+
+The new implementation was adapted to the current project architecture:
+
+- output frame: world_ned;
+- x coordinate represents North;
+- y coordinate represents East;
+- output topic remains /planner/reference_path;
+- smooth semicircular connectors are used between adjacent sweep lanes;
+- the existing tuned leader controller is used without retuning.
+
+Smooth U-turns were intentionally preferred to sharp grid-like transitions so
+that the generated trajectory better reflects the turning requirements of the
+WAM-V.
+
+### Coverage test 1 — 5 m lane spacing
+
+The initial planner used:
+
+    lane spacing = 5 m
+    U-turn radius = 2.5 m
+
+This produced a difficult coverage trajectory containing two consecutive
+180-degree turns.
+
+The controller successfully completed the mission but tracking performance
+degraded significantly around the U-turns:
+
+    Post-capture position RMSE = 1.086 m
+    Maximum position error     = 2.219 m
+    Heading RMSE               = 0.394 rad
+    Speed RMSE                 = 0.089 m/s
+    Recovery count             = 1
+    Recovery time              = 9.504 s
+    Total completion time      = 100.448 s
+
+The tuned leader lookahead distance is approximately:
+
+    5.10 m
+
+The initial U-turn radius of only:
+
+    2.5 m
+
+was therefore substantially smaller than the controller lookahead distance.
+
+The largest errors occurred during the U-turn transitions rather than during
+the straight coverage sweeps.
+
+This showed that trajectory geometry must be compatible with the dynamic and
+control characteristics of the vehicle. A controller should not be expected to
+compensate indefinitely for arbitrarily tight planner geometry.
+
+### Coverage test 2 — increased turning radius
+
+The lane spacing was increased to:
+
+    12 m
+
+producing:
+
+    U-turn radius = 6 m
+
+The PID gains and all other controller parameters were left unchanged.
+
+The second coverage experiment again reached SUCCESS.
+
+Measured post-capture performance:
+
+    Mean position error        = 0.710 m
+    Position RMSE              = 0.813 m
+    Maximum position error     = 1.676 m
+    Heading RMSE               = 0.203 rad
+    Speed RMSE                 = 0.087 m/s
+    Capture time               = 1.004 s
+
+Terminal behavior:
+
+    Recovery count             = 1
+    Recovery time              = 7.048 s
+    Brake duration             = 7.504 s
+
+Mission timing:
+
+    TRACK duration             = 98.500 s
+    Total completion time      = 118.000 s
+
+The longer mission duration is expected because increasing the U-turn radius
+also increases the total physical coverage-path length.
+
+### Effect of the planner modification
+
+Changing only the coverage geometry produced approximately:
+
+    Position RMSE improvement      = 25%
+    Maximum-error improvement      = 24%
+    Heading-RMSE improvement       = 48%
+    Recovery-time improvement      = 26%
+
+Speed-tracking performance remained nearly unchanged.
+
+When the second test was separated into sweep and turning portions, the
+approximate tracking behavior was:
+
+    Straight sweep RMSE  = 0.656 m
+    U-turn RMSE          = 0.971 m
+
+Therefore the remaining error is primarily associated with repeated
+180-degree direction changes rather than general straight-line instability.
+
+The maximum error of approximately 1.676 m occurred during the second U-turn.
+
+### Interpretation
+
+The coverage trajectory is treated as a stress/generalization test rather than
+as part of the PID optimization objective.
+
+The PID controller had been optimized only using the standard straight and
+curved validation trajectories. It was intentionally NOT retuned specifically
+for coverage, because doing so could over-specialize the validated leader
+controller.
+
+Despite this, the WAM-V:
+
+- captured the trajectory;
+- completed all three sweep lanes;
+- negotiated both 180-degree U-turns;
+- reached the final goal;
+- achieved SUCCESS.
+
+The only RECOVER event occurred during terminal stopping after the coverage
+tracking phase, not during either U-turn.
+
+The experiment therefore demonstrates that the validated controller
+generalizes to an unseen multi-turn trajectory while also showing the
+importance of planner/controller compatibility.
+
+The final leader controller remains unchanged and is now frozen for the
+leader-follower stage.
+

@@ -1,0 +1,39 @@
+[INFO] [1790443591.126685869] [leader_pid_controller]: Leader PID controller started.
+[INFO] [1790443591.127410827] [leader_pid_controller]: Control rate: 10.00 Hz
+[INFO] [1790443591.128006225] [leader_pid_controller]: Controller state: TRACK
+[INFO] [1790443595.216719163] [leader_pid_controller]: Controller state: TRACK
+[INFO] [1790443595.217010785] [leader_pid_controller]: New reference path received: 41 waypoints.
+[INFO] [1790443602.664594130] [leader_pid_controller]: Controller state: BRAKE
+[INFO] [1790443602.664876032] [leader_pid_controller]: Goal braking started. Total speed=0.748 m/s, surge=0.746 m/s.
+[INFO] [1790443603.859086242] [leader_pid_controller]: Boat stopped outside goal tolerance. Distance=1.283 m. Entering RECOVER.
+[INFO] [1790443603.859592217] [leader_pid_controller]: Controller state: RECOVER
+[INFO] [1790443603.859832021] [leader_pid_controller]: RECOVER mode: ALIGN
+[INFO] [1790443603.885162371] [leader_pid_controller]: RECOVER alignment complete. Beginning slow approach.
+[INFO] [1790443604.791757331] [leader_pid_controller]: RECOVER capture distance reached. Distance=0.744 m. Entering BRAKE.
+[INFO] [1790443604.792240131] [leader_pid_controller]: Controller state: BRAKE
+[INFO] [1790443604.792519492] [leader_pid_controller]: Goal braking started. Total speed=0.267 m/s, surge=0.201 m/s.
+[INFO] [1790443605.425516304] [leader_pid_controller]: Controller state: HOLD
+[INFO] [1790443605.425913398] [leader_pid_controller]: Boat stopped inside target zone. Speed=0.050 m/s, distance=0.796 m.
+[INFO] [1790443605.426200475] [leader_pid_controller]: Holding for 5.0 simulated seconds.
+[INFO] [1790443606.791170950] [leader_pid_controller]: ========================================
+[INFO] [1790443606.791489220] [leader_pid_controller]: EXPERIMENT SUCCESS
+[INFO] [1790443606.791723425] [leader_pid_controller]: Goal distance: 0.891 m
+[INFO] [1790443606.792020468] [leader_pid_controller]: Speed: 0.008 m/s
+[INFO] [1790443606.792281365] [leader_pid_controller]: Remained within 1.00 m for 5.0 simulated seconds.
+[INFO] [1790443606.792507388] [leader_pid_controller]: ========================================
+Traceback (most recent call last):
+  File "/home/sajed/vrx_ws/install/platoon_control/lib/platoon_control/leader_pid_controller", line 33, in <module>
+    sys.exit(load_entry_point('platoon-control', 'console_scripts', 'leader_pid_controller')())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/sajed/vrx_ws/build/platoon_control/platoon_control/leader_pid_controller.py", line 2126, in main
+    node.stop()
+  File "/home/sajed/vrx_ws/build/platoon_control/platoon_control/leader_pid_controller.py", line 2096, in stop
+    self.publish_zero_thrust()
+  File "/home/sajed/vrx_ws/build/platoon_control/platoon_control/leader_pid_controller.py", line 2046, in publish_zero_thrust
+    self.publish_thrusters(
+  File "/home/sajed/vrx_ws/build/platoon_control/platoon_control/leader_pid_controller.py", line 2006, in publish_thrusters
+    self.left_position_publisher.publish(
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/publisher.py", line 70, in publish
+    self.__publisher.publish(msg)
+rclpy._rclpy_pybind11.RCLError: Failed to publish: publisher's context is invalid, at ./src/rcl/publisher.c:423
+[ros2run]: Process exited with failure 1

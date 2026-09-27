@@ -1,0 +1,18 @@
+{
+  "session_name": "leader_autotune_full_01",
+  "best_score": 1.1676035461821879,
+  "best_candidate": {
+    "heading_kp": 598.2546211080435,
+    "heading_ki": 21.16457380396548,
+    "heading_kd": 146.24018908977035,
+    "speed_kp": 275.194653,
+    "speed_ki": 2.611967,
+    "speed_kd": 25.339928,
+    "brake_kp": 533.947644,
+    "brake_ki": 44.207972,
+    "brake_kd": 0.954594,
+    "lookahead_distance": 4.512728957820743
+  },
+  "evaluated_candidates": 29,
+  "history_rows": 29
+}

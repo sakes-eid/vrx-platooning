@@ -1,0 +1,54 @@
+[INFO] [1790444220.760589092] [leader_pid_controller]: Leader PID controller started.
+[INFO] [1790444220.761181506] [leader_pid_controller]: Control rate: 10.00 Hz
+[INFO] [1790444220.761642455] [leader_pid_controller]: Controller state: TRACK
+[INFO] [1790444226.931656030] [leader_pid_controller]: Controller state: TRACK
+[INFO] [1790444226.931930407] [leader_pid_controller]: New reference path received: 41 waypoints.
+[INFO] [1790444234.510539096] [leader_pid_controller]: Controller state: BRAKE
+[INFO] [1790444234.510817768] [leader_pid_controller]: Goal braking started. Total speed=0.769 m/s, surge=0.768 m/s.
+[INFO] [1790444234.873720484] [leader_pid_controller]: Controller state: HOLD
+[INFO] [1790444234.873984535] [leader_pid_controller]: Boat stopped inside target zone. Speed=0.044 m/s, distance=0.585 m.
+[INFO] [1790444234.874281768] [leader_pid_controller]: Holding for 5.0 simulated seconds.
+[INFO] [1790444236.173281900] [leader_pid_controller]: ========================================
+[INFO] [1790444236.173520024] [leader_pid_controller]: EXPERIMENT SUCCESS
+[INFO] [1790444236.173717481] [leader_pid_controller]: Goal distance: 0.601 m
+[INFO] [1790444236.173913197] [leader_pid_controller]: Speed: 0.007 m/s
+[INFO] [1790444236.174140961] [leader_pid_controller]: Remained within 1.00 m for 5.0 simulated seconds.
+[INFO] [1790444236.174362005] [leader_pid_controller]: ========================================
+Traceback (most recent call last):
+  File "/home/sajed/vrx_ws/build/platoon_control/platoon_control/leader_pid_controller.py", line 2116, in main
+    rclpy.spin(
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py", line 247, in spin
+    executor.spin_once()
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 926, in spin_once
+    self._spin_once_impl(timeout_sec)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 918, in _spin_once_impl
+    raise handler.exception()
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/task.py", line 286, in _execute_coroutine_step
+    result = coro.send(None)
+             ^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 584, in handler
+    call_coroutine = take_from_wait_list(entity)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 470, in _take_subscription
+    msg_info = sub.handle.take_message(sub.msg_type, sub.raw)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Unable to convert call argument '0' to Python object (#define PYBIND11_DETAILED_ERROR_MESSAGES or compile in debug mode for details)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/sajed/vrx_ws/install/platoon_control/lib/platoon_control/leader_pid_controller", line 33, in <module>
+    sys.exit(load_entry_point('platoon-control', 'console_scripts', 'leader_pid_controller')())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/sajed/vrx_ws/build/platoon_control/platoon_control/leader_pid_controller.py", line 2126, in main
+    node.stop()
+  File "/home/sajed/vrx_ws/build/platoon_control/platoon_control/leader_pid_controller.py", line 2096, in stop
+    self.publish_zero_thrust()
+  File "/home/sajed/vrx_ws/build/platoon_control/platoon_control/leader_pid_controller.py", line 2046, in publish_zero_thrust
+    self.publish_thrusters(
+  File "/home/sajed/vrx_ws/build/platoon_control/platoon_control/leader_pid_controller.py", line 2006, in publish_thrusters
+    self.left_position_publisher.publish(
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/publisher.py", line 70, in publish
+    self.__publisher.publish(msg)
+rclpy._rclpy_pybind11.RCLError: Failed to publish: publisher's context is invalid, at ./src/rcl/publisher.c:423
+[ros2run]: Process exited with failure 1

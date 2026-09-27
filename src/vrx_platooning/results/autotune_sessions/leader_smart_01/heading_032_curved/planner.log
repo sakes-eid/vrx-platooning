@@ -1,0 +1,16 @@
+[INFO] [1790443287.624712558] [trajectory_planner]: Trajectory planner started: curved
+[INFO] [1790443287.625087033] [trajectory_planner]: Frame: world_ned (x=North, y=East)
+Traceback (most recent call last):
+  File "/home/sajed/vrx_ws/install/platoon_planner/lib/platoon_planner/trajectory_planner", line 33, in <module>
+    sys.exit(load_entry_point('platoon-planner', 'console_scripts', 'trajectory_planner')())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/sajed/vrx_ws/build/platoon_planner/platoon_planner/trajectory_planner.py", line 462, in main
+    rclpy.shutdown()
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py", line 134, in shutdown
+    _shutdown(context=context)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/utilities.py", line 82, in shutdown
+    context.shutdown()
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/context.py", line 129, in shutdown
+    self.__context.shutdown()
+rclpy._rclpy_pybind11.RCLError: failed to shutdown: rcl_shutdown already called on the given context, at ./src/rcl/init.c:333
+[ros2run]: Process exited with failure 1

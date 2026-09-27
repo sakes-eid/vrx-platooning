@@ -1,0 +1,26 @@
+[INFO] [1790444471.985807437] [trajectory_logger]: Trajectory logger started.
+[INFO] [1790444471.986439084] [trajectory_logger]: CSV output: /home/sajed/vrx_ws/src/vrx_platooning/results/autotune_sessions/leader_smart_01/refinement_002_curved/trajectory.csv
+
+============================================
+ TRAJECTORY LOGGER SUMMARY
+============================================
+Completion reason       : SUCCESS
+CSV                     : /home/sajed/vrx_ws/src/vrx_platooning/results/autotune_sessions/leader_smart_01/refinement_002_curved/trajectory.csv
+Samples                 : 1096
+Mean position error     : 0.389 m
+Max position error      : 1.426 m
+Position RMSE           : 0.449 m
+Mean |heading error|    : 0.134 rad
+Mean speed              : 0.614 m/s
+============================================
+
+Traceback (most recent call last):
+  File "/home/sajed/vrx_ws/install/platoon_monitor/lib/platoon_monitor/trajectory_logger", line 33, in <module>
+    sys.exit(load_entry_point('platoon-monitor', 'console_scripts', 'trajectory_logger')())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/sajed/vrx_ws/build/platoon_monitor/platoon_monitor/trajectory_logger.py", line 1049, in main
+    node.destroy_node()
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/node.py", line 1968, in destroy_node
+    self.__node.destroy_when_not_in_use()
+KeyboardInterrupt
+[ros2run]: Interrupt

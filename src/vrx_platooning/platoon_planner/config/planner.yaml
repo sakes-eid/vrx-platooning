@@ -1,0 +1,43 @@
+trajectory_planner:
+  ros__parameters:
+
+    trajectory_type: "straight"
+
+    frame_id: "world_ned"
+
+    waypoint_spacing: 0.5
+
+    # ---------------------------------------------------------
+    # Straight trajectory - WORLD NED
+    #
+    # x = North [m]
+    # y = East [m]
+    #
+    # Starts near the normal WAM-V spawn position.
+    # ---------------------------------------------------------
+
+    straight_start_x: 163.0
+    straight_start_y: -531.0
+
+    straight_end_x: 183.0
+    straight_end_y: -531.0
+
+    # ---------------------------------------------------------
+    # Curved trajectory - WORLD NED
+    #
+    # This semicircle uses approximately the same start/end
+    # region as the straight test.
+    #
+    # Angle convention:
+    # 0      = North
+    # +pi/2  = East
+    # +pi    = South
+    # ---------------------------------------------------------
+
+    circle_center_x: 173.0
+    circle_center_y: -531.0
+
+    circle_radius: 10.0
+
+    circle_start_angle: 3.14159265359
+    circle_end_angle: 0.0

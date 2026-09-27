@@ -1,0 +1,11 @@
+[INFO] [1790436368.293665387] [trajectory_logger]: Trajectory logger started.
+[INFO] [1790436368.294133391] [trajectory_logger]: CSV output: /home/sajed/vrx_ws/src/vrx_platooning/results/autotune/accelerated_validation_curved_01/trajectory.csv
+
+============================================
+ TRAJECTORY LOGGER SUMMARY
+============================================
+Completion reason       : MANUAL_STOP
+CSV                     : /home/sajed/vrx_ws/src/vrx_platooning/results/autotune/accelerated_validation_curved_01/trajectory.csv
+Samples                 : 0
+============================================
+

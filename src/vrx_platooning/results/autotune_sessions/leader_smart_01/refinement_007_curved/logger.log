@@ -1,0 +1,16 @@
+[INFO] [1790444612.883969517] [trajectory_logger]: Trajectory logger started.
+[INFO] [1790444612.884378596] [trajectory_logger]: CSV output: /home/sajed/vrx_ws/src/vrx_platooning/results/autotune_sessions/leader_smart_01/refinement_007_curved/trajectory.csv
+
+============================================
+ TRAJECTORY LOGGER SUMMARY
+============================================
+Completion reason       : SUCCESS
+CSV                     : /home/sajed/vrx_ws/src/vrx_platooning/results/autotune_sessions/leader_smart_01/refinement_007_curved/trajectory.csv
+Samples                 : 1026
+Mean position error     : 0.325 m
+Max position error      : 1.426 m
+Position RMSE           : 0.426 m
+Mean |heading error|    : 0.138 rad
+Mean speed              : 0.646 m/s
+============================================
+

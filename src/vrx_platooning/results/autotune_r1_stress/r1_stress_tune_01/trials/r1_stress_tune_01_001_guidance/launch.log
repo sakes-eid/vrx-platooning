@@ -1,0 +1,581 @@
+[INFO] [launch]: All log files can be found below /home/sajed/.ros/log/2026-09-27-02-04-13-704820-DESKTOP-6TAEMV4-70096
+[INFO] [launch]: Default logging verbosity is set to INFO
+['xacro', '/home/sajed/vrx_ws/install/platoon_bringup/share/platoon_bringup/urdf/wamv_light.urdf.xacro', 'namespace:=wamv', 'locked:=true', 'vrx_sensors_enabled:=true', 'thruster_config:=H']
+[INFO] [gazebo-1]: process started with pid [70121]
+[INFO] [monitor_sim-2]: process started with pid [70122]
+[INFO] [create-3]: process started with pid [70124]
+[INFO] [parameter_bridge-4]: process started with pid [70125]
+[INFO] [multi_vehicle_state-5]: process started with pid [70126]
+[INFO] [stress_course_planner-6]: process started with pid [70127]
+[INFO] [leader_stress_controller-7]: process started with pid [70128]
+[INFO] [r1_stress_logger-8]: process started with pid [70157]
+[parameter_bridge-4] [INFO] [1790467454.322736634] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/clock (gz.msgs.Clock) -> /clock (rosgraph_msgs/msg/Clock)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1790467454.323995278] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/vrx/task/info (gz.msgs.Param) -> /vrx/task/info (ros_gz_interfaces/msg/ParamVec)] (Lazy 0)
+[create-3] [INFO] [1790467454.325570183] [ros_gz_sim]: Requesting list of world names.
+[parameter_bridge-4] [INFO] [1790467454.326609299] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/vrx/debug/wind/speed (gz.msgs.Float) -> /vrx/debug/wind/speed (std_msgs/msg/Float32)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1790467454.327394678] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/vrx/debug/wind/direction (gz.msgs.Float) -> /vrx/debug/wind/direction (std_msgs/msg/Float32)] (Lazy 0)
+[stress_course_planner-6] [INFO] [1790467454.673453456] [trajectory_planner]: R1 stress-course planner waiting for first world_ned state.
+[r1_stress_logger-8] [INFO] [1790467454.692171833] [r1_stress_logger]: R1 stress CSV: /home/sajed/vrx_ws/src/vrx_platooning/results/autotune_r1_stress/r1_stress_tune_01/trials/r1_stress_tune_01_001_guidance/r1_stress.csv
+[leader_stress_controller-7] [INFO] [1790467454.713543623] [leader_pid_controller]: Leader stress controller started FROM original validated LeaderPIDController.
+[leader_stress_controller-7] [INFO] [1790467454.714368118] [leader_pid_controller]: Control rate: 10.00 Hz
+[leader_stress_controller-7] [INFO] [1790467454.715030988] [leader_pid_controller]: Controller state: TRACK
+[multi_vehicle_state-5] [INFO] [1790467454.727572767] [r1.multi_vehicle_state_node]: r1 GPS state estimator started
+[multi_vehicle_state-5] [INFO] [1790467454.727988321] [r1.multi_vehicle_state_node]: GPS   : /wamv/sensors/gps/gps/fix
+[multi_vehicle_state-5] [INFO] [1790467454.728284269] [r1.multi_vehicle_state_node]: IMU   : /wamv/sensors/imu/imu/data
+[multi_vehicle_state-5] [INFO] [1790467454.728574240] [r1.multi_vehicle_state_node]: State : /r1/vehicle_state
+[multi_vehicle_state-5] [INFO] [1790467454.728852524] [r1.multi_vehicle_state_node]: Frame : world_ned
+[gazebo-1] [1;32m[Msg] [0m[1;32mGazebo Sim Server v[0m[1;32m8.15.0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mLoading SDF world file[[0m[1;32m/home/sajed/vrx_ws/install/vrx_gz/share/vrx_gz/worlds/sydney_regatta.sdf[0m[1;32m].[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mServing entity system service on [[0m[1;32m/[0m[1;32mentity/system/add[0m[1;32m][0m[1;32m[0m
+[gazebo-1] [1;36m[Dbg] [Physics.cc:1004] [0m[1;36mLoaded [[0m[1;36mgz::physics::dartsim::Plugin[0m[1;36m] from library [[0m[1;36m/opt/ros/jazzy/opt/gz_physics_vendor/lib/gz-physics-7/engine-plugins/libgz-physics-dartsim-plugin.so[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mgz::sim::systems::Physics[0m[1;36m] for entity [[0m[1;36m1[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mCreate[0m[1;32m service on [[0m[1;32m/world/sydney_regatta/create_multiple[0m[1;32m] (async)[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mCreate[0m[1;32m service on [[0m[1;32m/world/sydney_regatta/create_multiple/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mRemove[0m[1;32m service on [[0m[1;32m/world/sydney_regatta/remove[0m[1;32m] (async)[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mRemove[0m[1;32m service on [[0m[1;32m/world/sydney_regatta/remove/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mPose[0m[1;32m service on [[0m[1;32m/world/sydney_regatta/set_pose[0m[1;32m] (async)[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mPose[0m[1;32m service on [[0m[1;32m/world/sydney_regatta/set_pose/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mPose[0m[1;32m service on [[0m[1;32m/world/sydney_regatta/set_pose_vector[0m[1;32m] (async)[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mPose[0m[1;32m service on [[0m[1;32m/world/sydney_regatta/set_pose_vector/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mLight configuration[0m[1;32m service on [[0m[1;32m/world/sydney_regatta/light_config[0m[1;32m] (async)[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mLight configuration[0m[1;32m service on [[0m[1;32m/world/sydney_regatta/light_config/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mPhysics[0m[1;32m service on [[0m[1;32m/world/sydney_regatta/set_physics[0m[1;32m] (async)[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mPhysics[0m[1;32m service on [[0m[1;32m/world/sydney_regatta/set_physics/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mSphericalCoordinates[0m[1;32m service on [[0m[1;32m/world/sydney_regatta/set_spherical_coordinates[0m[1;32m] (async)[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mSphericalCoordinates[0m[1;32m service on [[0m[1;32m/world/sydney_regatta/set_spherical_coordinates/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mEnable collision[0m[1;32m service on [[0m[1;32m/world/sydney_regatta/enable_collision[0m[1;32m] (async)[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mEnable collision[0m[1;32m service on [[0m[1;32m/world/sydney_regatta/enable_collision/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mDisable collision[0m[1;32m service on [[0m[1;32m/world/sydney_regatta/disable_collision[0m[1;32m] (async)[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mDisable collision[0m[1;32m service on [[0m[1;32m/world/sydney_regatta/disable_collision/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mMaterial[0m[1;32m service on [[0m[1;32m/world/sydney_regatta/visual_config[0m[1;32m] (async)[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mMaterial[0m[1;32m service on [[0m[1;32m/world/sydney_regatta/visual_config/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mMaterial[0m[1;32m service on [[0m[1;32m/world/sydney_regatta/wheel_slip[0m[1;32m] (async)[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mMaterial[0m[1;32m service on [[0m[1;32m/world/sydney_regatta/wheel_slip/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mgz::sim::systems::UserCommands[0m[1;36m] for entity [[0m[1;36m1[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [Sensors.cc:697] [0m[1;36mConfiguring Sensors system[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [Sensors.cc:557] [0m[1;36mSensorsPrivate::Run[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mgz::sim::systems::Sensors[0m[1;36m] for entity [[0m[1;36m1[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [Sensors.cc:532] [0m[1;36mSensorsPrivate::RenderThread started[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [Sensors.cc:337] [0m[1;36mWaiting for init[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mgz::sim::systems::Imu[0m[1;36m] for entity [[0m[1;36m1[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [Magnetometer.cc:261] [0m[1;36mMagnetometer: using param [use_units_gauss: [0m[1;36m1[0m[1;36m].[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [Magnetometer.cc:269] [0m[1;36mMagnetometer: using param [use_earth_frame_ned: [0m[1;36m1[0m[1;36m].[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mgz::sim::systems::Magnetometer[0m[1;36m] for entity [[0m[1;36m1[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mgz::sim::systems::ForceTorque[0m[1;36m] for entity [[0m[1;36m1[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mServing particle emitter information on [[0m[1;32m/world/sydney_regatta/particle_emitters[0m[1;32m][0m[1;32m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mgz::sim::systems::ParticleEmitter[0m[1;36m] for entity [[0m[1;36m1[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mgz::sim::systems::SceneBroadcaster[0m[1;36m] for entity [[0m[1;36m1[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mgz::sim::systems::Contact[0m[1;36m] for entity [[0m[1;36m1[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mgz::sim::systems::NavSat[0m[1;36m] for entity [[0m[1;36m1[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [USVWind.cc:160] [0m[1;36mwamv[0m[1;36m loaded[0m[1;36m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mWind direction unit vector = [0m[1;32m-0.5[0m[1;32m [0m[1;32m-0.866025[0m[1;32m [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mWind mean velocity = [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mvar wind gain constants = [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mvar wind time constants = [0m[1;32m2[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mupdate rate  = [0m[1;32m10[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mtopic wind speed  = [0m[1;32m/vrx/debug/wind/speed[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mtopic wind direction = [0m[1;32m/vrx/debug/wind/direction[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mRandom seed value = [0m[1;32m10[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mVar wind filter gain = [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mvrx::USVWind[0m[1;36m] for entity [[0m[1;36m1[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mvrx::PublisherPlugin[0m[1;36m] for entity [[0m[1;36m1[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mInput Parameters:[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mmodel:     [0m[1;32mPMS[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mnumber:     [0m[1;32m3[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mscale:      [0m[1;32m1.1[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mangle:      [0m[1;32m0.4[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32msteepness:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mamplitude:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mperiod:     [0m[1;32m5[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mdirection:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mtau:  [0m[1;32m2[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mgain:  [0m[1;32m1[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mDerived Parameters:[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mamplitudes:  [0m[1;32m0.121167[0m[1;32m, [0m[1;32m0.130759[0m[1;32m, [0m[1;32m0.128568[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mwavenumbers: [0m[1;32m0.133171[0m[1;32m, [0m[1;32m0.161136[0m[1;32m, [0m[1;32m0.194975[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32momegas:      [0m[1;32m1.1424[0m[1;32m, [0m[1;32m1.25664[0m[1;32m, [0m[1;32m1.3823[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mperiods:     [0m[1;32m[Msg] [0m[1;32m5.5[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m5[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m4.54545[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mphases:      [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32msteepnesses: [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mdirections:  [0m[1;32m[Msg] [0m[1;32m0.921061[0m[1;32m [0m[1;32m-0.389418[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m1[0m[1;32m [0m[1;32m0[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m0.921061[0m[1;32m [0m[1;32m0.389418[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mvrx::WaveVisual[0m[1;36m] for entity [[0m[1;36m17[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mInput Parameters:[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mmodel:     [0m[1;32mPMS[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mnumber:     [0m[1;32m3[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mscale:      [0m[1;32m1.1[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mangle:      [0m[1;32m0.4[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32msteepness:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mamplitude:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mperiod:     [0m[1;32m5[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mdirection:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mtau:  [0m[1;32m2[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mgain:  [0m[1;32m1[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mDerived Parameters:[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mamplitudes:  [0m[1;32m0.121167[0m[1;32m, [0m[1;32m0.130759[0m[1;32m, [0m[1;32m0.128568[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mwavenumbers: [0m[1;32m0.133171[0m[1;32m, [0m[1;32m0.161136[0m[1;32m, [0m[1;32m0.194975[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32momegas:      [0m[1;32m1.1424[0m[1;32m, [0m[1;32m1.25664[0m[1;32m, [0m[1;32m1.3823[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mperiods:     [0m[1;32m[Msg] [0m[1;32m5.5[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m5[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m4.54545[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mphases:      [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32msteepnesses: [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mdirections:  [0m[1;32m[Msg] [0m[1;32m0.921061[0m[1;32m [0m[1;32m-0.389418[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m1[0m[1;32m [0m[1;32m0[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m0.921061[0m[1;32m [0m[1;32m0.389418[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m[0m
+[gazebo-1] [1;36m[Dbg] [PolyhedraBuoyancyDrag.cc:236] [0m[1;36mFound buoyancy element(s), looking at each element...[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [PolyhedraBuoyancyDrag.cc:248] [0m[1;36mBuoyancy object:[0m
+[gazebo-1] [1;36m	Link: [0m[1;36mlink[0m[1;36m[[0m[1;36m19[0m[1;36m][0m
+[gazebo-1] [1;36m	Pose: [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m [0m[1;36m-0.3[0m[1;36m [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m[0m
+[gazebo-1] [1;36m	Geometry: [0m[1;36mCylinder:0.325,0.1[0m[1;36m[0m
+[gazebo-1] [1;36m	Mass: [0m[1;36m20[0m[1;36m[0m
+[gazebo-1] [1;36m	Water height: [0m[1;36m0[0m[1;36m[0m
+[gazebo-1] [1;36m	Water velocity: [0m[1;36m0[0m[1;36m[0m
+[gazebo-1] [1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mvrx::PolyhedraBuoyancyDrag[0m[1;36m] for entity [[0m[1;36m18[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mInput Parameters:[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mmodel:     [0m[1;32mPMS[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mnumber:     [0m[1;32m3[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mscale:      [0m[1;32m1.1[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mangle:      [0m[1;32m0.4[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32msteepness:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mamplitude:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mperiod:     [0m[1;32m5[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mdirection:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mtau:  [0m[1;32m2[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mgain:  [0m[1;32m1[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mDerived Parameters:[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mamplitudes:  [0m[1;32m0.121167[0m[1;32m, [0m[1;32m0.130759[0m[1;32m, [0m[1;32m0.128568[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mwavenumbers: [0m[1;32m0.133171[0m[1;32m, [0m[1;32m0.161136[0m[1;32m, [0m[1;32m0.194975[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32momegas:      [0m[1;32m1.1424[0m[1;32m, [0m[1;32m1.25664[0m[1;32m, [0m[1;32m1.3823[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mperiods:     [0m[1;32m[Msg] [0m[1;32m5.5[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m5[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m4.54545[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mphases:      [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32msteepnesses: [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mdirections:  [0m[1;32m[Msg] [0m[1;32m0.921061[0m[1;32m [0m[1;32m-0.389418[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m1[0m[1;32m [0m[1;32m0[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m0.921061[0m[1;32m [0m[1;32m0.389418[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m[0m
+[gazebo-1] [1;36m[Dbg] [PolyhedraBuoyancyDrag.cc:236] [0m[1;36mFound buoyancy element(s), looking at each element...[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [PolyhedraBuoyancyDrag.cc:248] [0m[1;36mBuoyancy object:[0m
+[gazebo-1] [1;36m	Link: [0m[1;36mlink[0m[1;36m[[0m[1;36m24[0m[1;36m][0m
+[gazebo-1] [1;36m	Pose: [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m [0m[1;36m-0.3[0m[1;36m [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m[0m
+[gazebo-1] [1;36m	Geometry: [0m[1;36mCylinder:0.325,0.1[0m[1;36m[0m
+[gazebo-1] [1;36m	Mass: [0m[1;36m20[0m[1;36m[0m
+[gazebo-1] [1;36m	Water height: [0m[1;36m0[0m[1;36m[0m
+[gazebo-1] [1;36m	Water velocity: [0m[1;36m0[0m[1;36m[0m
+[gazebo-1] [1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mvrx::PolyhedraBuoyancyDrag[0m[1;36m] for entity [[0m[1;36m23[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mInput Parameters:[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mmodel:     [0m[1;32mPMS[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mnumber:     [0m[1;32m3[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mscale:      [0m[1;32m1.1[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mangle:      [0m[1;32m0.4[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32msteepness:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mamplitude:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mperiod:     [0m[1;32m5[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mdirection:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mtau:  [0m[1;32m2[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mgain:  [0m[1;32m1[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mDerived Parameters:[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mamplitudes:  [0m[1;32m0.121167[0m[1;32m, [0m[1;32m0.130759[0m[1;32m, [0m[1;32m0.128568[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mwavenumbers: [0m[1;32m0.133171[0m[1;32m, [0m[1;32m0.161136[0m[1;32m, [0m[1;32m0.194975[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32momegas:      [0m[1;32m1.1424[0m[1;32m, [0m[1;32m1.25664[0m[1;32m, [0m[1;32m1.3823[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mperiods:     [0m[1;32m[Msg] [0m[1;32m5.5[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m5[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m4.54545[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mphases:      [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32msteepnesses: [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mdirections:  [0m[1;32m[Msg] [0m[1;32m0.921061[0m[1;32m [0m[1;32m-0.389418[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m1[0m[1;32m [0m[1;32m0[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m0.921061[0m[1;32m [0m[1;32m0.389418[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m[0m
+[gazebo-1] [1;36m[Dbg] [PolyhedraBuoyancyDrag.cc:236] [0m[1;36mFound buoyancy element(s), looking at each element...[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [PolyhedraBuoyancyDrag.cc:248] [0m[1;36mBuoyancy object:[0m
+[gazebo-1] [1;36m	Link: [0m[1;36mlink[0m[1;36m[[0m[1;36m29[0m[1;36m][0m
+[gazebo-1] [1;36m	Pose: [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m [0m[1;36m-0.3[0m[1;36m [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m[0m
+[gazebo-1] [1;36m	Geometry: [0m[1;36mCylinder:0.325,0.1[0m[1;36m[0m
+[gazebo-1] [1;36m	Mass: [0m[1;36m20[0m[1;36m[0m
+[gazebo-1] [1;36m	Water height: [0m[1;36m0[0m[1;36m[0m
+[gazebo-1] [1;36m	Water velocity: [0m[1;36m0[0m[1;36m[0m
+[gazebo-1] [1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mvrx::PolyhedraBuoyancyDrag[0m[1;36m] for entity [[0m[1;36m28[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mInput Parameters:[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mmodel:     [0m[1;32mPMS[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mnumber:     [0m[1;32m3[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mscale:      [0m[1;32m1.1[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mangle:      [0m[1;32m0.4[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32msteepness:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mamplitude:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mperiod:     [0m[1;32m5[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mdirection:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mtau:  [0m[1;32m2[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mgain:  [0m[1;32m1[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mDerived Parameters:[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mamplitudes:  [0m[1;32m0.121167[0m[1;32m, [0m[1;32m0.130759[0m[1;32m, [0m[1;32m0.128568[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mwavenumbers: [0m[1;32m0.133171[0m[1;32m, [0m[1;32m0.161136[0m[1;32m, [0m[1;32m0.194975[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32momegas:      [0m[1;32m1.1424[0m[1;32m, [0m[1;32m1.25664[0m[1;32m, [0m[1;32m1.3823[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mperiods:     [0m[1;32m[Msg] [0m[1;32m5.5[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m5[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m4.54545[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mphases:      [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32msteepnesses: [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mdirections:  [0m[1;32m[Msg] [0m[1;32m0.921061[0m[1;32m [0m[1;32m-0.389418[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m1[0m[1;32m [0m[1;32m0[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m0.921061[0m[1;32m [0m[1;32m0.389418[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m[0m
+[gazebo-1] [1;36m[Dbg] [PolyhedraBuoyancyDrag.cc:236] [0m[1;36mFound buoyancy element(s), looking at each element...[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [PolyhedraBuoyancyDrag.cc:248] [0m[1;36mBuoyancy object:[0m
+[gazebo-1] [1;36m	Link: [0m[1;36mlink[0m[1;36m[[0m[1;36m34[0m[1;36m][0m
+[gazebo-1] [1;36m	Pose: [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m [0m[1;36m-0.3[0m[1;36m [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m[0m
+[gazebo-1] [1;36m	Geometry: [0m[1;36mCylinder:0.325,0.1[0m[1;36m[0m
+[gazebo-1] [1;36m	Mass: [0m[1;36m20[0m[1;36m[0m
+[gazebo-1] [1;36m	Water height: [0m[1;36m0[0m[1;36m[0m
+[gazebo-1] [1;36m	Water velocity: [0m[1;36m0[0m[1;36m[0m
+[gazebo-1] [1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mvrx::PolyhedraBuoyancyDrag[0m[1;36m] for entity [[0m[1;36m33[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mInput Parameters:[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mmodel:     [0m[1;32mPMS[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mnumber:     [0m[1;32m3[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mscale:      [0m[1;32m1.1[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mangle:      [0m[1;32m0.4[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32msteepness:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mamplitude:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mperiod:     [0m[1;32m5[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mdirection:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mtau:  [0m[1;32m2[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mgain:  [0m[1;32m1[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mDerived Parameters:[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mamplitudes:  [0m[1;32m0.121167[0m[1;32m, [0m[1;32m0.130759[0m[1;32m, [0m[1;32m0.128568[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mwavenumbers: [0m[1;32m0.133171[0m[1;32m, [0m[1;32m0.161136[0m[1;32m, [0m[1;32m0.194975[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32momegas:      [0m[1;32m1.1424[0m[1;32m, [0m[1;32m1.25664[0m[1;32m, [0m[1;32m1.3823[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mperiods:     [0m[1;32m[Msg] [0m[1;32m5.5[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m5[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m4.54545[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mphases:      [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32msteepnesses: [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mdirections:  [0m[1;32m[Msg] [0m[1;32m0.921061[0m[1;32m [0m[1;32m-0.389418[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m1[0m[1;32m [0m[1;32m0[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m0.921061[0m[1;32m [0m[1;32m0.389418[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m[0m
+[gazebo-1] [1;36m[Dbg] [PolyhedraBuoyancyDrag.cc:236] [0m[1;36mFound buoyancy element(s), looking at each element...[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [PolyhedraBuoyancyDrag.cc:248] [0m[1;36mBuoyancy object:[0m
+[gazebo-1] [1;36m	Link: [0m[1;36mlink[0m[1;36m[[0m[1;36m39[0m[1;36m][0m
+[gazebo-1] [1;36m	Pose: [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m[0m
+[gazebo-1] [1;36m	Geometry: [0m[1;36mSphere:0.21[0m[1;36m[0m
+[gazebo-1] [1;36m	Mass: [0m[1;36m3.5[0m[1;36m[0m
+[gazebo-1] [1;36m	Water height: [0m[1;36m0[0m[1;36m[0m
+[gazebo-1] [1;36m	Water velocity: [0m[1;36m0[0m[1;36m[0m
+[gazebo-1] [1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mvrx::PolyhedraBuoyancyDrag[0m[1;36m] for entity [[0m[1;36m38[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mInput Parameters:[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mmodel:     [0m[1;32mPMS[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mnumber:     [0m[1;32m3[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mscale:      [0m[1;32m1.1[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mangle:      [0m[1;32m0.4[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32msteepness:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mamplitude:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mperiod:     [0m[1;32m5[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mdirection:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mtau:  [0m[1;32m2[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mgain:  [0m[1;32m1[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mDerived Parameters:[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mamplitudes:  [0m[1;32m0.121167[0m[1;32m, [0m[1;32m0.130759[0m[1;32m, [0m[1;32m0.128568[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mwavenumbers: [0m[1;32m0.133171[0m[1;32m, [0m[1;32m0.161136[0m[1;32m, [0m[1;32m0.194975[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32momegas:      [0m[1;32m1.1424[0m[1;32m, [0m[1;32m1.25664[0m[1;32m, [0m[1;32m1.3823[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mperiods:     [0m[1;32m[Msg] [0m[1;32m5.5[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m5[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m4.54545[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mphases:      [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32msteepnesses: [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mdirections:  [0m[1;32m[Msg] [0m[1;32m0.921061[0m[1;32m [0m[1;32m-0.389418[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m1[0m[1;32m [0m[1;32m0[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m0.921061[0m[1;32m [0m[1;32m0.389418[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m[0m
+[gazebo-1] [1;36m[Dbg] [PolyhedraBuoyancyDrag.cc:236] [0m[1;36mFound buoyancy element(s), looking at each element...[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [PolyhedraBuoyancyDrag.cc:248] [0m[1;36mBuoyancy object:[0m
+[gazebo-1] [1;36m	Link: [0m[1;36mlink[0m[1;36m[[0m[1;36m43[0m[1;36m][0m
+[gazebo-1] [1;36m	Pose: [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m[0m
+[gazebo-1] [1;36m	Geometry: [0m[1;36mSphere:0.21[0m[1;36m[0m
+[gazebo-1] [1;36m	Mass: [0m[1;36m3.5[0m[1;36m[0m
+[gazebo-1] [1;36m	Water height: [0m[1;36m0[0m[1;36m[0m
+[gazebo-1] [1;36m	Water velocity: [0m[1;36m0[0m[1;36m[0m
+[gazebo-1] [1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mvrx::PolyhedraBuoyancyDrag[0m[1;36m] for entity [[0m[1;36m42[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mInput Parameters:[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mmodel:     [0m[1;32mPMS[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mnumber:     [0m[1;32m3[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mscale:      [0m[1;32m1.1[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mangle:      [0m[1;32m0.4[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32msteepness:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mamplitude:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mperiod:     [0m[1;32m5[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mdirection:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mtau:  [0m[1;32m2[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mgain:  [0m[1;32m1[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mDerived Parameters:[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mamplitudes:  [0m[1;32m0.121167[0m[1;32m, [0m[1;32m0.130759[0m[1;32m, [0m[1;32m0.128568[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mwavenumbers: [0m[1;32m0.133171[0m[1;32m, [0m[1;32m0.161136[0m[1;32m, [0m[1;32m0.194975[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32momegas:      [0m[1;32m1.1424[0m[1;32m, [0m[1;32m1.25664[0m[1;32m, [0m[1;32m1.3823[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mperiods:     [0m[1;32m[Msg] [0m[1;32m5.5[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m5[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m4.54545[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mphases:      [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32msteepnesses: [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mdirections:  [0m[1;32m[Msg] [0m[1;32m0.921061[0m[1;32m [0m[1;32m-0.389418[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m1[0m[1;32m [0m[1;32m0[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m0.921061[0m[1;32m [0m[1;32m0.389418[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m[0m
+[gazebo-1] [1;36m[Dbg] [PolyhedraBuoyancyDrag.cc:236] [0m[1;36mFound buoyancy element(s), looking at each element...[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [PolyhedraBuoyancyDrag.cc:248] [0m[1;36mBuoyancy object:[0m
+[gazebo-1] [1;36m	Link: [0m[1;36mlink[0m[1;36m[[0m[1;36m138[0m[1;36m][0m
+[gazebo-1] [1;36m	Pose: [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m [0m[1;36m-0.02[0m[1;36m [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m[0m
+[gazebo-1] [1;36m	Geometry: [0m[1;36mSphere:0.0285[0m[1;36m[0m
+[gazebo-1] [1;36m	Mass: [0m[1;36m0.04[0m[1;36m[0m
+[gazebo-1] [1;36m	Water height: [0m[1;36m0[0m[1;36m[0m
+[gazebo-1] [1;36m	Water velocity: [0m[1;36m0[0m[1;36m[0m
+[create-3] [INFO] [1790467455.267889088] [ros_gz_sim]: Entity creation successful.
+[INFO] [create-3]: process has finished cleanly [pid 70124]
+[INFO] [parameter_bridge-9]: process started with pid [70233]
+[INFO] [pose_tf_broadcaster-10]: process started with pid [70234]
+[INFO] [robot_state_publisher-11]: process started with pid [70235]
+[robot_state_publisher-11] [WARN] [1790467455.468179956] [kdl_parser]: The root link wamv/base_link has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
+[robot_state_publisher-11] [INFO] [1790467455.468379934] [wamv.robot_state_publisher]: Robot initialized
+[parameter_bridge-9] [INFO] [1790467455.471999459] [wamv.ros_gz_bridge]: Creating GZ->ROS Bridge: [/model/wamv/pose (gz.msgs.Pose_V) -> /model/wamv/pose (tf2_msgs/msg/TFMessage)] (Lazy 0)
+[parameter_bridge-9] [INFO] [1790467455.474155016] [wamv.ros_gz_bridge]: Creating GZ->ROS Bridge: [/model/wamv/pose_static (gz.msgs.Pose_V) -> /model/wamv/pose_static (tf2_msgs/msg/TFMessage)] (Lazy 0)
+[parameter_bridge-9] [INFO] [1790467455.474631522] [wamv.ros_gz_bridge]: Creating GZ->ROS Bridge: [/world/sydney_regatta/model/wamv/joint_state (gz.msgs.Model) -> /world/sydney_regatta/model/wamv/joint_state (sensor_msgs/msg/JointState)] (Lazy 0)
+[parameter_bridge-9] [INFO] [1790467455.475983820] [wamv.ros_gz_bridge]: Creating GZ->ROS Bridge: [/vrx/contacts (gz.msgs.Contacts) -> /vrx/contacts (ros_gz_interfaces/msg/Contacts)] (Lazy 0)
+[parameter_bridge-9] [INFO] [1790467455.477653192] [wamv.ros_gz_bridge]: Creating GZ->ROS Bridge: [/world/sydney_regatta/model/wamv/link/wamv/gps_wamv_link/sensor/navsat/navsat (gz.msgs.NavSat) -> /world/sydney_regatta/model/wamv/link/wamv/gps_wamv_link/sensor/navsat/navsat (sensor_msgs/msg/NavSatFix)] (Lazy 0)
+[parameter_bridge-9] [INFO] [1790467455.478272496] [wamv.ros_gz_bridge]: Creating GZ->ROS Bridge: [/world/sydney_regatta/model/wamv/link/wamv/imu_wamv_link/sensor/imu_wamv_sensor/imu (gz.msgs.IMU) -> /world/sydney_regatta/model/wamv/link/wamv/imu_wamv_link/sensor/imu_wamv_sensor/imu (sensor_msgs/msg/Imu)] (Lazy 0)
+[parameter_bridge-9] [INFO] [1790467455.478842828] [wamv.ros_gz_bridge]: Creating ROS->GZ Bridge: [wamv/thrusters/left/thrust (std_msgs/msg/Float64) -> wamv/thrusters/left/thrust (gz.msgs.Double)] (Lazy 0)
+[parameter_bridge-9] [INFO] [1790467455.479679450] [wamv.ros_gz_bridge]: Creating ROS->GZ Bridge: [wamv/thrusters/left/pos (std_msgs/msg/Float64) -> wamv/thrusters/left/pos (gz.msgs.Double)] (Lazy 0)
+[parameter_bridge-9] [INFO] [1790467455.480197484] [wamv.ros_gz_bridge]: Creating ROS->GZ Bridge: [wamv/thrusters/right/thrust (std_msgs/msg/Float64) -> wamv/thrusters/right/thrust (gz.msgs.Double)] (Lazy 0)
+[parameter_bridge-9] [INFO] [1790467455.480642126] [wamv.ros_gz_bridge]: Creating ROS->GZ Bridge: [wamv/thrusters/right/pos (std_msgs/msg/Float64) -> wamv/thrusters/right/pos (gz.msgs.Double)] (Lazy 0)
+[parameter_bridge-9] [INFO] [1790467455.481205919] [wamv.ros_gz_bridge]: Creating GZ->ROS Bridge: [wamv/sensors/acoustics/receiver/range_bearing (gz.msgs.Param) -> wamv/sensors/acoustics/receiver/range_bearing (ros_gz_interfaces/msg/ParamVec)] (Lazy 0)
+[parameter_bridge-9] [INFO] [1790467455.481782202] [wamv.ros_gz_bridge]: Creating ROS->GZ Bridge: [/pinger/set_pinger_position (geometry_msgs/msg/Vector3) -> /pinger/set_pinger_position (gz.msgs.Vector3d)] (Lazy 0)
+[parameter_bridge-9] [INFO] [1790467455.482389553] [wamv.ros_gz_bridge]: Creating ROS->GZ Bridge: [/wamv/shooters/ball_shooter/fire (std_msgs/msg/Bool) -> /wamv/shooters/ball_shooter/fire (gz.msgs.Boolean)] (Lazy 0)
+[gazebo-1] [1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mvrx::PolyhedraBuoyancyDrag[0m[1;36m] for entity [[0m[1;36m137[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mLoaded level [[0m[1;32mdefault[0m[1;32m][0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mServing world controls on [[0m[1;32m/world/sydney_regatta[0m[1;32m/control], [[0m[1;32m/world/sydney_regatta[0m[1;32m/control/state] and [[0m[1;32m/world/sydney_regatta[0m[1;32m/playback/control][0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mServing GUI information on [[0m[1;32m/world/sydney_regatta[0m[1;32m/[0m[1;32mgui/info[0m[1;32m][0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mWorld [[0m[1;32msydney_regatta[0m[1;32m] initialized with [[0m[1;32m4ms[0m[1;32m] physics profile.[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mServing world SDF generation service on [[0m[1;32m/world/sydney_regatta[0m[1;32m/[0m[1;32mgenerate_world_sdf[0m[1;32m][0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mServing world names on [[0m[1;32m/gazebo/worlds[0m[1;32m][0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mResource path add service on [[0m[1;32m/gazebo/resource_paths/add[0m[1;32m].[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mResource path get service on [[0m[1;32m/gazebo/resource_paths/get[0m[1;32m].[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mResource path resolve service on [[0m[1;32m/gazebo/resource_paths/resolve[0m[1;32m].[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mResource paths published on [[0m[1;32m/gazebo/resource_paths[0m[1;32m].[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mServer control service on [[0m[1;32m/server_control[0m[1;32m].[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mFound no publishers on /stats, adding root stats topic[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mFound no publishers on /clock, adding root clock topic[0m[1;32m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:627] [0m[1;36mCreating PostUpdate worker threads: [0m[1;36m8[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:638] [0m[1;36mCreating postupdate worker thread ([0m[1;36m0[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:638] [0m[1;36mCreating postupdate worker thread ([0m[1;36m1[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:638] [0m[1;36mCreating postupdate worker thread ([0m[1;36m2[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:638] [0m[1;36mCreating postupdate worker thread ([0m[1;36m3[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:638] [0m[1;36mCreating postupdate worker thread ([0m[1;36m4[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:638] [0m[1;36mCreating postupdate worker thread ([0m[1;36m5[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:638] [0m[1;36mCreating postupdate worker thread ([0m[1;36m6[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mThruster listening to commands on [[0m[1;32mwamv/thrusters/left/thrust[0m[1;32m][0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mThruster listening to enable_deadband on [[0m[1;32mwamv/thrusters/left/thrust/enable_deadband[0m[1;32m][0m[1;32m[0m
+[gazebo-1] [1;36m[Dbg] [Thruster.cc:496] [0m[1;36mUsing velocity control for propeller joint.[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mgz::sim::systems::Thruster[0m[1;36m] for entity [[0m[1;36m143[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mJointPositionController subscribing to Double messages on [[0m[1;32mwamv/thrusters/left/pos[0m[1;32m][0m[1;32m[0m
+[gazebo-1] [1;36m[Dbg] [JointPositionController.cc:302] [0m[1;36m[JointPositionController] system parameters:[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [JointPositionController.cc:303] [0m[1;36mp_gain: [[0m[1;36m1[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [JointPositionController.cc:304] [0m[1;36mi_gain: [[0m[1;36m0.1[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [JointPositionController.cc:305] [0m[1;36md_gain: [[0m[1;36m0.01[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [JointPositionController.cc:306] [0m[1;36mi_max: [[0m[1;36m1[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [JointPositionController.cc:307] [0m[1;36mi_min: [[0m[1;36m-1[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [JointPositionController.cc:308] [0m[1;36mcmd_max: [[0m[1;36m1000[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [JointPositionController.cc:309] [0m[1;36mcmd_min: [[0m[1;36m-1000[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [JointPositionController.cc:310] [0m[1;36mcmd_offset: [[0m[1;36m0[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [JointPositionController.cc:311] [0m[1;36mTopic: [[0m[1;36mwamv/thrusters/left/pos[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [JointPositionController.cc:312] [0m[1;36minitial_position: [[0m[1;36m0[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mgz::sim::systems::JointPositionController[0m[1;36m] for entity [[0m[1;36m143[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mThruster listening to commands on [[0m[1;32mwamv/thrusters/right/thrust[0m[1;32m][0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mThruster listening to enable_deadband on [[0m[1;32mwamv/thrusters/right/thrust/enable_deadband[0m[1;32m][0m[1;32m[0m
+[gazebo-1] [1;36m[Dbg] [Thruster.cc:496] [0m[1;36mUsing velocity control for propeller joint.[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mgz::sim::systems::Thruster[0m[1;36m] for entity [[0m[1;36m143[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mJointPositionController subscribing to Double messages on [[0m[1;32mwamv/thrusters/right/pos[0m[1;32m][0m[1;32m[0m
+[gazebo-1] [1;36m[Dbg] [JointPositionController.cc:302] [0m[1;36m[JointPositionController] system parameters:[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [JointPositionController.cc:303] [0m[1;36mp_gain: [[0m[1;36m1[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [JointPositionController.cc:304] [0m[1;36mi_gain: [[0m[1;36m0.1[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [JointPositionController.cc:305] [0m[1;36md_gain: [[0m[1;36m0.01[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [JointPositionController.cc:306] [0m[1;36mi_max: [[0m[1;36m1[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [JointPositionController.cc:307] [0m[1;36mi_min: [[0m[1;36m-1[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [JointPositionController.cc:308] [0m[1;36mcmd_max: [[0m[1;36m1000[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [JointPositionController.cc:309] [0m[1;36mcmd_min: [[0m[1;36m-1000[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [JointPositionController.cc:310] [0m[1;36mcmd_offset: [[0m[1;36m0[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [JointPositionController.cc:311] [0m[1;36mTopic: [[0m[1;36mwamv/thrusters/right/pos[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [JointPositionController.cc:312] [0m[1;36minitial_position: [[0m[1;36m0[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mgz::sim::systems::JointPositionController[0m[1;36m] for entity [[0m[1;36m143[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mInput Parameters:[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mmodel:     [0m[1;32mPMS[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mnumber:     [0m[1;32m3[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mscale:      [0m[1;32m1.1[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mangle:      [0m[1;32m0.4[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32msteepness:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mamplitude:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mperiod:     [0m[1;32m5[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mdirection:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mtau:  [0m[1;32m2[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mgain:  [0m[1;32m1[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mDerived Parameters:[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mamplitudes:  [0m[1;32m0.121167[0m[1;32m, [0m[1;32m0.130759[0m[1;32m, [0m[1;32m0.128568[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mwavenumbers: [0m[1;32m0.133171[0m[1;32m, [0m[1;32m0.161136[0m[1;32m, [0m[1;32m0.194975[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32momegas:      [0m[1;32m1.1424[0m[1;32m, [0m[1;32m1.25664[0m[1;32m, [0m[1;32m1.3823[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mperiods:     [0m[1;32m[Msg] [0m[1;32m5.5[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m5[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m4.54545[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mphases:      [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32msteepnesses: [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mdirections:  [0m[1;32m[Msg] [0m[1;32m0.921061[0m[1;32m [0m[1;32m-0.389418[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m1[0m[1;32m [0m[1;32m0[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m0.921061[0m[1;32m [0m[1;32m0.389418[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m[0m
+[gazebo-1] [1;36m[Dbg] [Surface.cc:188] [0m[1;36mSurface plugin successfully configured with the following [0m[1;36mparameters:[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [Surface.cc:190] [0m[1;36m  <link_name>: [0m[1;36mwamv/base_link[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [Surface.cc:191] [0m[1;36m  <vehicle_length>: [0m[1;36m4.9[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [Surface.cc:192] [0m[1;36m  <hull_radius>: [0m[1;36m0.213[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [Surface.cc:193] [0m[1;36m  <fluid_level>: [0m[1;36m0[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [Surface.cc:194] [0m[1;36m  <fluid_density>: [0m[1;36m1000[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [Surface.cc:195] [0m[1;36m  <points>:[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [Surface.cc:197] [0m[1;36m    [[0m[1;36m0.6[0m[1;36m [0m[1;36m1.03[0m[1;36m [0m[1;36m0[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [Surface.cc:197] [0m[1;36m    [[0m[1;36m-1.4[0m[1;36m [0m[1;36m1.03[0m[1;36m [0m[1;36m0[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mvrx::Surface[0m[1;36m] for entity [[0m[1;36m143[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mInput Parameters:[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mmodel:     [0m[1;32mPMS[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mnumber:     [0m[1;32m3[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mscale:      [0m[1;32m1.1[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mangle:      [0m[1;32m0.4[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32msteepness:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mamplitude:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mperiod:     [0m[1;32m5[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mdirection:  [0m[1;32m0[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mtau:  [0m[1;32m2[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mgain:  [0m[1;32m1[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mDerived Parameters:[0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mamplitudes:  [0m[1;32m0.121167[0m[1;32m, [0m[1;32m0.130759[0m[1;32m, [0m[1;32m0.128568[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mwavenumbers: [0m[1;32m0.133171[0m[1;32m, [0m[1;32m0.161136[0m[1;32m, [0m[1;32m0.194975[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32momegas:      [0m[1;32m1.1424[0m[1;32m, [0m[1;32m1.25664[0m[1;32m, [0m[1;32m1.3823[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mperiods:     [0m[1;32m[Msg] [0m[1;32m5.5[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m5[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m4.54545[0m[1;32m, [0m[1;32m[Msg] [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mphases:      [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32msteepnesses: [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m0[0m[1;32m, [0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mdirections:  [0m[1;32m[Msg] [0m[1;32m0.921061[0m[1;32m [0m[1;32m-0.389418[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m1[0m[1;32m [0m[1;32m0[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m0.921061[0m[1;32m [0m[1;32m0.389418[0m[1;32m; [0m[1;32m[Msg] [0m[1;32m[0m
+[gazebo-1] [1;36m[Dbg] [Surface.cc:188] [0m[1;36mSurface plugin successfully configured with the following [0m[1;36mparameters:[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [Surface.cc:190] [0m[1;36m  <link_name>: [0m[1;36mwamv/base_link[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [Surface.cc:191] [0m[1;36m  <vehicle_length>: [0m[1;36m4.9[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [Surface.cc:192] [0m[1;36m  <hull_radius>: [0m[1;36m0.213[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [Surface.cc:193] [0m[1;36m  <fluid_level>: [0m[1;36m0[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [Surface.cc:194] [0m[1;36m  <fluid_density>: [0m[1;36m1000[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [Surface.cc:195] [0m[1;36m  <points>:[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [Surface.cc:197] [0m[1;36m    [[0m[1;36m0.6[0m[1;36m [0m[1;36m-1.03[0m[1;36m [0m[1;36m0[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [Surface.cc:197] [0m[1;36m    [[0m[1;36m-1.4[0m[1;36m [0m[1;36m-1.03[0m[1;36m [0m[1;36m0[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mvrx::Surface[0m[1;36m] for entity [[0m[1;36m143[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimpleHydrodynamics.cc:164] [0m[1;36mSimpleHydrodynamics plugin successfully configured with the [0m[1;36mfollowing parameters:[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimpleHydrodynamics.cc:166] [0m[1;36m  <link_name>: [0m[1;36mwamv/base_link[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimpleHydrodynamics.cc:167] [0m[1;36m  <xDotU>: [0m[1;36m0[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimpleHydrodynamics.cc:168] [0m[1;36m  <yDotV>: [0m[1;36m0[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimpleHydrodynamics.cc:169] [0m[1;36m  <zDotW>: [0m[1;36m0.1[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimpleHydrodynamics.cc:170] [0m[1;36m  <kDotP>: [0m[1;36m0.1[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimpleHydrodynamics.cc:171] [0m[1;36m  <mDotQ>: [0m[1;36m0.1[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimpleHydrodynamics.cc:172] [0m[1;36m  <nDotR>: [0m[1;36m0[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimpleHydrodynamics.cc:173] [0m[1;36m  <xU>: [0m[1;36m100[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimpleHydrodynamics.cc:174] [0m[1;36m  <xUU>: [0m[1;36m150[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimpleHydrodynamics.cc:175] [0m[1;36m  <yV>: [0m[1;36m100[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimpleHydrodynamics.cc:176] [0m[1;36m  <yVV>: [0m[1;36m100[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimpleHydrodynamics.cc:177] [0m[1;36m  <zW>: [0m[1;36m500[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimpleHydrodynamics.cc:178] [0m[1;36m  <zWW>: [0m[1;36m0[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimpleHydrodynamics.cc:179] [0m[1;36m  <kP>: [0m[1;36m300[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimpleHydrodynamics.cc:180] [0m[1;36m  <kPP>: [0m[1;36m600[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimpleHydrodynamics.cc:181] [0m[1;36m  <mQ>: [0m[1;36m900[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimpleHydrodynamics.cc:182] [0m[1;36m  <mQQ>: [0m[1;36m900[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimpleHydrodynamics.cc:183] [0m[1;36m  <nR>: [0m[1;36m800[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimpleHydrodynamics.cc:184] [0m[1;36m  <nRR>: [0m[1;36m800[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mvrx::SimpleHydrodynamics[0m[1;36m] for entity [[0m[1;36m143[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [DetachableJoint.cc:137] [0m[1;36mDetach topic is: [0m[1;36m/vrx/release[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [DetachableJoint.cc:143] [0m[1;36mDetachableJoint subscribing to messages on [0m[1;36m[[0m[1;36m/vrx/release[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [DetachableJoint.cc:160] [0m[1;36mAttach topic is: [0m[1;36m/model/wamv/detachable_joint/attach[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [DetachableJoint.cc:195] [0m[1;36mOutput topic is: [0m[1;36m/model/platform/detachable_joint/state[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mgz::sim::systems::DetachableJoint[0m[1;36m] for entity [[0m[1;36m143[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mgz::sim::systems::PosePublisher[0m[1;36m] for entity [[0m[1;36m143[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mgz::sim::systems::JointStatePublisher[0m[1;36m] for entity [[0m[1;36m143[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mvrx::AcousticPingerPlugin[0m[1;36m] for entity [[0m[1;36m143[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [BallShooterPlugin.cc:212] [0m[1;36m<projectile><model_name>: [0m[1;36mblue_projectile[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [BallShooterPlugin.cc:213] [0m[1;36m<projectile><link_name>: [0m[1;36mlink[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [BallShooterPlugin.cc:214] [0m[1;36m<frame>: [0m[1;36mwamv/ball_shooter_launcher_link[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [BallShooterPlugin.cc:215] [0m[1;36m<num_shots>: [0m[1;36m4[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [BallShooterPlugin.cc:216] [0m[1;36m<pose>: [0m[1;36m0.14[0m[1;36m [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m [0m[1;36m0[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [BallShooterPlugin.cc:218] [0m[1;36m<shot_force>: [0m[1;36m65[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [BallShooterPlugin.cc:219] [0m[1;36m<topic>: [0m[1;36mwamv/shooters/ball_shooter/fire[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SystemManager.cc:80] [0m[1;36mLoaded system [[0m[1;36mvrx::BallShooterPlugin[0m[1;36m] for entity [[0m[1;36m143[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [UserCommands.cc:1093] [0m[1;36mCreated entity [[0m[1;36m143[0m[1;36m] named [[0m[1;36mwamv[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mContact system publishing on [0m[1;32m/vrx/contacts[0m[1;32m[0m
+[gazebo-1] [1;36m[Dbg] [USVWind.cc:282] [0m[1;36mwamv[0m[1;36m initialized[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SDFFeatures.cc:333] [0m[1;36mMesh construction from an SDF has not been implemented yet for [0m[1;36mdartsim. Use AttachMeshShapeFeature to use mesh shapes.[0m
+[gazebo-1] [1;36m[Dbg] [SDFFeatures.cc:865] [0m[1;36mThe geometry element of collision [[0m[1;36mcollision[0m[1;36m] [0m[1;36mcouldn't be created[0m
+[gazebo-1] [1;36m[Dbg] [SimulationFeatures.cc:90] [0m[1;36mSimulation timestep set to: [0m[1;36m0.004[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [ImuSensor.cc:150] [0m[1;36mIMU data for [[0m[1;36mwamv::wamv/imu_wamv_link::imu_wamv_sensor[0m[1;36m] advertised on [[0m[1;36mworld/sydney_regatta/model/wamv/link/wamv/imu_wamv_link/sensor/imu_wamv_sensor/imu[0m[1;36m][0m[1;36m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mServing scene information on [[0m[1;32m/world/sydney_regatta[0m[1;32m/[0m[1;32mscene/info[0m[1;32m][0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mServing graph information on [[0m[1;32m/world/sydney_regatta[0m[1;32m/[0m[1;32mscene/graph[0m[1;32m][0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mServing full state on [[0m[1;32m/world/sydney_regatta[0m[1;32m/[0m[1;32mstate[0m[1;32m][0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mServing full state (async) on [[0m[1;32m/world/sydney_regatta[0m[1;32m/[0m[1;32mstate_async[0m[1;32m][0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mPublishing scene information on [[0m[1;32m/world/sydney_regatta/scene/info[0m[1;32m][0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mPublishing entity deletions on [[0m[1;32m/world/sydney_regatta/scene/deletion[0m[1;32m][0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mPublishing state changes on [[0m[1;32m/world/sydney_regatta/state[0m[1;32m][0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mPublishing pose messages on [[0m[1;32m/world/sydney_regatta[0m[1;32m/[0m[1;32mpose/info[0m[1;32m][0m[1;32m[0m
+[gazebo-1] [1;32m[Msg] [0m[1;32mPublishing dynamic pose messages on [[0m[1;32m/world/sydney_regatta[0m[1;32m/[0m[1;32mdynamic_pose/info[0m[1;32m][0m[1;32m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:654] [0m[1;36mExiting postupdate worker thread ([0m[1;36m5[0m[1;36m5[Dbg] [SimulationRunner.cc:654] [0m[1;36m5[Dbg] [SimulationRunner.cc:654] [Dbg] [SimulationRunner.cc:654] [0m[1;36mExiting postupdate worker thread ([0m[1;36m6[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:654] [Dbg] [SimulationRunner.cc:654] [0m[1;36mExiting postupdate worker thread ([0m[1;36m2[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36mExiting postupdate worker thread ([0m[1;36m4[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36mExiting postupdate worker thread ([0m[1;36m3[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36mExiting postupdate worker thread ([0m[1;36m0[0m[1;36m)[0m[1;36m[0m
+[stress_course_planner-6] [INFO] [1790467456.530925688] [trajectory_planner]: Stress course published in world_ned: 467 points, 232.1 m total length. R1 ceiling=2.00 m/s.
+[leader_stress_controller-7] [INFO] [1790467456.538182943] [leader_pid_controller]: Controller state: TRACK
+[leader_stress_controller-7] [INFO] [1790467456.538521553] [leader_pid_controller]: New reference path received: 467 waypoints.
+[parameter_bridge-9] [INFO] [1790467456.614241296] [wamv.ros_gz_bridge]: Passing message from ROS std_msgs/msg/Float64 to Gazebo gz.msgs.Double (showing msg only once per type)
+[leader_stress_controller-7] [INFO] [1790467689.218494273] [leader_pid_controller]: Controller state: BRAKE
+[leader_stress_controller-7] [INFO] [1790467689.218805997] [leader_pid_controller]: Goal braking started. Total speed=0.771 m/s, surge=0.749 m/s.
+[leader_stress_controller-7] [INFO] [1790467692.818515940] [leader_pid_controller]: Controller state: HOLD
+[leader_stress_controller-7] [INFO] [1790467692.818765738] [leader_pid_controller]: Boat stopped inside target zone. Speed=0.050 m/s, distance=0.775 m.
+[leader_stress_controller-7] [INFO] [1790467692.819077355] [leader_pid_controller]: Holding for 5.0 simulated seconds.
+[leader_stress_controller-7] [INFO] [1790467697.819206675] [leader_pid_controller]: ========================================
+[leader_stress_controller-7] [INFO] [1790467697.819583147] [leader_pid_controller]: EXPERIMENT SUCCESS
+[leader_stress_controller-7] [INFO] [1790467697.819775419] [leader_pid_controller]: Goal distance: 0.833 m
+[leader_stress_controller-7] [INFO] [1790467697.819955306] [leader_pid_controller]: Speed: 0.006 m/s
+[leader_stress_controller-7] [INFO] [1790467697.820359985] [leader_pid_controller]: Remained within 1.00 m for 5.0 simulated seconds.
+[leader_stress_controller-7] [INFO] [1790467697.820665731] [leader_pid_controller]: ========================================
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[robot_state_publisher-11] [INFO] [1790467698.224940108] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[parameter_bridge-4] [INFO] [1790467698.224951595] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[parameter_bridge-9] [INFO] [1790467698.224939322] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[monitor_sim-2] Traceback (most recent call last):
+[monitor_sim-2]   File "/home/sajed/vrx_ws/install/vrx_ros/share/vrx_ros/launch/monitor_sim.py", line 38, in <module>
+[monitor_sim-2]     monitor_sim()
+[monitor_sim-2]   File "/home/sajed/vrx_ws/install/vrx_ros/share/vrx_ros/launch/monitor_sim.py", line 27, in monitor_sim
+[monitor_sim-2]     time.sleep(1)
+[monitor_sim-2] KeyboardInterrupt
+[pose_tf_broadcaster-10] [INFO] [1790467698.225027754] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[ERROR] [monitor_sim-2]: process has died [pid 70122, exit code -2, cmd 'python3 /home/sajed/vrx_ws/install/vrx_ros/share/vrx_ros/launch/monitor_sim.py'].
+[leader_stress_controller-7] Traceback (most recent call last):
+[leader_stress_controller-7]   File "/home/sajed/vrx_ws/install/platoon_control/lib/platoon_control/leader_stress_controller", line 33, in <module>
+[leader_stress_controller-7]     sys.exit(load_entry_point('platoon-control', 'console_scripts', 'leader_stress_controller')())
+[leader_stress_controller-7]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[leader_stress_controller-7]   File "/home/sajed/vrx_ws/build/platoon_control/platoon_control/leader_stress_controller.py", line 2553, in main
+[leader_stress_controller-7]     node.stop()
+[leader_stress_controller-7]   File "/home/sajed/vrx_ws/build/platoon_control/platoon_control/leader_stress_controller.py", line 2523, in stop
+[leader_stress_controller-7]     self.publish_zero_thrust()
+[leader_stress_controller-7]   File "/home/sajed/vrx_ws/build/platoon_control/platoon_control/leader_stress_controller.py", line 2465, in publish_zero_thrust
+[leader_stress_controller-7]     self.publish_thrusters(
+[leader_stress_controller-7]   File "/home/sajed/vrx_ws/build/platoon_control/platoon_control/leader_stress_controller.py", line 2425, in publish_thrusters
+[leader_stress_controller-7]     self.left_position_publisher.publish(
+[leader_stress_controller-7]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/publisher.py", line 70, in publish
+[leader_stress_controller-7]     self.__publisher.publish(msg)
+[leader_stress_controller-7] rclpy._rclpy_pybind11.RCLError: Failed to publish: publisher's context is invalid, at ./src/rcl/publisher.c:423
+[INFO] [parameter_bridge-4]: process has finished cleanly [pid 70125]
+[INFO] [parameter_bridge-9]: process has finished cleanly [pid 70233]
+[INFO] [pose_tf_broadcaster-10]: process has finished cleanly [pid 70234]
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:654] [0m[1;36mExiting postupdate worker thread ([0m[1;36m1[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:627] [0m[1;36mCreating PostUpdate worker threads: [0m[1;36m12[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:638] [0m[1;36mCreating postupdate worker thread ([0m[1;36m0[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:638] [0m[1;36mCreating postupdate worker thread ([0m[1;36m1[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:638] [0m[1;36mCreating postupdate worker thread ([0m[1;36m2[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:638] [0m[1;36mCreating postupdate worker thread ([0m[1;36m3[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:638] [0m[1;36mCreating postupdate worker thread ([0m[1;36m4[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:638] [0m[1;36mCreating postupdate worker thread ([0m[1;36m5[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:638] [0m[1;36mCreating postupdate worker thread ([0m[1;36m6[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:638] [0m[1;36mCreating postupdate worker thread ([0m[1;36m7[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:638] [0m[1;36mCreating postupdate worker thread ([0m[1;36m8[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:638] [0m[1;36mCreating postupdate worker thread ([0m[1;36m9[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:638] [0m[1;36mCreating postupdate worker thread ([0m[1;36m10[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [JointPositionController.cc:376] [0m[1;36mIdentified joint [[0m[1;36mwamv/left_chassis_engine_joint[0m[1;36m] as Entity [[0m[1;36m240[0m[1;36m][0m
+[gazebo-1] [1;36m[Dbg] [JointPositionController.cc:376] [0m[1;36mIdentified joint [[0m[1;36mwamv/right_chassis_engine_joint[0m[1;36m] as Entity [[0m[1;36m243[0m[1;36m][0m
+[gazebo-1] [1;36m[Dbg] [SignalHandler.cc:142] [0m[1;36mReceived signal[[0m[1;36m2[0m[1;36m].[0m
+[gazebo-1] [1;36m[Dbg] [ServerPrivate.cc:122] [0m[1;36mServer received signal[[0m[1;36m2[0m[1;36m][0m
+[gazebo-1] [1;36m[Dbg] [Sensors.cc:565] [0m[1;36mSensorsPrivate::Stop[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [Sensors.cc:391] [0m[1;36mRendering Thread initialized[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [Sensors.cc:551] [0m[1;36mSensorsPrivate::RenderThread stopped[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [gz.cc:434] [0m[1;36mShutting down gz-sim-server[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:654] [0m[1;36mExiting postupdate worker thread ([0m[1;36m1[0m[1;36m)[0m[1;36m
+[gazebo-1] [Dbg] [SimulationRunner.cc:654] [0m[1;36mExiting postupdate worker thread ([0m[1;36m2[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:654] [0m[1;36mExiting postupdate worker thread ([0m[1;36m7[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:654] [0m[1;36mExiting postupdate worker thread ([0m[1;36m9[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:654] [0m[1;36mExiting postupdate worker thread ([0m[1;36m8[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:654] [0m[1;36mExiting postupdate worker thread ([0m[1;36m5[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:654] [0m[1;36mExiting postupdate worker thread ([0m[1;36m6[0m[1;36mExiting postupdate worker thread ([0m[1;36m10[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m6[0m[1;36m[Dbg] [SimulationRunner.cc:654] [Dbg] [SimulationRunner.cc:654] [0m[1;36m[0m
+[gazebo-1] [1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36mExiting postupdate worker thread ([0m[1;36m4[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [SimulationRunner.cc:654] Exiting postupdate worker thread ([0m[1;36m0[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m)[0m[1;36mExiting postupdate worker thread ([0m[1;36m3[0m[1;36m)[0m[1;36m[0m
+[gazebo-1] [1;36m[Dbg] [Sensors.cc:565] [0m[1;36mSensorsPrivate::Stop[0m[1;36m[0m
+[INFO] [robot_state_publisher-11]: process has finished cleanly [pid 70235]
+[ERROR] [gazebo-1]: process has died [pid 70121, exit code -2, cmd 'ruby /opt/ros/jazzy/opt/gz_tools_vendor/bin/gz sim -v 4 -r -s  sydney_regatta.sdf --force-version 8'].
+[INFO] [multi_vehicle_state-5]: process has finished cleanly [pid 70126]
+[INFO] [r1_stress_logger-8]: process has finished cleanly [pid 70157]
+[INFO] [stress_course_planner-6]: process has finished cleanly [pid 70127]
+[ERROR] [leader_stress_controller-7]: process has died [pid 70128, exit code 1, cmd '/home/sajed/vrx_ws/install/platoon_control/lib/platoon_control/leader_stress_controller --ros-args -r __node:=leader_pid_controller --params-file /tmp/launch_params__i7v8ljm --params-file /tmp/launch_params_ghqilh29'].

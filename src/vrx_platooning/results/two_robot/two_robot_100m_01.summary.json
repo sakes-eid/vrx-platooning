@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "minimum_distance_m": 4.934418545660337,
+  "follow": {
+    "samples": 1222,
+    "mean_distance_m": 13.84126081974498,
+    "distance_rmse_m": 9.151110540331263,
+    "maximum_absolute_error_m": 11.603495943511387,
+    "r1_mean_speed_mps": 0.8443359088369835,
+    "r2_mean_speed_mps": 0.8691979230857843,
+    "r2_max_speed_mps": 1.0455645659775519
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "success": true,
+  "minimum_hitbox_clearance_m": 3.6434183764669195,
+  "minimum_reference_distance_m": 8.108520486673678,
+  "collision_warning_samples": 0,
+  "avoidance_active_samples": 0,
+  "mission_state_first_time_s": {
+    "FOLLOW": 0.0,
+    "PARK_BRAKE": 123.2,
+    "PARK_REVERSE": 123.808,
+    "PARK_ALIGN": 136.9,
+    "PARK": 160.20000000000002,
+    "DWELL": 202.20000000000002
+  },
+  "follow": {
+    "samples": 1231,
+    "target_hitbox_clearance_m": 5.0,
+    "mean_hitbox_clearance_m": 7.766091286247873,
+    "hitbox_clearance_rmse_m": 3.5566307640139825,
+    "maximum_abs_clearance_error_m": 7.779799874811232,
+    "mean_reference_distance_m": 12.83271979481738,
+    "r1_mean_speed_mps": 0.8356432221824658,
+    "r2_mean_speed_mps": 0.9848102956386533,
+    "r2_max_speed_mps": 1.4130016511327468
+  }
+}

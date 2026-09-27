@@ -1,0 +1,32 @@
+[INFO] [1790444447.937376217] [leader_pid_controller]: Leader PID controller started.
+[INFO] [1790444447.938088298] [leader_pid_controller]: Control rate: 10.00 Hz
+[INFO] [1790444447.938758655] [leader_pid_controller]: Controller state: TRACK
+[INFO] [1790444452.025918850] [leader_pid_controller]: Controller state: TRACK
+[INFO] [1790444452.026191516] [leader_pid_controller]: New reference path received: 64 waypoints.
+[INFO] [1790444464.400783741] [leader_pid_controller]: Controller state: BRAKE
+[INFO] [1790444464.401101458] [leader_pid_controller]: Goal braking started. Total speed=0.751 m/s, surge=0.724 m/s.
+[INFO] [1790444465.401322215] [leader_pid_controller]: Controller state: HOLD
+[INFO] [1790444465.401730654] [leader_pid_controller]: Boat stopped inside target zone. Speed=0.049 m/s, distance=0.795 m.
+[INFO] [1790444465.402164362] [leader_pid_controller]: Holding for 5.0 simulated seconds.
+[INFO] [1790444466.736927053] [leader_pid_controller]: ========================================
+[INFO] [1790444466.737212149] [leader_pid_controller]: EXPERIMENT SUCCESS
+[INFO] [1790444466.737423384] [leader_pid_controller]: Goal distance: 0.845 m
+[INFO] [1790444466.737616917] [leader_pid_controller]: Speed: 0.009 m/s
+[INFO] [1790444466.737981615] [leader_pid_controller]: Remained within 1.00 m for 5.0 simulated seconds.
+[INFO] [1790444466.738240384] [leader_pid_controller]: ========================================
+Traceback (most recent call last):
+  File "/home/sajed/vrx_ws/install/platoon_control/lib/platoon_control/leader_pid_controller", line 33, in <module>
+    sys.exit(load_entry_point('platoon-control', 'console_scripts', 'leader_pid_controller')())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/sajed/vrx_ws/build/platoon_control/platoon_control/leader_pid_controller.py", line 2126, in main
+    node.stop()
+  File "/home/sajed/vrx_ws/build/platoon_control/platoon_control/leader_pid_controller.py", line 2096, in stop
+    self.publish_zero_thrust()
+  File "/home/sajed/vrx_ws/build/platoon_control/platoon_control/leader_pid_controller.py", line 2046, in publish_zero_thrust
+    self.publish_thrusters(
+  File "/home/sajed/vrx_ws/build/platoon_control/platoon_control/leader_pid_controller.py", line 2006, in publish_thrusters
+    self.left_position_publisher.publish(
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/publisher.py", line 70, in publish
+    self.__publisher.publish(msg)
+rclpy._rclpy_pybind11.RCLError: Failed to publish: publisher's context is invalid, at ./src/rcl/publisher.c:423
+[ros2run]: Process exited with failure 1
