@@ -1,0 +1,66 @@
+{
+  "success": false,
+  "minimum_hitbox_clearance_m": 4.0296547911902065,
+  "minimum_reference_distance_m": 9.056640012600058,
+  "collision_warning_samples": 0,
+  "avoidance_active_samples": 0,
+  "mission_state_first_time_s": {
+    "UNKNOWN": 0.0,
+    "FOLLOW": 0.1
+  },
+  "follow_phase_first_time_s": {
+    "CATCHUP": 0.2,
+    "FOLLOWING": 30.1
+  },
+  "follow_phase_last_time_s": {
+    "CATCHUP": 136.8,
+    "FOLLOWING": 150.9
+  },
+  "catchup_distance_m": 6.0,
+  "predecessor_target_capture_time_s": null,
+  "follower_longitudinal_state_first_time_s": {
+    "UNKNOWN": 0.0,
+    "TRACK": 0.1
+  },
+  "follower_longitudinal_state_last_time_s": {
+    "UNKNOWN": 0.0,
+    "TRACK": 150.9
+  },
+  "follower_longitudinal_state_samples": {
+    "UNKNOWN": 1,
+    "TRACK": 1509
+  },
+  "distance_error_policy": "5 m hitbox-clearance error is recorded only during FOLLOWING while breadcrumb subscription is active; CATCHUP and post-unsubscribe phases are excluded.",
+  "catchup": {
+    "samples": 500,
+    "mean_hitbox_clearance_m": 7.993573791787862,
+    "predecessor_mean_speed_mps": 0.8992463935608749,
+    "follower_mean_speed_mps": 0.9124642549451982,
+    "follower_max_speed_mps": 1.410807318619948
+  },
+  "following": {
+    "samples": 1008,
+    "target_hitbox_clearance_m": 5.0,
+    "mean_hitbox_clearance_m": 5.72113365369337,
+    "hitbox_clearance_rmse_m": 0.8773317380701022,
+    "predecessor_mean_speed_mps": 0.8462325065684141,
+    "follower_mean_speed_mps": 0.9280058598516177,
+    "follower_max_speed_mps": 1.3394854043998168,
+    "heading_error_rmse_deg": 1.4517342345141746,
+    "cross_track_error_rmse_m": 1.6928649676919767
+  },
+  "follow": {
+    "note": "Backward-compatible alias containing only valid steady FOLLOWING samples.",
+    "samples": 1008,
+    "target_hitbox_clearance_m": 5.0,
+    "mean_hitbox_clearance_m": 5.72113365369337,
+    "hitbox_clearance_rmse_m": 0.8773317380701022,
+    "maximum_abs_clearance_error_m": 0.9996107698385179,
+    "mean_reference_distance_m": 11.187414949101928,
+    "predecessor_mean_speed_mps": 0.8462325065684141,
+    "follower_mean_speed_mps": 0.9280058598516177,
+    "follower_max_speed_mps": 1.3394854043998168,
+    "heading_error_rmse_deg": 1.4517342345141746,
+    "cross_track_error_rmse_m": 1.6928649676919767
+  }
+}

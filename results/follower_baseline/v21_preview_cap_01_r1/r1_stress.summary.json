@@ -1,0 +1,25 @@
+{
+  "success": true,
+  "samples": 3608,
+  "state_first_time_s": {
+    "TRACK": 0.0,
+    "BRAKE": 283.204,
+    "HOLD": 284.40000000000003,
+    "SUCCESS": 289.40000000000003
+  },
+  "state_last_time_s": {
+    "TRACK": 283.1,
+    "BRAKE": 284.3,
+    "HOLD": 289.3,
+    "SUCCESS": 360.70000000000005
+  },
+  "max_speed_mps": 3.9943097221078787,
+  "track": {
+    "samples": 2832,
+    "mean_speed_mps": 0.8443909773035818,
+    "cross_track_rmse_m": 0.3421160968291254,
+    "maximum_abs_cross_track_error_m": 0.9501621841973247,
+    "heading_error_rmse_deg": 2.21855515962785,
+    "speed_error_rmse_mps": 0.6861403808107122
+  }
+}

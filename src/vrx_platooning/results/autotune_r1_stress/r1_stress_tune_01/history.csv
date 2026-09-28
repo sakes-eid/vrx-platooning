@@ -1,2 +1,0 @@
-stage,trial,score,success,cte_rmse_m,cte_p95_m,max_abs_cte_m,heading_rmse_deg,speed_rmse_mps,straight_mean_speed_mps,track_time_s,terminal_time_s,recovery_time_s,recovery_episodes,termination_reason,trial_name
-guidance,1,6.573886736619849,True,0.46156987919818154,0.8035050821912371,1.4247315735444772,3.0570984074306633,0.63323143379717,1.1494008515525291,232.60000000000002,9.0,0.0,0,SUCCESS,r1_stress_tune_01_001_guidance

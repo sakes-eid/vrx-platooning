@@ -1,0 +1,48 @@
+{
+  "success": true,
+  "minimum_hitbox_clearance_m": null,
+  "minimum_reference_distance_m": null,
+  "collision_warning_samples": 0,
+  "avoidance_active_samples": 0,
+  "mission_state_first_time_s": {},
+  "follow_phase_first_time_s": {},
+  "follow_phase_last_time_s": {},
+  "catchup_distance_m": 6.0,
+  "predecessor_target_capture_time_s": null,
+  "follower_longitudinal_state_first_time_s": {},
+  "follower_longitudinal_state_last_time_s": {},
+  "follower_longitudinal_state_samples": {},
+  "distance_error_policy": "5 m hitbox-clearance error is recorded only during FOLLOWING while breadcrumb subscription is active; CATCHUP and post-unsubscribe phases are excluded.",
+  "catchup": {
+    "samples": 0,
+    "mean_hitbox_clearance_m": null,
+    "predecessor_mean_speed_mps": null,
+    "follower_mean_speed_mps": null,
+    "follower_max_speed_mps": null
+  },
+  "following": {
+    "samples": 0,
+    "target_hitbox_clearance_m": 5.0,
+    "mean_hitbox_clearance_m": null,
+    "hitbox_clearance_rmse_m": null,
+    "predecessor_mean_speed_mps": null,
+    "follower_mean_speed_mps": null,
+    "follower_max_speed_mps": null,
+    "heading_error_rmse_deg": null,
+    "cross_track_error_rmse_m": null
+  },
+  "follow": {
+    "note": "Backward-compatible alias containing only valid steady FOLLOWING samples.",
+    "samples": 0,
+    "target_hitbox_clearance_m": 5.0,
+    "mean_hitbox_clearance_m": null,
+    "hitbox_clearance_rmse_m": null,
+    "maximum_abs_clearance_error_m": null,
+    "mean_reference_distance_m": null,
+    "predecessor_mean_speed_mps": null,
+    "follower_mean_speed_mps": null,
+    "follower_max_speed_mps": null,
+    "heading_error_rmse_deg": null,
+    "cross_track_error_rmse_m": null
+  }
+}

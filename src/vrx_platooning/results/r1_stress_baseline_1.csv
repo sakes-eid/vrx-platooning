@@ -1,1 +1,0 @@
-time_s,north_m,east_m,body_yaw_rad,course_angle_rad,vx_mps,vy_mps,speed_mps,reference_north_m,reference_east_m,position_error_m,target_north_m,target_east_m,desired_heading_rad,heading_error_rad,speed_error_mps,left_thrust,right_thrust,controller_state

@@ -24,3 +24,27 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
+
+# Raw experiment telemetry
+results/*.csv
+results/**/*.csv
+results/**/*.log
+results/**/*.sqlite3
+results/**/*.db
+
+# Large/generated tuning sessions
+results/autotune/
+results/autotune_sessions/
+results/autotune_r1_stress/
+results/autotune_followers/
+
+# Local code backups
+results/code_backups/
+
+# Development snapshots
+*.before*
+*.pre_*
+*.bak
+
+# Additional local backup snapshots
+*.backup_before*

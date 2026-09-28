@@ -1,0 +1,81 @@
+{
+  "success": false,
+  "minimum_hitbox_clearance_m": 4.362631308114996,
+  "minimum_reference_distance_m": 9.044192833708337,
+  "collision_warning_samples": 0,
+  "avoidance_active_samples": 0,
+  "mission_state_first_time_s": {
+    "UNKNOWN": 0.0,
+    "FOLLOW": 0.1,
+    "FORMATION_BRAKE": 283.3,
+    "FORMATION_HOLD": 286.0,
+    "PARK_ALIGN": 289.5
+  },
+  "follow_phase_first_time_s": {
+    "CATCHUP": 0.2,
+    "FOLLOWING": 27.6
+  },
+  "follow_phase_last_time_s": {
+    "CATCHUP": 223.10000000000002,
+    "FOLLOWING": 283.20000000000005
+  },
+  "catchup_distance_m": 6.0,
+  "predecessor_target_capture_time_s": 283.3,
+  "follower_longitudinal_state_first_time_s": {
+    "UNKNOWN": 0.0,
+    "TRACK": 0.1,
+    "BRAKE": 283.40000000000003,
+    "RECOVER": 284.904,
+    "HOLD": 285.3,
+    "PARKING": 289.6
+  },
+  "follower_longitudinal_state_last_time_s": {
+    "UNKNOWN": 0.0,
+    "TRACK": 283.3,
+    "BRAKE": 284.8,
+    "RECOVER": 285.20000000000005,
+    "HOLD": 289.5,
+    "PARKING": 293.3
+  },
+  "follower_longitudinal_state_samples": {
+    "UNKNOWN": 1,
+    "TRACK": 2831,
+    "BRAKE": 15,
+    "RECOVER": 4,
+    "HOLD": 43,
+    "PARKING": 38
+  },
+  "distance_error_policy": "5 m hitbox-clearance error is recorded only during FOLLOWING while breadcrumb subscription is active; CATCHUP and post-unsubscribe phases are excluded.",
+  "catchup": {
+    "samples": 368,
+    "mean_hitbox_clearance_m": 8.602949435087213,
+    "predecessor_mean_speed_mps": 0.9792306111849723,
+    "follower_mean_speed_mps": 0.9161852481368168,
+    "follower_max_speed_mps": 1.5560288237006008
+  },
+  "following": {
+    "samples": 2461,
+    "target_hitbox_clearance_m": 5.0,
+    "mean_hitbox_clearance_m": 5.006246295123112,
+    "hitbox_clearance_rmse_m": 0.30640401490165203,
+    "predecessor_mean_speed_mps": 0.8266870624413187,
+    "follower_mean_speed_mps": 0.9599039942579974,
+    "follower_max_speed_mps": 1.526297551186876,
+    "heading_error_rmse_deg": 1.5874623522345888,
+    "cross_track_error_rmse_m": 1.8973433255034333
+  },
+  "follow": {
+    "note": "Backward-compatible alias containing only valid steady FOLLOWING samples.",
+    "samples": 2461,
+    "target_hitbox_clearance_m": 5.0,
+    "mean_hitbox_clearance_m": 5.006246295123112,
+    "hitbox_clearance_rmse_m": 0.30640401490165203,
+    "maximum_abs_clearance_error_m": 0.998164788125246,
+    "mean_reference_distance_m": 10.577754404714266,
+    "predecessor_mean_speed_mps": 0.8266870624413187,
+    "follower_mean_speed_mps": 0.9599039942579974,
+    "follower_max_speed_mps": 1.526297551186876,
+    "heading_error_rmse_deg": 1.5874623522345888,
+    "cross_track_error_rmse_m": 1.8973433255034333
+  }
+}
