@@ -1,3 +1,68 @@
+# VRX Platooning
+
+Autonomous multi-vessel platooning project developed with **ROS 2 Jazzy**, **Gazebo / VRX**, and Python using simulated WAM-V surface vehicles.
+
+The project investigates trajectory tracking and cooperative control for a platoon of autonomous surface vessels. The current architecture consists of:
+
+- **R1 — Leader:** follows a predefined trajectory using GPS-based state estimation, local Cartesian planning, and differential-thrust control.
+- **R2 — Follower:** follows R1 while regulating inter-vessel spacing and using proactive information about the leader's motion.
+- **R3 — Planned:** will extend the same follower architecture so that additional vessels can follow the preceding vessel.
+
+The project includes trajectory planning, GPS-to-local state estimation, differential-thrust control, experiment logging, RViz visualization, stress testing, and **Optuna-based automated controller tuning**.
+
+> **Control constraint:** WAM-V thruster steering angles remain fixed straight. Vessel turning is achieved using differential left/right thrust rather than thruster-angle steering.
+
+---
+
+## Quick Start
+
+Clone the repository into a ROS 2 workspace:
+
+```bash
+mkdir -p ~/vrx_ws/src
+cd ~/vrx_ws/src
+
+git clone https://github.com/sakes-eid/vrx-platooning.git
+```
+
+The project also requires the **VRX simulator** and its dependencies.
+
+After the required packages are present:
+
+```bash
+cd ~/vrx_ws
+
+source /opt/ros/jazzy/setup.bash
+
+rosdep install --from-paths src --ignore-src -r -y
+
+colcon build --symlink-install
+
+source install/setup.bash
+```
+
+For the current complete R1 experiment:
+
+```bash
+cd ~/vrx_ws
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+
+ros2 launch platoon_bringup leader_stress_full.launch.py
+```
+
+For the current R1 + R2 visual experiment:
+
+```bash
+cd ~/vrx_ws
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+
+ros2 launch platoon_bringup follower_stress_visual.launch.py
+```
+
+---
+
 ## Recommended / Current Versions
 
 The repository contains older experimental implementations, diagnostics, and development iterations. For users who want to run the current system, the files below should be treated as the **canonical versions**.
