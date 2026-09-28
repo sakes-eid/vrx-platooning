@@ -82,7 +82,7 @@ setup(
 
     maintainer='sajed',
 
-    maintainer_email='sajed@example.com',
+    maintainer_email='eids4576@gmail.com',
 
     description=(
         'Automatic PID tuning framework '
