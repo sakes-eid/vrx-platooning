@@ -1,136 +1,108 @@
-# VRX Platooning
+## Recommended / Current Versions
 
-Autonomous multi-vessel platooning project developed with **ROS 2 Jazzy**, **Gazebo / VRX**, and Python.
-
-The project investigates trajectory tracking and cooperative control of multiple WAM-V surface vehicles. The current architecture uses one vessel as the trajectory-following leader (**R1**) and develops additional vessels as followers (**R2**, later R3) while maintaining inter-vehicle spacing and stable motion through turns.
-
-The system uses **GPS-based state estimation**, local Cartesian coordinates, trajectory planning, differential-thrust control, experiment logging, visualization, and automated controller tuning.
-
----
-
-## Current Status
+The repository contains older experimental implementations, diagnostics, and development iterations. For users who want to run the current system, the files below should be treated as the **canonical versions**.
 
 ### R1 — Leader
 
-R1 is the reference vehicle and follows a predefined stress-test trajectory.
+R1 is the currently validated leader implementation.
 
-Implemented features include:
+| Component | Recommended file |
+|---|---|
+| Main controller | `platoon_control/platoon_control/leader_stress_controller.py` |
+| Trajectory planner | `platoon_planner/platoon_planner/stress_course_planner.py` |
+| Controller parameters | `platoon_control/config/leader_pid.yaml` |
+| Full experiment launch | `platoon_bringup/launch/leader_stress_full.launch.py` |
+| Core/headless launch | `platoon_bringup/launch/leader_stress_core.launch.py` |
+| Tuning launch | `platoon_bringup/launch/leader_stress_tuning.launch.py` |
+| Experiment logger | `platoon_monitor/platoon_monitor/r1_stress_logger.py` |
+| Visualization | `platoon_monitor/platoon_monitor/r1_stress_viz.py` |
+| RViz configuration | `platoon_bringup/rviz/r1_stress.rviz` |
+| Latest autotuner | `platoon_tuning/platoon_tuning/r1_stress_autotune_v3.py` |
 
-- GPS-based local state estimation
-- Straight and curved trajectory generation
-- Path look-ahead / turn preview
-- Differential-thrust heading control
-- Fixed straight thruster steering angles
-- Speed and heading control
-- Stress-course testing
-- Automated parameter tuning with Optuna
-- Experiment logging and visualization
-- Final validation runs
+`r1_stress_autotune_v3.py` is the latest R1 tuning implementation. Earlier versions such as `r1_stress_autotune.py` and `r1_stress_autotune_v2.py` are retained for development history but should not be considered the current tuner.
 
-R1 is currently used as the frozen reference configuration for follower development.
+---
 
 ### R2 — Follower
 
-R2 follows R1 rather than directly tracking the global trajectory.
+R2 is the current follower implementation.
 
-Current R2 development includes:
+R2 development is still active, so these are the **current recommended versions**, rather than a permanently frozen release.
 
-- Reactive follower controller
-- Proactive follower controller
-- Inter-vehicle gap regulation
-- Leader-motion preview
-- Speed-preview diagnostics
-- Proactive follower trajectory planning
-- Dedicated follower logging
-- R1/R2 visualization
-- Baseline and manual validation tests
-- Generic follower autotuning framework seeded from the validated R1 configuration
+| Component | Recommended file |
+|---|---|
+| Current proactive controller | `platoon_control/platoon_control/proactive_follower_controller_v21.py` |
+| Current proactive planner | `platoon_planner/platoon_planner/proactive_follower_planner_v21.py` |
+| Basic/reactive follower | `platoon_control/platoon_control/follower_pid_controller.py` |
+| Follower logger | `platoon_monitor/platoon_monitor/follower_logger.py` |
+| R2 visualization | `platoon_monitor/platoon_monitor/r2_stress_viz.py` |
+| Combined R1/R2 RViz config | `platoon_bringup/rviz/r1_r2_stress.rviz` |
+| Current follower autotuner | `platoon_tuning/platoon_tuning/follower_stress_autotune_v1.py` |
 
-R2 is currently undergoing tuning and validation.
-
-### R3 — Planned
-
-The intended architecture is:
+The non-versioned proactive files:
 
 ```text
-Reference trajectory
-        |
-        v
-       R1
-        |
-        v
-       R2
-        |
-        v
-       R3
+platoon_control/platoon_control/proactive_follower_controller.py
+platoon_planner/platoon_planner/proactive_follower_planner.py
 ```
 
-R3 will reuse the follower architecture developed for R2, using R2 as its leader.
+represent earlier development stages.
+
+For current R2 testing, prefer the `v21` implementations.
 
 ---
 
-## Repository Structure
+## Available R2 Launch Modes
+
+Several launch files are provided because different stages of follower development require different levels of instrumentation.
+
+### Reactive baseline
 
 ```text
-vrx-platooning/
-├── platoon_bringup/
-│   ├── launch/
-│   ├── rviz/
-│   └── urdf/
-│
-├── platoon_control/
-│   ├── config/
-│   └── platoon_control/
-│
-├── platoon_interfaces/
-│
-├── platoon_monitor/
-│   └── platoon_monitor/
-│
-├── platoon_planner/
-│   ├── config/
-│   └── platoon_planner/
-│
-├── platoon_state/
-│   ├── config/
-│   └── platoon_state/
-│
-├── platoon_tuning/
-│   ├── config/
-│   └── platoon_tuning/
-│
-├── docs/
-│   ├── PROCESS_HISTORY.md
-│   └── QUESTIONS_ANSWERS.md
-│
-└── results/
+platoon_bringup/launch/follower_stress_baseline.launch.py
 ```
 
-### Packages
+Used to establish the performance of the simpler follower architecture before proactive behaviour is enabled.
 
-**`platoon_state`**  
-Converts simulated GPS and vehicle-state information into a local Cartesian reference frame used by the controllers and planners.
+### Proactive follower
 
-**`platoon_planner`**  
-Generates trajectories and follower references, including stress-course trajectories and proactive follower planning.
+```text
+platoon_bringup/launch/follower_stress_proactive.launch.py
+```
 
-**`platoon_control`**  
-Contains leader and follower controllers. Vessel turning is performed using **differential left/right thrust**, while thruster steering angles remain fixed straight.
+Runs the proactive follower architecture.
 
-**`platoon_monitor`**  
-Provides experiment logging, trajectory visualization, follower diagnostics, and R1/R2 monitoring.
+### Current visual experiment
 
-**`platoon_tuning`**  
-Contains the automated parameter-tuning framework used for R1 and extended for follower tuning.
+```text
+platoon_bringup/launch/follower_stress_visual.launch.py
+```
 
-**`platoon_bringup`**  
-Contains launch files, RViz configurations, and vehicle descriptions used to run complete experiments.
+Recommended when visually inspecting R1 and R2 behaviour together.
+
+### R2 v2.1 diagnostics
+
+```text
+platoon_bringup/launch/follower_stress_v21_diag.launch.py
+```
+
+Used for detailed diagnostics of the current v2.1 follower controller/planner.
+
+### Automated follower tuning
+
+```text
+platoon_bringup/launch/follower_stress_tuning.launch.py
+```
+
+Used by the follower autotuning framework.
 
 ---
 
-## Requirements
+# Installation and Requirements
 
-The project is currently developed using:
+## Core requirements
+
+The project is developed with:
 
 - Ubuntu
 - ROS 2 Jazzy
@@ -139,18 +111,71 @@ The project is currently developed using:
 - Python 3
 - NumPy
 - PyYAML
-- Optuna
-- RViz2
 
-The official VRX simulator is available from:
+The VRX simulator must also exist in the ROS 2 workspace.
 
+Official VRX repository:
+
+```text
 https://github.com/osrf/vrx
+```
+
+A typical workspace layout is:
+
+```text
+~/vrx_ws/
+├── src/
+│   ├── vrx/
+│   ├── vrx_gz/
+│   └── vrx_platooning/
+├── build/
+├── install/
+└── log/
+```
+
+The exact VRX package layout may vary depending on the VRX version being used.
 
 ---
 
-## Build
+## Additional requirement for automated tuning
 
-From the ROS 2 workspace:
+Automated tuning additionally requires:
+
+```text
+Optuna
+```
+
+Verify the main Python dependencies with:
+
+```bash
+python3 -c "import numpy, yaml; print('Core Python dependencies OK')"
+```
+
+For tuning:
+
+```bash
+python3 -c "import optuna; print('Optuna OK')"
+```
+
+---
+
+# Building the Workspace
+
+Open a terminal and run:
+
+```bash
+cd ~/vrx_ws
+
+source /opt/ros/jazzy/setup.bash
+
+rosdep install --from-paths src --ignore-src -r -y
+
+colcon build --symlink-install
+
+source install/setup.bash
+```
+
+After changing Python, launch, configuration, URDF, or package files, rebuild before starting another experiment:
 
 ```bash
 cd ~/vrx_ws
@@ -162,11 +187,18 @@ colcon build --symlink-install
 source install/setup.bash
 ```
 
+Every new terminal used for ROS commands should also source both ROS 2 and the workspace:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source ~/vrx_ws/install/setup.bash
+```
+
 ---
 
-## Running R1
+# Running R1
 
-A full R1 stress-test experiment can be launched with:
+The recommended R1 experiment is:
 
 ```bash
 cd ~/vrx_ws
@@ -177,32 +209,35 @@ source install/setup.bash
 ros2 launch platoon_bringup leader_stress_full.launch.py
 ```
 
-The stress-test framework combines:
+This launches the complete R1 stress-test stack, including the required simulation, state-estimation, planning, control, logging, and visualization components.
 
-- vehicle simulation
-- GPS/local-state estimation
-- trajectory generation
-- leader control
-- logging
-- visualization
+To inspect the available launch arguments:
+
+```bash
+cd ~/vrx_ws
+
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+
+ros2 launch platoon_bringup leader_stress_full.launch.py --show-args
+```
+
+For experiments where visualization is unnecessary, the lighter core launch can be used:
+
+```bash
+cd ~/vrx_ws
+
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+
+ros2 launch platoon_bringup leader_stress_core.launch.py
+```
 
 ---
 
-## Running R1 + R2
+# Running R1 + R2
 
-R2 experiments are provided through several launch configurations depending on the test being performed.
-
-Examples include:
-
-```text
-follower_stress_baseline.launch.py
-follower_stress_proactive.launch.py
-follower_stress_tuning.launch.py
-follower_stress_v21_diag.launch.py
-follower_stress_visual.launch.py
-```
-
-For example:
+For visual testing of the current follower architecture:
 
 ```bash
 cd ~/vrx_ws
@@ -213,116 +248,172 @@ source install/setup.bash
 ros2 launch platoon_bringup follower_stress_visual.launch.py
 ```
 
+For the current v2.1 diagnostic configuration:
+
+```bash
+cd ~/vrx_ws
+
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+
+ros2 launch platoon_bringup follower_stress_v21_diag.launch.py
+```
+
+For a simpler follower baseline:
+
+```bash
+cd ~/vrx_ws
+
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+
+ros2 launch platoon_bringup follower_stress_baseline.launch.py
+```
+
+For proactive follower testing:
+
+```bash
+cd ~/vrx_ws
+
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+
+ros2 launch platoon_bringup follower_stress_proactive.launch.py
+```
+
 ---
 
-## Automated Tuning
+# Automated Tuning
 
-R1 controller development uses an automated stress-test tuning framework.
+## R1
 
-The latest R1 tuner is:
+The current R1 autotuner is:
 
 ```text
 platoon_tuning/platoon_tuning/r1_stress_autotune_v3.py
 ```
 
-Follower tuning is implemented in:
+It is based on Optuna and automates repeated simulation experiments while evaluating controller and trajectory-tracking performance.
+
+Earlier R1 tuners are kept in the repository for traceability but are not the recommended versions.
+
+---
+
+## R2
+
+The current follower autotuner is:
 
 ```text
 platoon_tuning/platoon_tuning/follower_stress_autotune_v1.py
 ```
 
-The tuning system uses **Optuna** together with deterministic simulation runs, parameter search spaces, validation metrics, early rejection of poor candidates, and saved experiment summaries.
-
-The follower tuner is designed to allow the same approach to later be reused for **R3 ← R2** tuning.
-
----
-
-## Results
-
-The repository intentionally does **not** contain the full raw telemetry produced by every simulation.
-
-Large files such as:
-
-- raw trajectory CSV files
-- Gazebo logs
-- controller logs
-- Optuna databases
-- intermediate tuning trials
-- temporary code backups
-
-are excluded from version control.
-
-Small summary files are retained where useful to document experiment performance and validation.
-
----
-
-## Documentation
-
-Development history and design decisions are documented in:
+The follower tuning system is designed to reuse the validated R1 configuration as a starting point for R2 and, later, allow the same architecture to be applied recursively to:
 
 ```text
-docs/PROCESS_HISTORY.md
-```
-
-Project questions, experiments, and corresponding answers are documented in:
-
-```text
-docs/QUESTIONS_ANSWERS.md
-```
-
----
-
-## Control Constraint
-
-A project requirement is that the WAM-V thruster steering angles remain fixed straight.
-
-Therefore, heading control does **not** steer the left and right thrusters.
-
-Turning is achieved using differential thrust:
-
-```text
-Left thrust ≠ Right thrust
-        ↓
-Yaw moment
-        ↓
-Vessel turns
-```
-
-This constraint is applied throughout the control architecture.
-
----
-
-## Coordinate System
-
-The vehicles obtain position information from simulated GPS.
-
-GPS coordinates are converted into a local Cartesian coordinate system whose origin is established at the beginning of the experiment.
-
-This allows controllers and planners to operate in metres while retaining GPS as the underlying simulated position source.
-
----
-
-## Development Goal
-
-The final objective is a reusable autonomous platooning architecture where:
-
-```text
-R1 follows the mission trajectory
-
-R2 follows R1
-
-R3 follows R2
-
+R3 <- R2
+R4 <- R3
 ...
-
-Rn follows R(n-1)
 ```
 
-Each follower should maintain stable spacing while anticipating the motion of the vehicle ahead, including acceleration, braking, and turns.
+The exact tuner command-line options should be checked directly with:
+
+```bash
+cd ~/vrx_ws
+
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+
+python3 \
+src/vrx_platooning/platoon_tuning/platoon_tuning/follower_stress_autotune_v1.py \
+--help
+```
+
+Likewise for R1:
+
+```bash
+cd ~/vrx_ws
+
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+
+python3 \
+src/vrx_platooning/platoon_tuning/platoon_tuning/r1_stress_autotune_v3.py \
+--help
+```
+
+Using `--help` is recommended before launching an automated tuning session because tuning parameters and experiment options may evolve during development.
 
 ---
 
-## License
+# Important Control Constraint
 
-A license will be added before the repository is released publicly.
+The WAM-V thruster steering angles are intentionally kept fixed straight.
 
+The controller must therefore **not steer the vessel by changing the thruster angle**.
+
+Turning is produced exclusively through differential thrust:
+
+```text
+left thrust > right thrust  -> yaw in one direction
+
+right thrust > left thrust  -> yaw in the opposite direction
+```
+
+This constraint applies to both leader and follower development.
+
+---
+
+# Results and Development Files
+
+The repository contains compact JSON result summaries where useful for documenting validation and development.
+
+Large generated data is intentionally excluded, including:
+
+```text
+raw CSV telemetry
+ROS / Gazebo logs
+Optuna databases
+intermediate tuning trials
+Python cache files
+temporary controller backups
+```
+
+This keeps the repository focused on the software required to reproduce the experiments rather than storing every individual simulation run.
+
+---
+
+# Which Files Should I Use?
+
+For someone cloning the repository for the first time:
+
+```text
+R1 controller:
+    leader_stress_controller.py
+
+R1 planner:
+    stress_course_planner.py
+
+R1 autotuner:
+    r1_stress_autotune_v3.py
+
+R1 normal launch:
+    leader_stress_full.launch.py
+
+
+R2 controller:
+    proactive_follower_controller_v21.py
+
+R2 planner:
+    proactive_follower_planner_v21.py
+
+R2 autotuner:
+    follower_stress_autotune_v1.py
+
+R2 visual launch:
+    follower_stress_visual.launch.py
+
+R2 diagnostic launch:
+    follower_stress_v21_diag.launch.py
+```
+
+Unless studying the development history, users should start with these files rather than the older implementations retained in the repository.
