@@ -147,6 +147,36 @@ Formation settle time    = 2.10 s
 
 The heading/guidance acceptance target was deliberately tightened to CTE RMSE <= 0.90 m, so the optimizer did not formally lock that stage before the 36-trial budget ended. The selected controller is therefore a **validated current baseline**, not a claim that every optimizer acceptance gate was satisfied.
 
+### Q24 distance-definition note
+
+The V2.2 follower regulates a **5 m along-path bumper-to-bumper gap**, not a 5 m center/reference-point Euclidean distance.
+
+For the completed 289.5 s Trial 36 run:
+
+```text
+Mean controlled path gap     = 4.973 m
+Path-gap RMSE                = 0.173 m
+
+PDF-defined mean d12         = 10.457 m
+PDF-defined minimum d12      = 8.267 m
+PDF-defined maximum d12      = 17.828 m
+```
+
+The handout quantity is:
+
+```text
+d12 = sqrt((x2 - x1)^2 + (y2 - y1)^2)
+```
+
+With the current WAM-V geometry, a straight aligned 5 m bumper gap corresponds to approximately **10.371 m reference-point separation**:
+
+```text
+5.000 + 2.822 + 2.549 = 10.371 m
+```
+
+The measured 10.457 m mean Euclidean separation is therefore consistent with the implemented bumper-gap formation. The repository documentation does **not** claim that the literal PDF-defined Euclidean distance converges to 5 m; both definitions are reported explicitly.
+
+
 Older V2.1 and reactive implementations remain in the repository for development traceability.
 ---
 
