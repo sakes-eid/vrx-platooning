@@ -137,7 +137,7 @@ W_TERMINAL_GAP_ERROR = 0.50
 W_FORMATION_SETTLE_TIME = 0.10
 W_MISSION_TIME = 0.0015
 
-LOCK_CONFIRM_RUNS = 2
+LOCK_CONFIRM_RUNS = 1
 
 PASS_THRESHOLDS = {
     "gap": {
@@ -165,32 +165,10 @@ PASS_THRESHOLDS = {
     },
 }
 
-# Hysteresis prevents a locked stage from chattering in and out of lock.
-UNLOCK_THRESHOLDS = {
-    "gap": {
-        "path_gap_rmse_m": 0.40,
-        "path_gap_p95_abs_error_m": 0.80,
-        "abs_path_gap_bias_m": 0.20,
-        "initial_catchup_time_s": 50.0,
-        "lost_gap_time_s": 5.0,
-        "lost_gap_episodes": 2,
-    },
-    "heading": {
-        "cte_rmse_m": 1.60,
-        "cte_p95_m": 3.20,
-        "max_abs_cte_m": 5.00,
-        "heading_rmse_deg": 3.50,
-    },
-    "speed": {
-        "speed_rmse_mps": 0.30,
-        "speed_p95_abs_error_mps": 0.50,
-    },
-    "brake": {
-        "terminal_speed_mps": 0.18,
-        "terminal_path_gap_error_m": 1.00,
-        "formation_settle_time_s": 5.0,
-    },
-}
+# A locked stage is reopened as soon as an ACCEPTED later-stage
+# controller moves it back outside the same threshold that locked it.
+# This implements "keep an eye on it; retune it next trial if it drifts".
+UNLOCK_THRESHOLDS = PASS_THRESHOLDS
 
 # ---------------------------------------------------------------------------
 # Search bounds.
@@ -2400,6 +2378,13 @@ def main():
         # Later stages are intentionally not skipped out of hierarchy.
         if stage_pass("gap", seed):
             pass_streak["gap"] = 1
+            if pass_streak["gap"] >= LOCK_CONFIRM_RUNS:
+                locked["gap"] = True
+                print(
+                    "  LOCK gap: seed already satisfies "
+                    "the V2.2 gap threshold",
+                    flush=True,
+                )
 
         for stage in STAGE_HIERARCHY:
             seed[f"{stage}_locked"] = (
