@@ -1708,3 +1708,380 @@ Next stage:
     R1 -> R2
     desired spacing = 5 m
 
+---
+
+# 2026-09-29 — R2 V2.2 Path-Gap Architecture, Adaptive Tuning, and Current Freeze
+
+## Reason for V2.2
+
+The earlier follower controller used minimum oriented-hull clearance as both the physical safety measure and the nominal 5 m formation-control variable.
+
+This created a geometry problem on tight turns.
+
+Two vessels could have a correct longitudinal formation spacing along the predecessor's travelled path while the Euclidean minimum distance between their oriented hull polygons changed substantially because of the corner geometry.
+
+The distance PID then reacted to a geometric safety distance that was not a clean longitudinal formation coordinate.
+
+This contributed to unnecessary speed correction and poor corner behavior.
+
+V2.2 separates the three concepts:
+
+    RAW breadcrumb path:
+        longitudinal formation coordinate
+
+    SMOOTHED breadcrumb path:
+        lateral guidance / heading / CTE
+
+    EXACT oriented hull clearance:
+        collision warning / avoidance only
+
+This separation is now considered the canonical follower architecture.
+
+---
+
+## V2.2 formation measurement
+
+The planner publishes:
+
+    /planner/r2/path_gap
+    /planner/r2/path_gap_valid
+
+The measurement is based on continuous arc-length progress on the unsmoothed predecessor breadcrumb history.
+
+Follower progress is projected onto the current raw breadcrumb segment rather than being quantized to breadcrumb indices.
+
+The current approximation is:
+
+    path_gap
+      = leader_s
+      - follower_s
+      - predecessor_rear_extent
+      - follower_front_extent
+
+using:
+
+    predecessor rear extent = 2.822 m
+    follower front extent   = 2.549 m
+
+The raw breadcrumb spacing is:
+
+    0.20 m
+
+but continuous segment projection provides sub-breadcrumb resolution.
+
+The implementation does not project the physical rear/front bumper points separately onto the path. It subtracts the known longitudinal extents from center-reference arc-length separation.
+
+This is adequate for the current controller and should not be changed unless a repeatable curvature-specific bias remains after guidance tuning.
+
+---
+
+## V2.2 collision safety
+
+Physical collision safety continues to use exact oriented WAM-V rectangles.
+
+Current thresholds:
+
+    warning clearance   = 0.50 m
+    avoidance clearance = 0.20 m
+    release clearance   = 0.35 m
+
+A warning does not automatically fail an optimization trial.
+
+Avoidance activation receives a stronger soft penalty.
+
+Actual hull contact is treated as a hard collision and terminates the tuning run with the maximum penalty.
+
+The tuned selected R2 run produced:
+
+    minimum hull clearance = 3.457 m
+    collision warnings     = 0
+    avoidance activations  = 0
+    collision              = false
+
+---
+
+## Adaptive follower autotuner V2.2
+
+New tuner:
+
+    platoon_tuning/platoon_tuning/follower_stress_autotune_v22.py
+
+Hierarchy:
+
+    GAP
+      ->
+    HEADING / GUIDANCE
+      ->
+    SPEED
+      ->
+    BRAKING
+
+The total trial count is a shared maximum budget rather than a fixed allocation per controller.
+
+When one stage reaches threshold it is locked and the next stage immediately receives the remaining budget.
+
+Locked stages continue to be evaluated on every accepted later-stage candidate.
+
+If a later controller causes a previously locked metric to move outside threshold, that earlier stage is reopened and becomes the next stage to tune.
+
+The tuner supports Ctrl+C pause and:
+
+    --resume
+
+through:
+
+    checkpoint.json
+    adaptive_state.json
+    Optuna SQLite storage
+
+An interrupted candidate is discarded rather than left as a stale RUNNING Optuna trial.
+
+Startup also has a follower-logger timeout and expanded V2.1/V2.2 process cleanup to avoid overlapping stale Gazebo simulations.
+
+---
+
+## Catch-up metric correction
+
+The first adaptive seed run exposed a false acquisition issue.
+
+The V2.2 path-gap signal can be numerically valid while the breadcrumb trail is still being established. During this startup transient it can temporarily be negative.
+
+The first tuner implementation therefore incorrectly treated an early negative gap as "leader acquired" and later interpreted the genuine catch-up transient as losing the leader.
+
+The corrected acquisition condition requires:
+
+    breadcrumb guidance active
+    4.75 m <= path gap <= 5.25 m
+    continuous residence in band >= 2.0 s
+
+Only after confirmed acquisition does:
+
+    path gap > 5.75 m
+
+count as losing the leader.
+
+This avoids allowing the tunable catchup_distance parameter to define its own performance metric.
+
+---
+
+## Adaptive acceptance thresholds
+
+GAP:
+
+    path-gap RMSE          <= 0.25 m
+    path-gap P95 abs error <= 0.50 m
+    abs mean bias          <= 0.10 m
+    initial catch-up       <= 40 s
+    lost-gap time          <= 2 s
+    lost-gap episodes      <= 1
+
+HEADING / GUIDANCE:
+
+    CTE RMSE               <= 0.90 m
+    CTE P95                <= 2.50 m
+    maximum abs CTE        <= 4.00 m
+    heading RMSE           <= 2.50 deg
+
+SPEED:
+
+    speed RMSE             <= 0.20 m/s
+    speed P95 abs error    <= 0.35 m/s
+
+BRAKING:
+
+    terminal speed         <= 0.10 m/s
+    terminal path-gap err  <= 0.75 m
+    formation settle time  <= 3.0 s
+
+The heading CTE requirement was deliberately tightened from 1.25 m to:
+
+    0.90 m
+
+because earlier visual tests showed that a small scalar heading error could coexist with a large outside-corner path deviation.
+
+---
+
+## 36-trial study result
+
+Study:
+
+    r2_follow_adaptive_v22_01
+
+The optimizer exhausted the full 36-trial budget.
+
+Final adaptive state:
+
+    GAP     = LOCKED
+    HEADING = OPEN
+    SPEED   = OPEN
+    BRAKE   = OPEN
+
+The study therefore did NOT finish because all stages passed.
+
+It stopped because the maximum trial budget was consumed while continuing to improve the heading/guidance stage.
+
+The final accepted trial was:
+
+    r2_follow_adaptive_v22_01_036_heading
+
+Result:
+
+    SUCCESS
+
+Formation:
+
+    mean path gap              = 4.9730508 m
+    path-gap bias              = -0.0269492 m
+    path-gap RMSE              = 0.1727075 m
+    path-gap P95 abs error     = 0.3609428 m
+    maximum abs gap error      = 0.6705460 m
+
+Catch-up:
+
+    initial catch-up time      = 21.8 s
+    lost-gap time              = 0.0 s
+    lost-gap episodes          = 0
+
+Safety:
+
+    minimum hull clearance     = 3.4573180 m
+    collision warning time     = 0.0 s
+    avoidance active time      = 0.0 s
+    collision                  = false
+
+Guidance:
+
+    CTE RMSE                   = 1.0036579 m
+    CTE P95                    = 1.9415105 m
+    maximum abs CTE            = 2.1785988 m
+    heading RMSE               = 3.1643949 deg
+
+Speed:
+
+    speed RMSE                 = 0.1148075 m/s
+    speed P95 abs error        = 0.2628401 m/s
+
+Terminal:
+
+    terminal speed             = 0.0136079 m/s
+    terminal path-gap error    = 0.1789193 m
+    formation settle time      = 2.10 s
+
+Overall tuner score:
+
+    7.0173683
+
+Interpretation:
+
+- GAP passes the defined acceptance thresholds.
+- SPEED metrics already lie inside their intended thresholds even though the formal SPEED stage was never reached.
+- BRAKING metrics also lie inside their intended thresholds even though the formal BRAKING stage was never reached.
+- HEADING / GUIDANCE improved substantially but did not satisfy the deliberately strict 0.90 m CTE RMSE and 2.50 deg heading-RMSE lock criteria before the trial budget ended.
+
+---
+
+## Current tuned R2 parameters
+
+Frozen configuration files:
+
+    platoon_control/config/r2_follower_v22_tuned.yaml
+    platoon_planner/config/r2_follower_v22_tuned.yaml
+
+Gap PID:
+
+    Kp = 1.254616395479059
+    Ki = 0.07691598273776513
+    Kd = 0.25770214280663706
+
+Catch-up:
+
+    catchup_distance     = 5.345285289922457 m
+    catchup_min_speed    = 1.2723843447849745 m/s
+    max gap speed corr.  = 0.7765928787144546 m/s
+
+Guidance / heading:
+
+    heading Kp                    = 928.3642353153681
+    heading Ki                    = 5.105477736635173
+    heading Kd                    = 98.93066529065382
+    cross-track heading gain      = 0.2805635257284035
+    tangent half window           = 0.40204986097476825
+    lookahead distance            = 4.736355241980624 m
+    max cross-track correction    = 33.58076064448188 deg
+
+Speed PID:
+
+    Kp = 114.29069944122205
+    Ki = 44.09953488498377
+    Kd = 111.26620408076914
+
+Brake PID:
+
+    Kp = 177.8935198208073
+    Ki = 60.634764417119634
+    Kd = 10.647182804717701
+
+Planner preview:
+
+    historical_preview_decel     = 0.2646349942459316
+    historical_preview_max_speed = 1.5 m/s
+
+---
+
+## Visual validation
+
+The selected tuned configuration was loaded into:
+
+    follower_stress_visual.launch.py
+
+with R1 frozen.
+
+Visual comparison showed that R2 followed the predecessor path better than the previous pre-tuning configuration, especially through the difficult curved portions.
+
+The controller is therefore retained as the current R2 V2.2 tuned baseline.
+
+This does NOT mean the heading/guidance optimizer acceptance gate was met. It means the selected configuration is the best currently tested two-robot result and is suitable for continuing development.
+
+---
+
+## PDF Q19-Q24 status after V2.2
+
+    Q19 two robots                     COMPLETE
+    Q20 leader/follower ROS 2 arch.    COMPLETE
+    Q21 leader state publication       COMPLETE
+    Q22 follower uses leader info      COMPLETE
+    Q23 follower controller            COMPLETE
+    Q24 5 m formation verification     FUNCTIONALLY COMPLETE
+
+Q24 reporting note:
+
+The assignment PDF formally defines d12 as Euclidean center-position distance.
+
+The V2.2 controller intentionally regulates along-path bumper spacing because this gives a physically meaningful longitudinal formation variable through corners.
+
+The final report should therefore plot both:
+
+    V2.2 along-path bumper gap
+    PDF-defined Euclidean d12(t)
+
+and clearly explain why the controller uses the former while the latter is retained as a compliance/reporting metric.
+
+---
+
+## Current project status
+
+R1:
+
+    FROZEN
+
+R2:
+
+    V2.2 CURRENT TUNED BASELINE
+
+Next implementation stage:
+
+    Q25-Q32
+    R1 -> R2 -> R3
+
+Before R3 is considered complete, remaining R2-specific hard-coded launch/topic assumptions and the follower terminal-target logic must be generalized so that R3 follows R2 rather than implicitly depending on R1.
+
