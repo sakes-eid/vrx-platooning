@@ -2051,20 +2051,70 @@ This does NOT mean the heading/guidance optimizer acceptance gate was met. It me
     Q21 leader state publication       COMPLETE
     Q22 follower uses leader info      COMPLETE
     Q23 follower controller            COMPLETE
-    Q24 5 m formation verification     FUNCTIONALLY COMPLETE
+    Q24 5 m formation verification     COMPLETE WITH DEFINITION NOTE
 
-Q24 reporting note:
+## Final Q24 Euclidean-distance check
 
-The assignment PDF formally defines d12 as Euclidean center-position distance.
+After the tuned R2 visual validation, the handout-defined Euclidean quantity was calculated from the completed 289.5 s Trial 36 CSV:
 
-The V2.2 controller intentionally regulates along-path bumper spacing because this gives a physically meaningful longitudinal formation variable through corners.
+    d12 = sqrt((x2 - x1)^2 + (y2 - y1)^2)
 
-The final report should therefore plot both:
+The reconstruction used the logged predecessor/follower North and East positions and is equivalent to the logger's reference_distance_m field.
 
-    V2.2 along-path bumper gap
-    PDF-defined Euclidean d12(t)
+Dataset:
 
-and clearly explain why the controller uses the former while the latter is retained as a compliance/reporting metric.
+    total rows                = 2896
+    mission duration          = 289.5 s
+    FOLLOW samples            = 2829
+    steady FOLLOWING samples  = 2711
+
+Steady-FOLLOWING Euclidean result:
+
+    mean d12                  = 10.4570449 m
+    minimum d12               = 8.2674616 m
+    maximum d12               = 17.8281911 m
+
+Relative to the handout's literal 5 m reference-point target:
+
+    mean error                = +5.4570449 m
+    RMSE                      = 5.5549817 m
+    P95 absolute error        = 6.6246705 m
+
+This result is NOT documented as Euclidean convergence to 5 m.
+
+The V2.2 controller instead regulates a 5 m front-to-rear bumper gap along the predecessor's travelled path.
+
+With the current WAM-V collision geometry:
+
+    predecessor rear extent   = 2.822 m
+    follower front extent     = 2.549 m
+
+a straight aligned 5 m bumper gap corresponds to:
+
+    reference separation
+      = 5.000 + 2.822 + 2.549
+      = 10.371 m
+
+The measured mean Euclidean d12 of 10.457 m is therefore consistent with the implemented longitudinal formation geometry.
+
+A literal 5 m reference-point separation would be smaller than the combined 5.371 m longitudinal half-extents and would imply overlap in the straight-aligned collision model.
+
+The generated plot:
+
+    q24_pdf_d12_full_trial.png
+
+is retained as direct evidence of this definition difference.
+
+Final reporting rule:
+
+    Do not claim that PDF-defined Euclidean d12 converges to 5 m.
+
+Instead report both:
+
+    1. 5 m along-path bumper gap used for control;
+    2. Euclidean reference-point d12(t) required by the handout;
+
+and explain the geometry/definition discrepancy explicitly.
 
 ---
 
