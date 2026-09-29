@@ -1942,6 +1942,10 @@ def main():
     parser.add_argument(
         "--resume",
         action="store_true",
+        help=(
+            "continue from checkpoint.json and adaptive_state.json "
+            "after a previous stop or Ctrl+C pause"
+        ),
     )
 
     parser.add_argument(
@@ -2335,27 +2339,39 @@ def main():
             flush=True,
         )
 
-        seed = run_trial(
-            workspace=workspace,
-            launch_file=args.launch_file,
-            results_root=trials_root,
-            active_dir=active_dir,
-            bad_runs_path=bad_runs_path,
-            trial_name=seed_name,
-            stage_name="seed",
-            follower_id=args.follower_id,
-            predecessor_id=args.predecessor_id,
-            controller_values=controller_best,
-            planner_values=planner_best,
-            wall_timeout=args.wall_timeout,
-            progress_label="seed",
-            best_score=float("inf"),
-            sim_timeout=args.sim_timeout,
-            early_stop_args={
-                **early_stop_args,
-                "early_stop_enabled": False,
-            },
-        )
+        try:
+            seed = run_trial(
+                workspace=workspace,
+                launch_file=args.launch_file,
+                results_root=trials_root,
+                active_dir=active_dir,
+                bad_runs_path=bad_runs_path,
+                trial_name=seed_name,
+                stage_name="seed",
+                follower_id=args.follower_id,
+                predecessor_id=args.predecessor_id,
+                controller_values=controller_best,
+                planner_values=planner_best,
+                wall_timeout=args.wall_timeout,
+                progress_label="seed",
+                best_score=float("inf"),
+                sim_timeout=args.sim_timeout,
+                early_stop_args={
+                    **early_stop_args,
+                    "early_stop_enabled": False,
+                },
+            )
+        except KeyboardInterrupt:
+            cleanup_leftovers()
+            write_adaptive_state(
+                next_unlocked_stage(locked)
+            )
+            print(
+                "\nPAUSED during seed validation. "
+                "Run again with --resume to continue.",
+                flush=True,
+            )
+            return
 
         if not seed["success"]:
             raise SystemExit(
@@ -2534,9 +2550,36 @@ def main():
             )
         except KeyboardInterrupt:
             cleanup_leftovers()
+
+            try:
+                study.tell(
+                    trial,
+                    state=optuna.trial.TrialState.FAIL,
+                )
+            except Exception:
+                pass
+
+            write_checkpoint(
+                checkpoint_path,
+                seed_done=seed_done,
+                next_schedule_index=0,
+                completed_optimization_trials=(
+                    completed_optimization_trials
+                ),
+                best_score=best_global_score,
+                best_controller=controller_best,
+                best_planner=planner_best,
+                best_result=best_global_result,
+            )
+
+            write_adaptive_state(
+                next_unlocked_stage(locked)
+            )
+
             print(
-                "\nTuning interrupted by user. "
-                "No new trial will be started.",
+                "\nPAUSED. The interrupted candidate was discarded. "
+                "Run again with --resume to continue from the last "
+                "completed trial.",
                 flush=True,
             )
             break
