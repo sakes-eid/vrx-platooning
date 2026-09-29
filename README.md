@@ -51,14 +51,17 @@ source install/setup.bash
 ros2 launch platoon_bringup leader_stress_full.launch.py
 ```
 
-For the current R1 + R2 visual experiment:
+For the current tuned R1 + R2 visual experiment:
 
 ```bash
 cd ~/vrx_ws
 source /opt/ros/jazzy/setup.bash
 source install/setup.bash
 
-ros2 launch platoon_bringup follower_stress_visual.launch.py
+ros2 launch platoon_bringup follower_stress_visual.launch.py \
+  controller_params_file:=~/vrx_ws/src/vrx_platooning/platoon_control/config/r2_follower_v22_tuned.yaml \
+  planner_params_file:=~/vrx_ws/src/vrx_platooning/platoon_planner/config/r2_follower_v22_tuned.yaml \
+  follower_id:=r2 predecessor_id:=r1
 ```
 
 ---
@@ -90,31 +93,61 @@ R1 is the currently validated leader implementation.
 
 ### R2 — Follower
 
-R2 is the current follower implementation.
+R2 now uses the **V2.2 path-gap architecture**. The longitudinal formation controller regulates an along-path bumper gap on the predecessor's unsmoothed breadcrumb history, while the smoothed breadcrumb curve is used only for lateral guidance. Exact oriented hull clearance is reserved for collision warning / avoidance.
 
-R2 development is still active, so these are the **current recommended versions**, rather than a permanently frozen release.
+The current tuned R2 files are:
 
 | Component | Recommended file |
 |---|---|
-| Current proactive controller | `platoon_control/platoon_control/proactive_follower_controller_v21.py` |
-| Current proactive planner | `platoon_planner/platoon_planner/proactive_follower_planner_v21.py` |
-| Basic/reactive follower | `platoon_control/platoon_control/follower_pid_controller.py` |
-| Follower logger | `platoon_monitor/platoon_monitor/follower_logger.py` |
+| Current proactive controller | `platoon_control/platoon_control/proactive_follower_controller_v22.py` |
+| Current proactive planner | `platoon_planner/platoon_planner/proactive_follower_planner_v22.py` |
+| Tuned controller parameters | `platoon_control/config/r2_follower_v22_tuned.yaml` |
+| Tuned planner parameters | `platoon_planner/config/r2_follower_v22_tuned.yaml` |
+| V2.2 follower logger | `platoon_monitor/platoon_monitor/follower_logger_v22.py` |
+| V2.2 core launch | `platoon_bringup/launch/follower_stress_pathgap_v22.launch.py` |
+| Current visual launch | `platoon_bringup/launch/follower_stress_visual.launch.py` |
 | R2 visualization | `platoon_monitor/platoon_monitor/r2_stress_viz.py` |
 | Combined R1/R2 RViz config | `platoon_bringup/rviz/r1_r2_stress.rviz` |
-| Current follower autotuner | `platoon_tuning/platoon_tuning/follower_stress_autotune_v1.py` |
+| Adaptive follower autotuner | `platoon_tuning/platoon_tuning/follower_stress_autotune_v22.py` |
 
-The non-versioned proactive files:
+The V2.2 adaptive tuner uses the hierarchy:
 
 ```text
-platoon_control/platoon_control/proactive_follower_controller.py
-platoon_planner/platoon_planner/proactive_follower_planner.py
+GAP -> HEADING / GUIDANCE -> SPEED -> BRAKING
 ```
 
-represent earlier development stages.
+A stage is locked when it satisfies its threshold. Locked stages continue to be monitored and are reopened if a later accepted controller causes them to drift outside the same threshold.
 
-For current R2 testing, prefer the `v21` implementations.
+The 36-trial tuning study exhausted its trial budget with GAP locked and HEADING still open, but its final accepted controller was visually better than the previous follower and is retained as the current R2 tuned baseline.
 
+Final accepted run headline metrics:
+
+```text
+Path-gap RMSE            = 0.173 m
+Path-gap P95 abs error   = 0.361 m
+Path-gap bias            = -0.027 m
+Initial catch-up time    = 21.8 s
+Lost-gap episodes        = 0
+Minimum hull clearance   = 3.457 m
+Collision warnings       = 0
+Avoidance activations    = 0
+
+CTE RMSE                 = 1.004 m
+CTE P95                  = 1.942 m
+Maximum abs CTE          = 2.179 m
+Heading RMSE             = 3.164 deg
+
+Speed RMSE               = 0.115 m/s
+Speed P95 abs error      = 0.263 m/s
+
+Terminal speed           = 0.014 m/s
+Terminal path-gap error  = 0.179 m
+Formation settle time    = 2.10 s
+```
+
+The heading/guidance acceptance target was deliberately tightened to CTE RMSE <= 0.90 m, so the optimizer did not formally lock that stage before the 36-trial budget ended. The selected controller is therefore a **validated current baseline**, not a claim that every optimizer acceptance gate was satisfied.
+
+Older V2.1 and reactive implementations remain in the repository for development traceability.
 ---
 
 ## Available R2 Launch Modes
@@ -145,21 +178,27 @@ platoon_bringup/launch/follower_stress_visual.launch.py
 
 Recommended when visually inspecting R1 and R2 behaviour together.
 
-### R2 v2.1 diagnostics
+### R2 V2.2 path-gap experiment
 
 ```text
-platoon_bringup/launch/follower_stress_v21_diag.launch.py
+platoon_bringup/launch/follower_stress_pathgap_v22.launch.py
 ```
 
-Used for detailed diagnostics of the current v2.1 follower controller/planner.
+Runs the current V2.2 follower architecture without RViz.
 
 ### Automated follower tuning
 
+The adaptive V2.2 autotuner launches:
+
 ```text
-platoon_bringup/launch/follower_stress_tuning.launch.py
+platoon_bringup/launch/follower_stress_pathgap_v22.launch.py
 ```
 
-Used by the follower autotuning framework.
+and is implemented by:
+
+```text
+platoon_tuning/platoon_tuning/follower_stress_autotune_v22.py
+```
 
 ---
 
@@ -302,7 +341,7 @@ ros2 launch platoon_bringup leader_stress_core.launch.py
 
 # Running R1 + R2
 
-For visual testing of the current follower architecture:
+For visual testing of the tuned V2.2 follower:
 
 ```bash
 cd ~/vrx_ws
@@ -310,10 +349,16 @@ cd ~/vrx_ws
 source /opt/ros/jazzy/setup.bash
 source install/setup.bash
 
-ros2 launch platoon_bringup follower_stress_visual.launch.py
+ros2 launch platoon_bringup follower_stress_visual.launch.py \
+  controller_params_file:=~/vrx_ws/src/vrx_platooning/platoon_control/config/r2_follower_v22_tuned.yaml \
+  planner_params_file:=~/vrx_ws/src/vrx_platooning/platoon_planner/config/r2_follower_v22_tuned.yaml \
+  follower_id:=r2 \
+  predecessor_id:=r1 \
+  headless:=False \
+  show_map:=True
 ```
 
-For the current v2.1 diagnostic configuration:
+For a headless V2.2 run:
 
 ```bash
 cd ~/vrx_ws
@@ -321,31 +366,15 @@ cd ~/vrx_ws
 source /opt/ros/jazzy/setup.bash
 source install/setup.bash
 
-ros2 launch platoon_bringup follower_stress_v21_diag.launch.py
+ros2 launch platoon_bringup follower_stress_pathgap_v22.launch.py \
+  controller_params_file:=~/vrx_ws/src/vrx_platooning/platoon_control/config/r2_follower_v22_tuned.yaml \
+  planner_params_file:=~/vrx_ws/src/vrx_platooning/platoon_planner/config/r2_follower_v22_tuned.yaml \
+  follower_id:=r2 \
+  predecessor_id:=r1 \
+  headless:=True
 ```
 
-For a simpler follower baseline:
-
-```bash
-cd ~/vrx_ws
-
-source /opt/ros/jazzy/setup.bash
-source install/setup.bash
-
-ros2 launch platoon_bringup follower_stress_baseline.launch.py
-```
-
-For proactive follower testing:
-
-```bash
-cd ~/vrx_ws
-
-source /opt/ros/jazzy/setup.bash
-source install/setup.bash
-
-ros2 launch platoon_bringup follower_stress_proactive.launch.py
-```
-
+Older reactive and V2.1 launches are retained for comparison and development history.
 ---
 
 # Automated Tuning
@@ -369,28 +398,35 @@ Earlier R1 tuners are kept in the repository for traceability but are not the re
 The current follower autotuner is:
 
 ```text
-platoon_tuning/platoon_tuning/follower_stress_autotune_v1.py
+platoon_tuning/platoon_tuning/follower_stress_autotune_v22.py
 ```
 
-The follower tuning system is designed to reuse the validated R1 configuration as a starting point for R2 and, later, allow the same architecture to be applied recursively to:
+It uses Optuna with an adaptive hierarchical schedule:
 
 ```text
-R3 <- R2
-R4 <- R3
-...
+gap -> heading/guidance -> speed -> braking
 ```
 
-The exact tuner command-line options should be checked directly with:
+and supports pause/resume through its checkpoint and adaptive-state files.
+
+Example:
 
 ```bash
 cd ~/vrx_ws
-
 source /opt/ros/jazzy/setup.bash
 source install/setup.bash
 
-python3 \
-src/vrx_platooning/platoon_tuning/platoon_tuning/follower_stress_autotune_v1.py \
---help
+ros2 run platoon_tuning follower_stress_autotune_v22 \
+  --study-name r2_follow_adaptive_v22_01 \
+  --trials 36 \
+  --seed-controller ~/vrx_ws/src/vrx_platooning/platoon_control/config/r2_follower_v22_tuned.yaml \
+  --seed-planner ~/vrx_ws/src/vrx_platooning/platoon_planner/config/r2_follower_v22_tuned.yaml
+```
+
+To inspect all options:
+
+```bash
+ros2 run platoon_tuning follower_stress_autotune_v22 --help
 ```
 
 Likewise for R1:
@@ -466,19 +502,25 @@ R1 normal launch:
 
 
 R2 controller:
-    proactive_follower_controller_v21.py
+    proactive_follower_controller_v22.py
 
 R2 planner:
-    proactive_follower_planner_v21.py
+    proactive_follower_planner_v22.py
+
+R2 tuned controller YAML:
+    r2_follower_v22_tuned.yaml
+
+R2 tuned planner YAML:
+    r2_follower_v22_tuned.yaml
 
 R2 autotuner:
-    follower_stress_autotune_v1.py
+    follower_stress_autotune_v22.py
 
 R2 visual launch:
     follower_stress_visual.launch.py
 
-R2 diagnostic launch:
-    follower_stress_v21_diag.launch.py
+R2 V2.2 core launch:
+    follower_stress_pathgap_v22.launch.py
 ```
 
 Unless studying the development history, users should start with these files rather than the older implementations retained in the repository.
