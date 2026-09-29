@@ -99,7 +99,14 @@ MAX_PENALTY = 1e6
 # V2.2 formation metric: bumper-to-bumper distance ALONG the raw
 # predecessor breadcrumb chain.
 TARGET_GAP_M = 5.0
-ACQUIRED_GAP_M = 5.25
+
+# Catch-up acquisition is not declared on a single crossing. The follower
+# must be on breadcrumb guidance and remain inside the 5 m target band for
+# a short hold. This prevents the temporary/negative path-gap values that
+# occur while the breadcrumb trail is being established from falsely
+# counting as "leader acquired".
+ACQUISITION_BAND_M = 0.25
+ACQUISITION_HOLD_S = 2.0
 LOST_GAP_M = 5.75
 
 # Exact oriented-hull geometry is SAFETY ONLY.
@@ -465,17 +472,165 @@ def compute_metrics(rows):
 
     dt = sample_dt(rows)
 
-    following = [
+    # -------------------------------------------------------
+    # Establish a real acquisition event first.
+    #
+    # The raw path-gap topic can be numerically valid before the
+    # breadcrumb trail is ready. Those early values can even be
+    # negative, so a simple "gap <= 5.25" test falsely declares the
+    # leader acquired and then calls the genuine catch-up a loss.
+    #
+    # Acquisition therefore requires:
+    #   1. active BREADCRUMB guidance,
+    #   2. a finite V2.2 path gap,
+    #   3. gap inside 5.00 +/- 0.25 m,
+    #   4. continuous residence in that band for 2 s.
+    # -------------------------------------------------------
+
+    follow_gap_rows = [
         r for r in rows
-        if r.get("follow_phase") == "FOLLOWING"
-        and parse_bool(r.get("distance_error_valid", False))
+        if r.get("mission_state") == "FOLLOW"
+        and r.get("follower_path_source") == "BREADCRUMB"
+        and parse_bool(r.get("path_gap_valid", False))
+        and math.isfinite(f(r, "path_gap_m"))
+        and not parse_bool(
+            r.get("predecessor_target_capture", False)
+        )
     ]
 
-    if len(following) < 20:
+    if not follow_gap_rows:
         return None
 
+    release_time = f(
+        follow_gap_rows[0],
+        "time_s",
+        float("nan"),
+    )
+
+    band_low = TARGET_GAP_M - ACQUISITION_BAND_M
+    band_high = TARGET_GAP_M + ACQUISITION_BAND_M
+
+    acquisition_index = None
+    band_start_index = None
+    band_start_time = None
+
+    for i, row in enumerate(follow_gap_rows):
+        gap = f(row, "path_gap_m")
+        t = f(row, "time_s")
+
+        inside_band = (
+            band_low <= gap <= band_high
+            and math.isfinite(t)
+        )
+
+        if not inside_band:
+            band_start_index = None
+            band_start_time = None
+            continue
+
+        if band_start_index is None:
+            band_start_index = i
+            band_start_time = t
+
+        if (
+            band_start_time is not None
+            and t - band_start_time
+            >= ACQUISITION_HOLD_S
+        ):
+            # Metrics start when the target band has actually been
+            # confirmed, not on the first accidental crossing.
+            acquisition_index = i
+            break
+
+    if acquisition_index is None:
+        return {
+            "path_gap_rmse_m": float("nan"),
+            "path_gap_p95_abs_error_m": float("nan"),
+            "path_gap_bias_m": float("nan"),
+            "abs_path_gap_bias_m": float("nan"),
+            "maximum_abs_path_gap_error_m": float("nan"),
+            "mean_path_gap_m": float("nan"),
+            "minimum_hitbox_clearance_m": min(
+                finite([
+                    f(r, "hitbox_clearance_m")
+                    for r in rows
+                ])
+                or [float("nan")]
+            ),
+            "collision_detected": False,
+            "collision_warning_samples": sum(
+                parse_bool(r.get("collision_warning", False))
+                for r in rows
+            ),
+            "collision_warning_time_s": sum(
+                parse_bool(r.get("collision_warning", False))
+                for r in rows
+            ) * dt,
+            "avoidance_active_samples": sum(
+                parse_bool(r.get("avoidance_active", False))
+                for r in rows
+            ),
+            "avoidance_active_time_s": sum(
+                parse_bool(r.get("avoidance_active", False))
+                for r in rows
+            ) * dt,
+            "cte_rmse_m": float("nan"),
+            "cte_p95_m": float("nan"),
+            "max_abs_cte_m": float("nan"),
+            "heading_rmse_deg": float("nan"),
+            "speed_rmse_mps": float("nan"),
+            "speed_p95_abs_error_mps": float("nan"),
+            "initial_catchup_time_s": 99.0,
+            "lost_gap_time_s": 99.0,
+            "lost_gap_episodes": 99,
+            "first_follow_time_s": 99.0,
+            "catchup_time_s": 99.0,
+            "catchup_episodes": 99,
+            "predecessor_success_time_s": first_true_time(
+                rows,
+                "predecessor_success",
+            ),
+            "follower_success_time_s": first_true_time(
+                rows,
+                "follower_success",
+            ),
+            "terminal_speed_mps": 99.0,
+            "terminal_path_gap_error_m": 99.0,
+            "formation_settle_time_s": 99.0,
+            "mission_time_s": max(
+                finite([f(r, "time_s", 0.0) for r in rows])
+                or [0.0]
+            ),
+            "following_samples": 0,
+            "rows": len(rows),
+            "sample_dt_s": dt,
+        }
+
+    acquisition_row = follow_gap_rows[acquisition_index]
+    acquisition_time = f(
+        acquisition_row,
+        "time_s",
+        99.0,
+    )
+
+    initial_catchup_time = (
+        max(
+            0.0,
+            acquisition_time - release_time,
+        )
+        if math.isfinite(release_time)
+        else 99.0
+    )
+
+    # Everything after confirmed acquisition is the steady formation
+    # window. This is independent of the logger's tunable CATCHUP/
+    # FOLLOWING classification.
+    following = follow_gap_rows[
+        acquisition_index:
+    ]
+
     path_gap_errors = finite([
-        f(r, "path_gap_error_m")
+        f(r, "path_gap_m") - TARGET_GAP_M
         for r in following
     ])
 
@@ -504,57 +659,16 @@ def compute_metrics(rows):
         for r in following
     ])
 
-    # -------------------------------------------------------
-    # Catch-up / loss-of-leader metric.
-    #
-    # Do NOT use follow_phase here because catchup_distance is itself
-    # tuned and could otherwise game the objective.
-    #
-    # Acquired: first valid FOLLOW sample with gap <= 5.25 m.
-    # Lost: after acquisition, gap > 5.75 m. The hysteresis band avoids
-    # counting tiny 5 m regulation noise as "losing the leader".
-    # -------------------------------------------------------
-
-    follow_gap_rows = [
-        r for r in rows
-        if r.get("mission_state") == "FOLLOW"
-        and parse_bool(r.get("path_gap_valid", False))
-        and math.isfinite(f(r, "path_gap_m"))
-        and not parse_bool(
-            r.get("predecessor_target_capture", False)
-        )
+    lost_flags = [
+        f(r, "path_gap_m") > LOST_GAP_M
+        for r in following
     ]
 
-    acquisition_index = None
-
-    for i, row in enumerate(follow_gap_rows):
-        if f(row, "path_gap_m") <= ACQUIRED_GAP_M:
-            acquisition_index = i
-            break
-
-    if acquisition_index is None:
-        initial_catchup_time = 99.0
-        lost_gap_time = 99.0
-        lost_gap_episodes = 99
-    else:
-        acquired_row = follow_gap_rows[acquisition_index]
-        initial_catchup_time = max(
-            0.0,
-            f(acquired_row, "time_s", 99.0),
-        )
-
-        after_acquisition = follow_gap_rows[acquisition_index:]
-
-        lost_flags = [
-            f(r, "path_gap_m") > LOST_GAP_M
-            for r in after_acquisition
-        ]
-
-        lost_gap_time = sum(lost_flags) * dt
-        lost_gap_episodes = episode_count(
-            lost_flags,
-            True,
-        )
+    lost_gap_time = sum(lost_flags) * dt
+    lost_gap_episodes = episode_count(
+        lost_flags,
+        True,
+    )
 
     predecessor_success_time = first_true_time(
         rows,
@@ -2304,8 +2418,8 @@ def main():
         "warning/avoidance=soft penalty"
     )
     print(
-        "Catch-up    : fast initial acquisition + "
-        "strong penalty for losing leader"
+        "Catch-up    : BREADCRUMB + 5.00+/-0.25 m for 2 s; "
+        "then strong penalty for gap > 5.75 m"
     )
     print(
         f"Max trials  : {args.trials}"
