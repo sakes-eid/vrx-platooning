@@ -20,7 +20,7 @@ def generate_launch_description():
     core_launch = os.path.join(
         bringup_share,
         'launch',
-        'follower_stress_tuning.launch.py',
+        'follower_stress_pathgap_v22.launch.py',
     )
 
     # Use source-tree RViz config, same approach as the working R1 launch.

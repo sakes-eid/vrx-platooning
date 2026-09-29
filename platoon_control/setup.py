@@ -62,6 +62,7 @@ setup(
             'follower_controller = platoon_control.follower_pid_controller:main',
             'proactive_follower_controller = platoon_control.proactive_follower_controller:main',
             'proactive_follower_controller_v21 = platoon_control.proactive_follower_controller_v21:main',
+            'proactive_follower_controller_v22 = platoon_control.proactive_follower_controller_v22:main',
         
             'leader_thrust_gate = platoon_control.leader_thrust_gate:main',
         ],

@@ -41,6 +41,7 @@ setup(
             'two_robot_planner = platoon_planner.two_robot_planner:main',
             'follower_planner = platoon_planner.two_robot_planner:main',
             'proactive_follower_planner_v21 = platoon_planner.proactive_follower_planner_v21:main',
+            'proactive_follower_planner_v22 = platoon_planner.proactive_follower_planner_v22:main',
             'proactive_follower_planner = platoon_planner.proactive_follower_planner:main',
         
             'long_straight_planner = platoon_planner.long_straight_planner:main',

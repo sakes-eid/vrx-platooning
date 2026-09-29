@@ -68,6 +68,7 @@ setup(
         
             'two_robot_logger = platoon_monitor.two_robot_logger:main',
             'follower_logger = platoon_monitor.follower_logger:main',
+            'follower_logger_v22 = platoon_monitor.follower_logger_v22:main',
         ],
     },
 )
