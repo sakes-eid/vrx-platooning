@@ -386,7 +386,7 @@ def launch_system(context):
         ' Follower    : r2\n'
         ' R1 control  : FROZEN\n'
         ' R2 tuning   : NONE - current gains\n'
-        ' Gap target  : 5.0 m hull-to-hull\n'
+        ' Gap target  : 5.0 m along-path bumper gap\n'
         ' Course      : FULL STRESS COURSE\n'
         f' Run         : {run_name}\n'
         f' Output      : {follower_csv}\n'
