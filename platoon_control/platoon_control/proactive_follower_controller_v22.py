@@ -277,7 +277,7 @@ class FollowerPidController(Node):
 
             # Exact oriented-hull clearance is now SAFETY ONLY.
             # It no longer controls normal formation spacing.
-            'collision_warning_clearance': 0.20,
+            'collision_warning_clearance': 0.50,
             'collision_avoidance_clearance': 0.20,
             'collision_release_clearance': 0.35,
             'parking_reverse_clearance': 4.5,
