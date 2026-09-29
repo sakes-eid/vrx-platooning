@@ -149,7 +149,7 @@ PASS_THRESHOLDS = {
         "lost_gap_episodes": 1,
     },
     "heading": {
-        "cte_rmse_m": 1.25,
+        "cte_rmse_m": 0.90,
         "cte_p95_m": 2.50,
         "max_abs_cte_m": 4.00,
         "heading_rmse_deg": 2.50,
