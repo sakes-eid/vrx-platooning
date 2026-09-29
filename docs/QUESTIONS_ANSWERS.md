@@ -464,47 +464,287 @@ The visible validation therefore confirms that the final R1 controller provides 
 
 ---
 
+# Part 4 — Leader–Follower System
+
+## Q19. Create two robot instances in the simulator.
+
+Two WAM-V instances are now launched simultaneously in the Sydney Regatta world:
+
+    R1 / wamv   = leader
+    R2 / wamv2  = follower
+
+Each vehicle has its own simulated GPS and IMU inputs and its own state-estimation node.
+
+The current two-robot launch stack is based on:
+
+    follower_stress_pathgap_v22.launch.py
+
+with:
+
+    follower_stress_visual.launch.py
+
+used for combined Gazebo / RViz inspection.
+
+STATUS: COMPLETE.
+
+---
+
+## Q20. Define a ROS 2 architecture distinguishing the leader and follower.
+
+The two robots use separate namespaces and vehicle-state topics:
+
+    /r1/vehicle_state
+    /r2/vehicle_state
+
+R1 retains the frozen leader planner/controller.
+
+R2 uses a dedicated follower planner and follower controller:
+
+    proactive_follower_planner_v22
+    proactive_follower_controller_v22
+
+The architecture is:
+
+    R1 GPS/IMU
+        |
+        v
+    /r1/vehicle_state
+        |
+        +------------------------------+
+        |                              |
+        v                              v
+    R1 planner/controller      R2 follower planner
+                                      |
+                         raw breadcrumb history
+                         smooth guidance path
+                         V2.2 path-gap measurement
+                                      |
+                                      v
+                           R2 follower controller
+                                      |
+                                      v
+                         /wamv2 left/right thrust
+
+The thruster steering angles remain fixed straight for both boats. R2 turns only by differential thrust.
+
+STATUS: COMPLETE.
+
+---
+
+## Q21. Publish the leader state on a ROS 2 topic.
+
+The leader state is published on:
+
+    /r1/vehicle_state
+
+The message contains the local metric state derived from simulated GPS / IMU data, including position, heading and velocity information.
+
+The follower planner and controller use this published leader state rather than Gazebo ground-truth position.
+
+STATUS: COMPLETE.
+
+---
+
+## Q22. Use the leader information by the follower.
+
+R2 subscribes to R1 state and uses it in two distinct ways.
+
+### Longitudinal formation information
+
+The predecessor trajectory is stored as an unsmoothed breadcrumb history.
+
+The follower's longitudinal progress is projected continuously onto that raw history.
+
+The V2.2 path-gap signal represents the approximate bumper-to-bumper separation along the travelled path:
+
+    path_gap
+      = predecessor path progress
+      - follower path progress
+      - predecessor rear extent
+      - follower front extent
+
+This signal is used by the distance PID.
+
+### Lateral guidance information
+
+The same breadcrumb history is smoothed into a local curve.
+
+The smoothed path is used only for heading / cross-track guidance.
+
+This separation prevents path smoothing from corrupting the longitudinal spacing measurement.
+
+### Safety information
+
+Exact oriented WAM-V rectangles are used to calculate minimum physical hull clearance.
+
+This physical clearance is not used as the normal 5 m formation-control variable. It is reserved for:
+
+    collision warning
+    collision avoidance
+    minimum-clearance reporting
+
+STATUS: COMPLETE.
+
+---
+
+## Q23. Develop the follower controller.
+
+The current R2 controller contains four main functions:
+
+    gap / distance PID
+    heading PID + cross-track guidance
+    speed PID
+    terminal braking PID
+
+The normal FOLLOW speed command is based on:
+
+    predecessor speed
+        +
+    distance-PID correction
+
+During larger initial separation, a CATCHUP mode raises the requested follower speed.
+
+The controller also uses proactive historical speed information from the predecessor path to reduce speed before previously observed slow sections.
+
+The current tuned R2 configuration is stored in:
+
+    platoon_control/config/r2_follower_v22_tuned.yaml
+
+Current selected controller parameters include:
+
+    Gap PID
+        Kp = 1.254616395479059
+        Ki = 0.07691598273776513
+        Kd = 0.25770214280663706
+
+    Heading PID
+        Kp = 928.3642353153681
+        Ki = 5.105477736635173
+        Kd = 98.93066529065382
+
+    Cross-track heading gain
+        0.2805635257284035
+
+    Follow tangent half window
+        0.40204986097476825
+
+    Lookahead distance
+        4.736355241980624 m
+
+    Speed PID
+        Kp = 114.29069944122205
+        Ki = 44.09953488498377
+        Kd = 111.26620408076914
+
+    Brake PID
+        Kp = 177.8935198208073
+        Ki = 60.634764417119634
+        Kd = 10.647182804717701
+
+The adaptive follower tuner uses the hierarchy:
+
+    GAP -> HEADING / GUIDANCE -> SPEED -> BRAKING
+
+A stage locks once its acceptance threshold is reached. Later accepted changes continue to monitor locked stages and reopen them if they drift outside threshold.
+
+The 36-trial study exhausted its trial budget with:
+
+    GAP     = LOCKED
+    HEADING = OPEN
+    SPEED   = OPEN
+    BRAKE   = OPEN
+
+The selected final trial is therefore the best current validated R2 baseline, not a claim that every optimizer gate was reached.
+
+STATUS: COMPLETE for the implemented R2 controller.
+
+---
+
+## Q24. Verify that the distance between the two robots converges to 5 m.
+
+The current V2.2 controller was evaluated on the full stress trajectory.
+
+Final accepted tuning run:
+
+    Mean path gap              = 4.973 m
+    Path-gap bias              = -0.027 m
+    Path-gap RMSE              = 0.173 m
+    Path-gap P95 abs error     = 0.361 m
+    Maximum abs gap error      = 0.671 m
+    Initial catch-up time      = 21.8 s
+    Lost-gap episodes          = 0
+    Lost-gap time              = 0.0 s
+
+Physical safety during the same run:
+
+    Minimum hull clearance     = 3.457 m
+    Collision warnings         = 0
+    Avoidance activations      = 0
+    Collision                  = false
+
+Guidance / speed / terminal behavior:
+
+    CTE RMSE                   = 1.004 m
+    CTE P95                    = 1.942 m
+    Maximum abs CTE            = 2.179 m
+    Heading RMSE               = 3.164 deg
+
+    Speed RMSE                 = 0.115 m/s
+    Speed P95 abs error        = 0.263 m/s
+
+    Terminal speed             = 0.014 m/s
+    Terminal path-gap error    = 0.179 m
+    Formation settle time      = 2.10 s
+
+A subsequent visible R1 + R2 run using these gains showed visibly improved follower trajectory tracking compared with the earlier V2.1 / pre-tuning behavior.
+
+### Important reporting distinction
+
+The project PDF defines:
+
+    d12 = sqrt((x2 - x1)^2 + (y2 - y1)^2)
+
+as the formal inter-robot distance.
+
+The present controller's primary formation variable is instead the along-path bumper gap because this behaves more consistently through tight turns and matches the physical leader-follower interpretation used during development.
+
+Therefore the final report should show both:
+
+    1. the V2.2 along-path bumper gap used by the controller;
+    2. the PDF-defined Euclidean d12(t) for direct compliance with Q24.
+
+The current V2.2 results demonstrate convergence of the implemented formation variable to approximately 5 m with no subsequent loss of formation. The final PDF-defined d12 plot should still be generated explicitly before submission.
+
+STATUS: FUNCTIONALLY COMPLETE / FINAL PDF-DEFINED d12 PLOT STILL REQUIRED.
+
+---
+
 # Current conclusion
 
-The implementation and written answers for Q1-Q18 are now complete enough to freeze the R1 leader and continue to the leader-follower stage.
+R1 is frozen as the validated leader baseline.
 
-The following have been completed:
+R2 V2.2 is now the current tuned follower baseline and the two-robot leader-follower architecture required by Q19-Q24 is implemented.
 
-    ROS 2 workspace and package architecture
-    VRX / Gazebo WAM-V simulation
-    GPS / IMU based state estimation
-    world_ned navigation frame
-    differential-thrust actuation
-    fixed straight thruster steering
-    reference-path generation
-    PID heading control
-    PID speed control
-    terminal braking control
-    curvature-aware speed planning
-    adaptive lookahead
-    trajectory logging
-    quantitative controller evaluation
-    literature justification
-    final visible Gazebo validation
+The current recommended R2 files are:
 
-The final R1 visible validation completed successfully with:
+    proactive_follower_controller_v22.py
+    proactive_follower_planner_v22.py
+    follower_logger_v22.py
+    follower_stress_pathgap_v22.launch.py
+    follower_stress_visual.launch.py
+    r2_follower_v22_tuned.yaml
 
-    Cross-track RMSE       = 0.409 m
-    Maximum absolute CTE   = 0.980 m
-    Heading RMSE           = 2.56 deg
-    Maximum measured speed = 1.094 m/s
+Current R2 headline result:
 
-R1 is therefore frozen as the leader baseline.
+    path-gap RMSE = 0.173 m
+    mean gap      = 4.973 m
+    lost episodes = 0
+    min hull gap  = 3.457 m
 
-One report-evidence item remains for later final-report preparation:
+The next implementation stage is:
 
-    calculate and plot the exact PDF-defined ep(t)
-    after logging/reconstructing xd(t) and yd(t)
+    Q25-Q32
+    Three-robot platooning
+    R1 -> R2 -> R3
 
-This does not block follower development.
-
-The next project requirement is:
-
-    Q19 — Create two robot instances in the simulator.
-
-Development now proceeds to Robot 2.
+with R3 following R2 using the same generic follower architecture after the remaining R3-specific terminal/launch assumptions are generalized.
