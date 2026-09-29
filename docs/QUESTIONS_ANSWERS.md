@@ -662,7 +662,11 @@ STATUS: COMPLETE for the implemented R2 controller.
 
 ## Q24. Verify that the distance between the two robots converges to 5 m.
 
-The current V2.2 controller was evaluated on the full stress trajectory.
+The V2.2 follower was evaluated on the completed 289.5 s stress-course trial.
+
+### Formation variable used by the controller
+
+The controller regulates the 5 m **along-path bumper gap** measured on the predecessor's raw breadcrumb history.
 
 Final accepted tuning run:
 
@@ -682,40 +686,76 @@ Physical safety during the same run:
     Avoidance activations      = 0
     Collision                  = false
 
-Guidance / speed / terminal behavior:
+The follower therefore converges to and maintains the implemented 5 m bumper-to-bumper formation target without collision or later loss of the predecessor.
 
-    CTE RMSE                   = 1.004 m
-    CTE P95                    = 1.942 m
-    Maximum abs CTE            = 2.179 m
-    Heading RMSE               = 3.164 deg
+### PDF-defined Euclidean distance
 
-    Speed RMSE                 = 0.115 m/s
-    Speed P95 abs error        = 0.263 m/s
-
-    Terminal speed             = 0.014 m/s
-    Terminal path-gap error    = 0.179 m
-    Formation settle time      = 2.10 s
-
-A subsequent visible R1 + R2 run using these gains showed visibly improved follower trajectory tracking compared with the earlier V2.1 / pre-tuning behavior.
-
-### Important reporting distinction
-
-The project PDF defines:
+The project handout also defines:
 
     d12 = sqrt((x2 - x1)^2 + (y2 - y1)^2)
 
-as the formal inter-robot distance.
+using the robot reference positions.
 
-The present controller's primary formation variable is instead the along-path bumper gap because this behaves more consistently through tight turns and matches the physical leader-follower interpretation used during development.
+This quantity was reconstructed directly from the completed Trial 36 CSV using:
 
-Therefore the final report should show both:
+    predecessor_north_m
+    predecessor_east_m
+    follower_north_m
+    follower_east_m
 
-    1. the V2.2 along-path bumper gap used by the controller;
-    2. the PDF-defined Euclidean d12(t) for direct compliance with Q24.
+and was cross-checkable against the logger field:
 
-The current V2.2 results demonstrate convergence of the implemented formation variable to approximately 5 m with no subsequent loss of formation. The final PDF-defined d12 plot should still be generated explicitly before submission.
+    reference_distance_m
 
-STATUS: FUNCTIONALLY COMPLETE / FINAL PDF-DEFINED d12 PLOT STILL REQUIRED.
+The completed trial contained:
+
+    Total rows                 = 2896
+    Mission duration           = 289.5 s
+    FOLLOW samples             = 2829
+    Steady FOLLOWING samples   = 2711
+
+For the samples classified as steady FOLLOWING:
+
+    Mean Euclidean d12         = 10.457 m
+    Minimum Euclidean d12      = 8.267 m
+    Maximum Euclidean d12      = 17.828 m
+
+Relative to a literal 5 m Euclidean target:
+
+    Mean error                 = +5.457 m
+    RMSE                       = 5.555 m
+    P95 absolute error         = 6.625 m
+
+Therefore the literal PDF-defined reference-point distance does **not** converge to 5 m in the current implementation.
+
+This is expected from the geometry of the chosen formation definition. The V2.2 model uses:
+
+    predecessor rear extent    = 2.822 m
+    follower front extent      = 2.549 m
+
+so a 5 m bumper-to-bumper gap on a straight aligned path corresponds to a reference-point separation of approximately:
+
+    5.000 + 2.822 + 2.549
+    = 10.371 m
+
+The observed mean Euclidean distance of 10.457 m is close to this straight-line reference separation. Curves and transient catch-up geometry cause the instantaneous Euclidean distance to vary even while the longitudinal path gap remains near 5 m.
+
+A literal 5 m center/reference-point spacing would also be incompatible with the current straight-aligned hull model because the two longitudinal half-extents sum to 5.371 m.
+
+### Reporting conclusion
+
+The final report must therefore distinguish the two quantities explicitly:
+
+    Controller formation variable:
+        5 m along-path bumper gap
+
+    PDF comparison metric:
+        Euclidean reference-point d12(t)
+
+The generated PDF-defined d12 plot is retained as evidence rather than being misrepresented as a 5 m convergence plot.
+
+STATUS: COMPLETE WITH DOCUMENTED DISTANCE-DEFINITION DISCREPANCY.
+
 
 ---
 
@@ -723,7 +763,7 @@ STATUS: FUNCTIONALLY COMPLETE / FINAL PDF-DEFINED d12 PLOT STILL REQUIRED.
 
 R1 is frozen as the validated leader baseline.
 
-R2 V2.2 is now the current tuned follower baseline and the two-robot leader-follower architecture required by Q19-Q24 is implemented.
+R2 V2.2 is now the current tuned follower baseline and the two-robot leader-follower architecture required by Q19-Q24 is implemented. Q24 is documented with an explicit distinction between the implemented 5 m along-path bumper gap and the handout's Euclidean reference-point distance.
 
 The current recommended R2 files are:
 
@@ -740,6 +780,8 @@ Current R2 headline result:
     mean gap      = 4.973 m
     lost episodes = 0
     min hull gap  = 3.457 m
+    PDF mean d12   = 10.457 m
+    straight 5 m bumper-gap reference separation = 10.371 m
 
 The next implementation stage is:
 
