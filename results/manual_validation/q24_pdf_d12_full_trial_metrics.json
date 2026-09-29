@@ -1,0 +1,12 @@
+{
+  "total_rows": 2896,
+  "mission_duration_s": 289.5,
+  "follow_samples": 2829,
+  "steady_following_samples": 2711,
+  "mean_d12_m": 10.457044911196299,
+  "minimum_d12_m": 8.267461619182503,
+  "maximum_d12_m": 17.828191127352657,
+  "mean_error_from_pdf_5m_m": 5.457044911196299,
+  "rmse_error_from_pdf_5m_m": 5.554981749513038,
+  "p95_abs_error_from_pdf_5m_m": 6.624670512768539
+}
