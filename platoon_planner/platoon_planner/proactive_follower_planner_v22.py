@@ -56,6 +56,21 @@ class FollowerPlanner(Node):
             '/planner/reference_path',
         )
 
+        # Terminal handoff source:
+        #   reference_path      -> R2 <- R1 legacy/current behaviour
+        #   predecessor_mission -> later followers such as R3 <- R2
+        #
+        # Later followers must not receive the global reference path.
+        self.declare_parameter(
+            'terminal_handoff_mode',
+            'reference_path',
+        )
+
+        self.declare_parameter(
+            'predecessor_mission_state_topic',
+            '',
+        )
+
         # Backward-compatible default for the current R2 test.
         # Later R3 launch will give each follower its own mission topic.
         self.declare_parameter(
@@ -86,6 +101,33 @@ class FollowerPlanner(Node):
                 'reference_path_topic'
             ).value
         )
+
+        self.terminal_handoff_mode = str(
+            self.get_parameter(
+                'terminal_handoff_mode'
+            ).value
+        )
+
+        configured_predecessor_mission_topic = str(
+            self.get_parameter(
+                'predecessor_mission_state_topic'
+            ).value
+        )
+
+        self.predecessor_mission_state_topic = (
+            configured_predecessor_mission_topic
+            if configured_predecessor_mission_topic
+            else f'/{self.predecessor_id}/mission_state'
+        )
+
+        if self.terminal_handoff_mode not in (
+            'reference_path',
+            'predecessor_mission',
+        ):
+            raise ValueError(
+                'terminal_handoff_mode must be '
+                "'reference_path' or 'predecessor_mission'"
+            )
 
         self.mission_state_topic = str(
             self.get_parameter(
@@ -320,12 +362,27 @@ class FollowerPlanner(Node):
             20,
         )
 
-        self.create_subscription(
-            Path,
-            self.reference_path_topic,
-            self.reference_path_callback,
-            qos,
-        )
+        self.reference_path_subscription = None
+        self.predecessor_mission_subscription = None
+
+        if self.terminal_handoff_mode == 'reference_path':
+            self.reference_path_subscription = (
+                self.create_subscription(
+                    Path,
+                    self.reference_path_topic,
+                    self.reference_path_callback,
+                    qos,
+                )
+            )
+        else:
+            self.predecessor_mission_subscription = (
+                self.create_subscription(
+                    String,
+                    self.predecessor_mission_state_topic,
+                    self.predecessor_mission_state_callback,
+                    10,
+                )
+            )
 
         self.create_subscription(
             Bool,
@@ -451,6 +508,9 @@ class FollowerPlanner(Node):
         )
 
     def reference_path_callback(self, msg):
+        if self.terminal_handoff_mode != 'reference_path':
+            return
+
         if not msg.poses:
             return
 
@@ -459,6 +519,21 @@ class FollowerPlanner(Node):
             float(final.x),
             float(final.y),
         )
+
+    def predecessor_mission_state_callback(self, msg):
+        if self.terminal_handoff_mode != 'predecessor_mission':
+            return
+
+        predecessor_mode = str(msg.data)
+
+        if predecessor_mode in (
+            self.FORMATION_BRAKE,
+            self.FORMATION_HOLD,
+        ):
+            self.latch_target_capture(
+                f'{self.predecessor_id} mission='
+                f'{predecessor_mode}'
+            )
 
     def terminal_settled_callback(self, msg):
         self.follower_terminal_settled = bool(
@@ -475,8 +550,9 @@ class FollowerPlanner(Node):
         self.reverse_ready_start = None
 
         self.get_logger().info(
-            'R1 target capture latched (' + reason + '); '
-            'R2 breadcrumb following closed and formation braking begins.'
+            f'{self.predecessor_id} terminal handoff latched '
+            f'({reason}); {self.follower_id} breadcrumb following '
+            'closed and formation braking begins.'
         )
 
     def predecessor_success_callback(self, msg):
@@ -484,13 +560,14 @@ class FollowerPlanner(Node):
             self.leader_done = True
 
             self.get_logger().info(
-                'R1 SUCCESS latched; parking may begin after R2 settles.'
+                f'{self.predecessor_id} SUCCESS latched; terminal '
+                f'sequence may continue after {self.follower_id} settles.'
             )
 
             # Fail-safe only: under normal operation capture occurs first.
             if not self.target_capture_latched:
                 self.latch_target_capture(
-                    'R1 SUCCESS fallback'
+                    f'{self.predecessor_id} SUCCESS fallback'
                 )
 
     def follower_success_callback(self, msg):
@@ -1191,9 +1268,12 @@ class FollowerPlanner(Node):
     def update(self):
         now = self.get_clock().now()
 
-        # Capture is checked before mission-state publication so R2
-        # receives the brake handoff on the same planner cycle.
-        self.update_target_capture(now)
+        # First follower (R2 <- R1) detects terminal capture from
+        # the global reference endpoint. Later followers receive the
+        # handoff only from their predecessor's mission state.
+        if self.terminal_handoff_mode == 'reference_path':
+            self.update_target_capture(now)
+
         self.publish_target_capture()
         self.publish_mode()
         self.publish_reference_distance()
@@ -1219,8 +1299,8 @@ class FollowerPlanner(Node):
                 self.trail_ready = True
 
                 self.get_logger().info(
-                    f'R1 trail ready: {trail:.2f} m; '
-                    'R2 released.'
+                    f'{self.predecessor_id} trail ready: '
+                    f'{trail:.2f} m; {self.follower_id} released.'
                 )
 
             path = self.build_breadcrumb_path()
