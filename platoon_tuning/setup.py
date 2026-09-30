@@ -99,6 +99,7 @@ setup(
         'console_scripts': [
             'follower_stress_autotune_v1 = platoon_tuning.follower_stress_autotune_v1:main',
             'follower_stress_autotune_v22 = platoon_tuning.follower_stress_autotune_v22:main',
+            'follower_stress_autotune_v23 = platoon_tuning.follower_stress_autotune_v23:main',
             'r1_stress_autotune_v2 = platoon_tuning.r1_stress_autotune_v2:main',
             'r1_stress_autotune_v3 = platoon_tuning.r1_stress_autotune_v3:main',
             'r1_stress_autotune = platoon_tuning.r1_stress_autotune:main',
