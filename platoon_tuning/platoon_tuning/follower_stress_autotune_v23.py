@@ -1016,7 +1016,10 @@ def core_score(metrics):
     )
 
 
-def analyse(csv_path: Path):
+def analyse(
+    csv_path: Path,
+    terminal_success_fallback: bool = False,
+):
     rows = read_csv_rows(csv_path)
 
     if not rows:
@@ -1025,6 +1028,29 @@ def analyse(csv_path: Path):
             "reason": "NO_DATA",
             "score": MAX_PENALTY,
         }
+
+    # follower_logger_v22 finalizes immediately when pair_success
+    # arrives. In a narrow callback/timer race, the authoritative
+    # successful summary can therefore be written before another CSV
+    # timer row records predecessor_success=True.
+    #
+    # When the monitor has independently confirmed summary.success,
+    # treat the final follower row as the predecessor-success instant.
+    if (
+        terminal_success_fallback
+        and not any(
+            parse_bool(
+                r.get(
+                    "predecessor_success",
+                    False,
+                )
+            )
+            for r in rows
+        )
+    ):
+        rows[-1] = dict(rows[-1])
+        rows[-1]["predecessor_success"] = "True"
+        rows[-1]["pair_success"] = "True"
 
     metrics = compute_metrics(rows)
 
@@ -1276,6 +1302,7 @@ def monitor_trial(
     early_factor_end: float,
     early_margin: float,
     sim_timeout: float,
+    stall_wall_timeout: float,
 ):
     started = time.monotonic()
     last_print_sim = -999.0
@@ -1284,8 +1311,45 @@ def monitor_trial(
     bad_streak = 0
     last_partial = None
 
+    last_seen_sim_t = None
+    last_sim_progress_wall = started
+
+    summary_path = (
+        run_dir
+        / f"{trial_name}.summary.json"
+    )
+
     while True:
         wall_elapsed = time.monotonic() - started
+
+        # follower_logger_v22 writes this summary only when it
+        # finalizes. A success=True summary is an authoritative
+        # pair-success signal and also closes the small race where
+        # the final CSV row may precede predecessor_success=True.
+        if summary_path.exists():
+            try:
+                summary_payload = json.loads(
+                    summary_path.read_text()
+                )
+            except Exception:
+                summary_payload = {}
+
+            if bool(
+                summary_payload.get(
+                    "success",
+                    False,
+                )
+            ):
+                print(
+                    f"  [{label}] successful follower summary "
+                    "detected; ending trial",
+                    flush=True,
+                )
+                return {
+                    "reason": "SUCCESS",
+                    "partial": last_partial,
+                    "summary_success": True,
+                }
 
         if proc.poll() is not None:
             return {
@@ -1345,6 +1409,35 @@ def monitor_trial(
         sim_t = f(last, "time_s", 0.0)
         phase = last.get("follow_phase", "")
         mission = last.get("mission_state", "")
+
+        now_wall = time.monotonic()
+
+        if (
+            last_seen_sim_t is None
+            or sim_t > last_seen_sim_t + 1e-3
+        ):
+            last_seen_sim_t = sim_t
+            last_sim_progress_wall = now_wall
+
+        elif (
+            now_wall - last_sim_progress_wall
+            >= stall_wall_timeout
+        ):
+            stalled_for = (
+                now_wall - last_sim_progress_wall
+            )
+
+            print(
+                f"  [{label}] simulation stall: "
+                f"sim_time remained at {sim_t:.3f}s "
+                f"for {stalled_for:.1f}s wall",
+                flush=True,
+            )
+
+            return {
+                "reason": "SIM_STALL",
+                "partial": last_partial,
+            }
 
         path_gap = f(last, "path_gap_m")
         hull = f(last, "hitbox_clearance_m")
@@ -1837,7 +1930,15 @@ def run_trial(
     )
 
     if csv_path is not None:
-        result = analyse(csv_path)
+        result = analyse(
+            csv_path,
+            terminal_success_fallback=bool(
+                monitor.get(
+                    "summary_success",
+                    False,
+                )
+            ),
+        )
     else:
         result = {
             "success": False,
@@ -1847,6 +1948,14 @@ def run_trial(
 
     result["termination_reason"] = (
         monitor["reason"]
+    )
+    result["terminal_success_source"] = (
+        "follower_summary"
+        if monitor.get(
+            "summary_success",
+            False,
+        )
+        else "csv"
     )
     result["trial_name"] = trial_name
     result["stage"] = stage_name
@@ -2136,6 +2245,16 @@ def main():
         "--sim-timeout",
         type=float,
         default=390.0,
+    )
+
+    parser.add_argument(
+        "--stall-wall-timeout",
+        type=float,
+        default=120.0,
+        help=(
+            "terminate a trial if follower CSV simulation time "
+            "does not advance for this many wall-clock seconds"
+        ),
     )
 
     parser.add_argument(
@@ -2442,6 +2561,9 @@ def main():
     early_stop_args = {
         "startup_timeout":
             args.startup_timeout,
+
+        "stall_wall_timeout":
+            args.stall_wall_timeout,
 
         "early_stop_enabled":
             not args.no_early_stop,
