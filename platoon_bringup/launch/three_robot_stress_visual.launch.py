@@ -295,6 +295,15 @@ def launch_system(context):
                     'predecessor_mission_state_topic':
                         '/r2/mission_state',
 
+                    # R3 starts when R2 is released. Its initial
+                    # breadcrumb history is bootstrapped only from
+                    # the local R2/R3 pair geometry.
+                    'release_mode':
+                        'predecessor_release_bootstrap',
+
+                    'predecessor_release_topic':
+                        '/planner/r2/released',
+
                     'terminal_behavior':
                         'hold',
 
