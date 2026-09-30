@@ -91,6 +91,26 @@ class FollowerPlanner(Node):
             '/platoon/success',
         )
 
+        # Release policy:
+        #   local_trail
+        #       Original R2 behaviour. Wait until this predecessor
+        #       has produced enough real breadcrumb history.
+        #
+        #   predecessor_release_bootstrap
+        #       Later platoon members start when their predecessor
+        #       is released. Initial breadcrumbs are constructed only
+        #       from the current predecessor/follower pair geometry.
+        #       No global/reference path information is used.
+        self.declare_parameter(
+            'release_mode',
+            'local_trail',
+        )
+
+        self.declare_parameter(
+            'predecessor_release_topic',
+            '',
+        )
+
         self.follower_id = str(
             self.get_parameter('follower_id').value
         )
@@ -162,6 +182,34 @@ class FollowerPlanner(Node):
             self.get_parameter(
                 'mission_success_topic'
             ).value
+        )
+
+        self.release_mode = str(
+            self.get_parameter(
+                'release_mode'
+            ).value
+        )
+
+        if self.release_mode not in (
+            'local_trail',
+            'predecessor_release_bootstrap',
+        ):
+            raise ValueError(
+                'release_mode must be '
+                "'local_trail' or "
+                "'predecessor_release_bootstrap'"
+            )
+
+        configured_release_topic = str(
+            self.get_parameter(
+                'predecessor_release_topic'
+            ).value
+        )
+
+        self.predecessor_release_topic = (
+            configured_release_topic
+            if configured_release_topic
+            else f'/planner/{self.predecessor_id}/released'
         )
 
         self.predecessor_state_topic = (
@@ -279,6 +327,9 @@ class FollowerPlanner(Node):
         self.mode = self.FOLLOW
         self.previous_mode = None
         self.trail_ready = False
+
+        self.predecessor_released = False
+        self.release_bootstrap_complete = False
 
         self.leader_done = False
         self.follower_done = False
@@ -443,6 +494,14 @@ class FollowerPlanner(Node):
                 )
             )
 
+        if self.release_mode == 'predecessor_release_bootstrap':
+            self.create_subscription(
+                Bool,
+                self.predecessor_release_topic,
+                self.predecessor_release_callback,
+                qos,
+            )
+
         self.create_subscription(
             Bool,
             self.terminal_settled_topic,
@@ -555,6 +614,129 @@ class FollowerPlanner(Node):
 
     def follower_callback(self, msg):
         self.follower = msg
+
+    def predecessor_release_callback(self, msg):
+        if msg.data:
+            self.predecessor_released = True
+
+    def maybe_bootstrap_release(self):
+        """
+        Bootstrap a later follower from local pair geometry only.
+
+        The synthetic initial breadcrumb line runs from the current
+        follower position to the current predecessor position. It
+        provides the historical straight segment that physically
+        existed before the predecessor began moving.
+
+        No global path, R1 path, or future trajectory is used.
+        """
+        if (
+            self.release_mode
+            != 'predecessor_release_bootstrap'
+            or self.release_bootstrap_complete
+            or not self.predecessor_released
+            or self.predecessor is None
+            or self.follower is None
+        ):
+            return
+
+        follower_position = (
+            float(self.follower.x),
+            float(self.follower.y),
+        )
+
+        predecessor_position = (
+            float(self.predecessor.x),
+            float(self.predecessor.y),
+        )
+
+        separation = distance(
+            follower_position,
+            predecessor_position,
+        )
+
+        required = (
+            self.breadcrumb_lag_distance
+            + self.minimum_extra_trail
+        )
+
+        if separation < required:
+            return
+
+        spacing = max(
+            0.05,
+            self.breadcrumb_spacing,
+        )
+
+        segment_count = max(
+            1,
+            int(math.ceil(
+                separation / spacing
+            )),
+        )
+
+        self.breadcrumbs.clear()
+        self.breadcrumb_speeds.clear()
+
+        follower_speed = float(
+            self.follower.speed
+        )
+
+        predecessor_speed = float(
+            self.predecessor.speed
+        )
+
+        for i in range(segment_count + 1):
+            t = i / segment_count
+
+            point = (
+                follower_position[0]
+                + t * (
+                    predecessor_position[0]
+                    - follower_position[0]
+                ),
+
+                follower_position[1]
+                + t * (
+                    predecessor_position[1]
+                    - follower_position[1]
+                ),
+            )
+
+            speed = (
+                follower_speed
+                + t * (
+                    predecessor_speed
+                    - follower_speed
+                )
+            )
+
+            self.append_breadcrumb(
+                point,
+                speed,
+            )
+
+        self.filtered_predecessor = (
+            predecessor_position
+        )
+
+        self.follower_progress_index = 0
+        self.progress_acquired = False
+
+        self.trail_ready = True
+        self.release_bootstrap_complete = True
+
+        self.get_logger().info(
+            f'{self.follower_id} synchronized release '
+            f'from {self.predecessor_id}; '
+            f'bootstrapped {segment_count + 1} breadcrumbs '
+            f'over {separation:.2f} m using pair geometry only.'
+        )
+
+        # Publish TRUE immediately rather than waiting for the
+        # following 10 Hz planner cycle. This also supports future
+        # chained followers such as R4 <- R3.
+        self.publish_release_state()
 
     def clearance_callback(self, msg):
         self.hitbox_clearance = float(
@@ -1442,6 +1624,11 @@ class FollowerPlanner(Node):
         self.publish_mode()
         self.publish_reference_distance()
 
+        # Later followers may initialize their local historical
+        # breadcrumb chain from predecessor/follower geometry when
+        # the predecessor is released.
+        self.maybe_bootstrap_release()
+
         # Single authoritative chronological progress update.
         self.update_follower_progress()
 
@@ -1471,6 +1658,8 @@ class FollowerPlanner(Node):
                     f'{self.predecessor_id} trail ready: '
                     f'{trail:.2f} m; {self.follower_id} released.'
                 )
+
+                self.publish_release_state()
 
             path = self.build_breadcrumb_path()
 
