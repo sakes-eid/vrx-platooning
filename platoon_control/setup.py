@@ -1,3 +1,5 @@
+from glob import glob
+
 from setuptools import find_packages, setup
 
 package_name = 'platoon_control'
@@ -25,9 +27,7 @@ setup(
         ),
         (
             'share/' + package_name + '/config',
-            [
-                'config/leader_pid.yaml'
-            ]
+            glob('config/*.yaml')
         ),
     ],
 

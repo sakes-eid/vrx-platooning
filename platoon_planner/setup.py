@@ -1,3 +1,5 @@
+from glob import glob
+
 from setuptools import find_packages, setup
 
 package_name = 'platoon_planner'
@@ -17,7 +19,7 @@ setup(
         ),
         (
             'share/' + package_name + '/config',
-            ['config/planner.yaml']
+            glob('config/*.yaml')
         ),
     ],
     install_requires=['setuptools'],

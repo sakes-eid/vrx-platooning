@@ -1,0 +1,165 @@
+Panels:
+- Class: rviz_common/Displays
+  Name: Displays
+- Class: rviz_common/Views
+  Name: Views
+
+Visualization Manager:
+  Class: ''
+  Displays:
+
+  - Alpha: 0.45
+    Cell Size: 10
+    Class: rviz_default_plugins/Grid
+    Color: 120; 120; 120
+    Enabled: true
+    Name: World grid
+    Plane: XY
+    Plane Cell Count: 80
+    Reference Frame: world_ned
+
+  - Alpha: 1
+    Buffer Length: 1
+    Class: rviz_default_plugins/Path
+    Color: 80; 255; 80
+    Enabled: true
+    Line Style: Lines
+    Line Width: 0.12
+    Name: R1 reference course
+    Topic:
+      Depth: 5
+      Durability Policy: Transient Local
+      Reliability Policy: Reliable
+      Value: /planner/reference_path
+
+  - Alpha: 1
+    Buffer Length: 1
+    Class: rviz_default_plugins/Path
+    Color: 255; 150; 30
+    Enabled: true
+    Line Style: Lines
+    Line Width: 0.18
+    Name: R2 breadcrumb path
+    Topic:
+      Depth: 5
+      Durability Policy: Transient Local
+      Reliability Policy: Reliable
+      Value: /planner/r2/breadcrumb_path
+
+  - Alpha: 1
+    Buffer Length: 1
+    Class: rviz_default_plugins/Path
+    Color: 30; 140; 255
+    Enabled: true
+    Line Style: Lines
+    Line Width: 0.18
+    Name: R3 breadcrumb path
+    Topic:
+      Depth: 5
+      Durability Policy: Transient Local
+      Reliability Policy: Reliable
+      Value: /planner/r3/breadcrumb_path
+
+  - Alpha: 1
+    Buffer Length: 1
+    Class: rviz_default_plugins/Path
+    Color: 100; 255; 100
+    Enabled: true
+    Line Style: Lines
+    Line Width: 0.14
+    Name: R1 actual trail
+    Topic:
+      Depth: 5
+      Durability Policy: Transient Local
+      Reliability Policy: Reliable
+      Value: /viz/r1/trail
+
+  - Alpha: 1
+    Buffer Length: 1
+    Class: rviz_default_plugins/Path
+    Color: 255; 150; 30
+    Enabled: true
+    Line Style: Lines
+    Line Width: 0.14
+    Name: R2 actual trail
+    Topic:
+      Depth: 5
+      Durability Policy: Transient Local
+      Reliability Policy: Reliable
+      Value: /viz/r2/trail
+
+  - Alpha: 1
+    Buffer Length: 1
+    Class: rviz_default_plugins/Path
+    Color: 30; 140; 255
+    Enabled: true
+    Line Style: Lines
+    Line Width: 0.14
+    Name: R3 actual trail
+    Topic:
+      Depth: 5
+      Durability Policy: Transient Local
+      Reliability Policy: Reliable
+      Value: /viz/r3/trail
+
+  - Class: rviz_default_plugins/MarkerArray
+    Enabled: true
+    Name: R1
+    Topic:
+      Depth: 5
+      Reliability Policy: Reliable
+      Value: /viz/r1/markers
+
+  - Class: rviz_default_plugins/MarkerArray
+    Enabled: true
+    Name: R2
+    Topic:
+      Depth: 5
+      Reliability Policy: Reliable
+      Value: /viz/r2/markers
+
+  - Class: rviz_default_plugins/MarkerArray
+    Enabled: true
+    Name: R3
+    Topic:
+      Depth: 5
+      Reliability Policy: Reliable
+      Value: /viz/r3/markers
+
+  Enabled: true
+
+  Global Options:
+    Background Color: 35; 35; 35
+    Fixed Frame: world_ned
+    Frame Rate: 30
+
+  Name: root
+
+  Tools:
+  - Class: rviz_default_plugins/Interact
+  - Class: rviz_default_plugins/MoveCamera
+  - Class: rviz_default_plugins/Select
+  - Class: rviz_default_plugins/FocusCamera
+  - Class: rviz_default_plugins/Measure
+
+  Transformation:
+    Current:
+      Class: rviz_default_plugins/TF
+
+  Views:
+    Current:
+      Angle: 0
+      Class: rviz_default_plugins/TopDownOrtho
+      Name: Three-robot platoon
+      Near Clip Distance: 0.01
+      Scale: 7
+      Target Frame: world_ned
+      X: 209
+      Y: -519
+    Saved: null
+
+Window Geometry:
+  Height: 900
+  Width: 1300
+  X: 40
+  Y: 40

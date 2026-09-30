@@ -57,6 +57,7 @@ setup(
             'r1_stress_logger = platoon_monitor.r1_stress_logger:main',
             'r1_stress_viz = platoon_monitor.r1_stress_viz:main',
                         'r2_stress_viz = platoon_monitor.r2_stress_viz:main',
+            'follower_stress_viz = platoon_monitor.follower_stress_viz:main',
             'path_visualizer = '
             'platoon_monitor.path_visualizer:main',
 

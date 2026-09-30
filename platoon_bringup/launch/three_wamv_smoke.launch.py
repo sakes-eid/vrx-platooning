@@ -36,12 +36,16 @@ def launch_system(context):
         'wamv_light.urdf.xacro',
     )
 
-    # For this smoke test R2 and R3 use the same validated
-    # lightweight physical WAM-V definition.
-    follower_urdf = os.path.join(
+    r2_urdf = os.path.join(
         bringup_share,
         'urdf',
         'wamv_light_r2.urdf.xacro',
+    )
+
+    r3_urdf = os.path.join(
+        bringup_share,
+        'urdf',
+        'wamv_light_r3.urdf.xacro',
     )
 
     r1 = Model(
@@ -56,14 +60,14 @@ def launch_system(context):
         'wam-v',
         [-520.0, 162.0, 0.0, 0.0, 0.0, 1.0],
     )
-    r2.set_urdf(follower_urdf)
+    r2.set_urdf(r2_urdf)
 
     r3 = Model(
         'wamv3',
         'wam-v',
         [-508.0, 162.0, 0.0, 0.0, 0.0, 1.0],
     )
-    r3.set_urdf(follower_urdf)
+    r3.set_urdf(r3_urdf)
 
     actions = []
 
