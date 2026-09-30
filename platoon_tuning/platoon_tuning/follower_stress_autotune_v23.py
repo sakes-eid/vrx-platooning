@@ -2712,8 +2712,7 @@ def main():
 
         if stage == "joint":
             # JOINT is an integration optimizer rather than a separate
-            # lockable performance category. Adopt it only when the
-            # complete objective improves.
+            # lockable performance category.
             baseline_pass = False
             candidate_pass = False
 
@@ -2729,10 +2728,30 @@ def main():
                 else float("inf")
             )
 
-            accepted = (
-                result.get("success", False)
-                and score < best_global_score
-            )
+            if best_global_result is None:
+                # No initial verification run exists in V2.3.
+                # Preserve the supplied seed until a JOINT candidate
+                # demonstrates that at least one currently-open stage
+                # satisfies its shared documented threshold.
+                bootstrap_pass = any(
+                    not locked[stage_name]
+                    and stage_pass(
+                        stage_name,
+                        result,
+                    )
+                    for stage_name in STAGE_HIERARCHY
+                )
+
+                accepted = (
+                    result.get("success", False)
+                    and bootstrap_pass
+                )
+
+            else:
+                accepted = (
+                    result.get("success", False)
+                    and score < best_global_score
+                )
 
         else:
             baseline_pass = (
@@ -2767,22 +2786,35 @@ def main():
                 else float("inf")
             )
 
-            accepted = (
-                result.get("success", False)
-                and (
-                    score < best_global_score
-                    or (
-                        candidate_pass
-                        and not baseline_pass
-                    )
-                    or (
-                        candidate_pass
-                        and baseline_pass
-                        and candidate_stage_score
-                        < baseline_stage_score
+            if best_global_result is None:
+                # With no seed-verification run, do not replace the
+                # supplied starting parameters merely because this is
+                # the first successful random candidate.
+                #
+                # The first accepted working baseline must actually
+                # satisfy the active stage's shared R2/R3 threshold.
+                accepted = (
+                    result.get("success", False)
+                    and candidate_pass
+                )
+
+            else:
+                accepted = (
+                    result.get("success", False)
+                    and (
+                        score < best_global_score
+                        or (
+                            candidate_pass
+                            and not baseline_pass
+                        )
+                        or (
+                            candidate_pass
+                            and baseline_pass
+                            and candidate_stage_score
+                            < baseline_stage_score
+                        )
                     )
                 )
-            )
 
         result["accepted"] = accepted
 
