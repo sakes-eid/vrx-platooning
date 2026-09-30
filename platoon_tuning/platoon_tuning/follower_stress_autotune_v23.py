@@ -1147,7 +1147,7 @@ def cleanup_leftovers():
     # next trial and reproducing the old "waiting for follower logger"
     # failure.
     patterns = [
-        "three_robot_r3_tuning.launch.py",
+        "ros2 launch platoon_bringup three_robot_r3_tuning.launch.py",
         "follower_stress_tuning.launch.py",
         "follower_stress_pathgap_v22.launch.py",
         "follower_stress_visual.launch.py",
