@@ -71,6 +71,14 @@ class FollowerPlanner(Node):
             '',
         )
 
+        # Terminal behaviour after formation braking:
+        #   parking -> preserve the existing two-robot experiment
+        #   hold    -> remain stopped in formation for platooning
+        self.declare_parameter(
+            'terminal_behavior',
+            'parking',
+        )
+
         # Backward-compatible default for the current R2 test.
         # Later R3 launch will give each follower its own mission topic.
         self.declare_parameter(
@@ -127,6 +135,21 @@ class FollowerPlanner(Node):
             raise ValueError(
                 'terminal_handoff_mode must be '
                 "'reference_path' or 'predecessor_mission'"
+            )
+
+        self.terminal_behavior = str(
+            self.get_parameter(
+                'terminal_behavior'
+            ).value
+        )
+
+        if self.terminal_behavior not in (
+            'parking',
+            'hold',
+        ):
+            raise ValueError(
+                'terminal_behavior must be '
+                "'parking' or 'hold'"
             )
 
         self.mission_state_topic = str(
@@ -1357,11 +1380,22 @@ class FollowerPlanner(Node):
                 self.mode = self.FORMATION_HOLD
 
         elif self.mode == self.FORMATION_HOLD:
-            # Parking is forbidden until BOTH robots are ready.
+            # Terminal progression is forbidden until BOTH robots
+            # in this predecessor -> follower pair are ready.
             if not (
                 self.leader_done
                 and self.follower_terminal_settled
             ):
+                return
+
+            # Three-robot platooning mode: remain in active
+            # formation hold. Publish pair success so a downstream
+            # follower can complete its own terminal sequence, but
+            # do not reverse, park, or leave formation.
+            if self.terminal_behavior == 'hold':
+                msg = Bool()
+                msg.data = True
+                self.success_pub.publish(msg)
                 return
 
             if (
