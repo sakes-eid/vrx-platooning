@@ -2135,3 +2135,546 @@ Next implementation stage:
 
 Before R3 is considered complete, remaining R2-specific hard-coded launch/topic assumptions and the follower terminal-target logic must be generalized so that R3 follows R2 rather than implicitly depending on R1.
 
+---
+
+# 2026-09-30 — R3 Chained Platooning, Release Synchronization, and V2.3 Tuning
+
+## Objective
+
+The validated two-robot system was extended from:
+
+    R1 -> R2
+
+to:
+
+    R1 -> R2 -> R3
+
+The required information hierarchy is:
+
+    R1 = leader with global/reference trajectory
+    R2 = follower of R1
+    R3 = follower of R2
+
+A key design rule is that R3 must not receive the global reference path. The existing V2.2 follower architecture was therefore generalized for arbitrary predecessor/follower IDs instead of creating a separate R3 control algorithm.
+
+---
+
+## Generic follower terminal handoff
+
+The follower planner was generalized so its terminal handoff can come from either:
+
+    reference_path
+        for R2 <- R1
+
+or:
+
+    predecessor_mission
+        for R3 <- R2
+
+R3 therefore uses R2 mission state and pair success rather than the leader's global reference trajectory.
+
+Relevant commits:
+
+    05aa58f  Generalize follower terminal handoff for chained platooning
+    ddf72b0  Add platoon hold terminal mode and three-WAM-V smoke launch
+
+---
+
+## Three-robot terminal hold
+
+The two-robot parking sequence is not suitable for the middle vehicle of a three-robot chain because R3 still depends on R2.
+
+A dedicated terminal behavior was added:
+
+    terminal_behavior = hold
+
+In the three-robot experiment:
+
+    R1 reaches its final target and stops
+    R2 performs FORMATION_BRAKE -> FORMATION_HOLD
+    R3 performs FORMATION_BRAKE -> FORMATION_HOLD
+
+R2 and R3 remain in the platoon rather than reversing or parking.
+
+Pair-success information propagates downstream:
+
+    /r1/success
+        ->
+    /r2/pair_success
+        ->
+    /r3/pair_success
+
+---
+
+## Three-WAM-V simulation stack
+
+The three simulated models are:
+
+    R1 = wamv
+    R2 = wamv2
+    R3 = wamv3
+
+Nominal spawn coordinates:
+
+    R1 = (-532, 162)
+    R2 = (-520, 162)
+    R3 = (-508, 162)
+
+Each robot has an independent GPS/IMU state-estimation node:
+
+    /r1/vehicle_state
+    /r2/vehicle_state
+    /r3/vehicle_state
+
+The main three-robot launches are:
+
+    three_wamv_smoke.launch.py
+    three_robot_stress_visual.launch.py
+    three_robot_r3_tuning.launch.py
+
+R2 is visualized in orange and R3 in blue.
+
+The professor's steering constraint remains unchanged:
+
+    thruster steering angles fixed straight
+    yaw generated only by differential left/right thrust
+
+---
+
+## Breadcrumb hierarchy problem
+
+Initial R3 testing exposed a follower-path hierarchy problem on self-near portions of the stress course.
+
+The follower could re-project onto a geometrically nearby but chronologically incorrect section of predecessor history.
+
+This is especially dangerous for chained platooning because R3 must follow the path R2 actually travelled, in order.
+
+An early attempted hierarchy implementation was rejected and reverted:
+
+    5cb80a3  initial hierarchy attempt
+    8abf353  revert
+
+The final hierarchy correction was implemented in three steps:
+
+    0722b2c  Lock follower planner to breadcrumb chronology after acquisition
+    f0ac93f  Restrict follower guidance to local breadcrumb chronology
+    9509cc2  Centralize follower breadcrumb progress updates
+
+The resulting policy is:
+
+    startup:
+        one-time acquisition of the correct trail segment
+
+    after acquisition:
+        chronological progress only
+
+    steering:
+        local smoothed path around current chronological progress
+
+    longitudinal spacing:
+        raw unsmoothed predecessor breadcrumb chain
+
+A diagnostic run showed progress advancing from approximately:
+
+    99 -> 381
+
+with:
+
+    maximum forward index jump = 2
+    backward jumps             = 0
+    large nonlocal jumps       = 0
+
+A later visual test through the self-near loop behaved correctly.
+
+---
+
+## Synchronized R2/R3 release
+
+Waiting for a second complete breadcrumb trail before releasing R3 produced an undesirable delay.
+
+A latched release state was introduced:
+
+    /planner/{follower_id}/released
+
+For the three-robot chain:
+
+    /planner/r2/released
+
+is consumed by R3 using:
+
+    release_mode = predecessor_release_bootstrap
+
+Relevant commits:
+
+    a150adf  Publish follower release state for chained platooning
+    4f90139  Add synchronized release bootstrap for chained followers
+    643486a  Synchronize R3 release with R2
+
+Measured release timing during validation:
+
+    R2 release ~= 28.267 s
+    R3 release ~= 28.383 s
+    difference ~= 0.116 s
+
+This achieved the intended near-simultaneous follower release.
+
+---
+
+## Bootstrap-history correction
+
+The first synchronized-release implementation inserted a synthetic straight R3-to-R2 segment into the raw breadcrumb history.
+
+Although release timing was correct, the synthetic segment contaminated the authoritative predecessor path and later produced incorrect visual behavior.
+
+The design was corrected in:
+
+    8dbda59  Separate synchronized release from real breadcrumb history
+
+Current bootstrap policy:
+
+    temporary local bootstrap guidance
+        is NOT stored as
+    authoritative raw predecessor breadcrumb history
+
+R3 begins moving from local R2/R3 pair geometry while genuine R2 history accumulates independently.
+
+Once enough genuine R2 trail exists:
+
+    bootstrap terminates
+    real trail acquisition occurs
+    chronological breadcrumb following becomes authoritative
+
+Post-correction diagnostics confirmed that R3 acquired genuine R2 history and continued normally.
+
+---
+
+## Visual three-robot validation
+
+After the hierarchy and release corrections, a complete visual Gazebo run was performed using:
+
+    three_robot_stress_visual.launch.py
+
+Observed behavior matched the intended architecture:
+
+    R1 followed the stress trajectory
+    R2 followed R1
+    R3 followed R2
+    R3 had no global path subscription
+    both followers released together
+    both followers remained in chronological predecessor history
+    terminal behavior ended in formation hold
+
+This closed the main architecture/debugging phase and allowed R1/R2 to remain frozen while R3 tuning began.
+
+---
+
+## R3 tuning infrastructure
+
+R3 is initialized from the final R2 V2.2 gains because both followers use the same WAM-V dynamics and the same generic follower algorithm.
+
+Seed files:
+
+    platoon_control/config/r3_follower_v22_seed.yaml
+    platoon_planner/config/r3_follower_v22_seed.yaml
+
+The dedicated tuning launch is:
+
+    three_robot_r3_tuning.launch.py
+
+It freezes:
+
+    R1 leader
+    R2 final V2.2 follower
+
+and makes only:
+
+    R3
+
+tunable.
+
+The R3 logger records the R3 <- R2 pair and terminal sequence.
+
+Infrastructure commits:
+
+    b23302a  Add modular three-robot R3 tuning launch
+    36879a7  Clean up three-robot R3 tuning launches between trials
+
+---
+
+## V2.3 cyclic tuner
+
+A new tuner version was created rather than overwriting V2.2:
+
+    follower_stress_autotune_v23.py
+
+This preserves R2's historical tuning implementation and evidence.
+
+Relevant commits:
+
+    28da1d6  Add cyclic adaptive follower tuner v23
+    0829990  Finalize cyclic tuner v23 bookkeeping
+
+The V2.3 schedule is:
+
+    GAP     x4
+    HEADING x4
+    SPEED   x3
+    BRAKE   x1
+    JOINT   x3
+    repeat
+
+The same acceptance thresholds used for R2 are reused for R3.
+
+Locked stages are skipped in their normal slots but are checked after every accepted candidate. If an accepted controller causes a locked stage to fail the same threshold, that stage is reopened.
+
+There is intentionally:
+
+    no initial verification simulation
+    no final verification simulation
+
+The supplied seed is the starting working configuration.
+
+---
+
+## Tuner self-termination bug
+
+The initial cleanup routine searched for:
+
+    three_robot_r3_tuning.launch.py
+
+using:
+
+    pkill -f
+
+The tuner command line itself contained:
+
+    --launch-file three_robot_r3_tuning.launch.py
+
+so the tuner killed itself before Trial 1 could run.
+
+The cleanup match was narrowed to the actual ROS launch process.
+
+Fix:
+
+    c2c4c0d  Prevent cyclic tuner from killing itself
+
+---
+
+## Seed-baseline protection
+
+Removing the initial verification run exposed a second logic issue.
+
+At startup:
+
+    best score  = infinity
+    best result = none
+
+The first successful random candidate could therefore replace the R2-derived seed even when it failed the active stage threshold.
+
+The first observed GAP candidate demonstrated this behavior.
+
+The acceptance logic was corrected so that, before a working accepted result exists:
+
+    ordinary stage:
+        candidate must pass that stage's threshold
+
+    JOINT:
+        candidate must make at least one currently open stage pass
+
+Only after a valid accepted working result exists do normal score/improvement rules apply.
+
+Fix:
+
+    755ed69  Protect seed baseline in cyclic tuner
+
+---
+
+## Terminal-race and simulation-stall robustness
+
+Unattended tuning exposed two separate long-wait conditions.
+
+### Real simulation/logging stall
+
+One trial reached approximately:
+
+    287.364 s simulated time
+
+and stopped advancing.
+
+The old tuner waited until the full:
+
+    2400 s wall timeout
+
+A simulation-progress watchdog was added:
+
+    stall_wall_timeout = 120 s
+
+If follower CSV simulation time does not advance for the configured wall period:
+
+    termination_reason = SIM_STALL
+
+and the tuner continues to the next candidate.
+
+### Successful terminal callback race
+
+Another trial had actually completed.
+
+The launch log showed:
+
+    R2 FORMATION_HOLD
+    R3 FORMATION_HOLD
+    R1 SUCCESS
+    R2 SUCCESS latched by R3
+    R3 follower summary written
+
+However follower_logger_v22 finalizes as soon as pair success arrives.
+
+The final CSV timer row can therefore be written immediately before predecessor_success becomes true.
+
+The tuner previously waited indefinitely even though the authoritative summary JSON already reported success.
+
+V2.3 now treats:
+
+    follower summary success = true
+
+as an authoritative completion signal.
+
+When this fallback is used, the final CSV row is treated as the predecessor-success instant for offline terminal scoring.
+
+Fix:
+
+    96e8bc0  Make cyclic tuner robust to terminal races and stalls
+
+---
+
+## First 30-trial R3 V2.3 checkpoint
+
+Study:
+
+    r3_cyclic_v23_01
+
+Completed optimization trials:
+
+    30
+
+Final lock state:
+
+    GAP     = OPEN
+    HEADING = OPEN
+    SPEED   = OPEN
+    BRAKE   = LOCKED
+
+The study exhausted the requested 30-trial budget. It did NOT finish because all stages locked.
+
+Current best accepted trial:
+
+    r3_cyclic_v23_01_023_heading
+
+Stage:
+
+    HEADING
+
+Score:
+
+    31.6835029
+
+Formation:
+
+    mean path gap              = 5.192119 m
+    path-gap bias              = +0.192119 m
+    path-gap RMSE              = 1.011707 m
+    path-gap P95 abs error     = 2.669615 m
+    maximum abs gap error      = 4.304129 m
+
+Catch-up:
+
+    initial catch-up time      = 33.9 s
+    lost-gap time              = 26.0 s
+    lost-gap episodes          = 2
+
+Safety:
+
+    minimum hull clearance     = 2.448537 m
+    collision warnings         = 0
+    avoidance activations      = 0
+    collision                  = false
+
+Guidance:
+
+    CTE RMSE                   = 1.314310 m
+    CTE P95                    = 2.778180 m
+    maximum abs CTE            = 3.192600 m
+    heading RMSE               = 5.887856 deg
+
+Speed:
+
+    speed RMSE                 = 0.439656 m/s
+    speed P95 abs error        = 0.827393 m/s
+
+Terminal:
+
+    terminal speed             = 0.025904 m/s
+    terminal path-gap error    = 0.092779 m
+    formation settle time      = 1.10 s
+
+The brake stage satisfies all current brake thresholds and is formally locked.
+
+Gap, heading/guidance and speed remain outside their complete acceptance sets and therefore remain open.
+
+Current best controller differs from the R2 seed mainly in heading/guidance and braking parameters. The R2-derived gap and speed gains remain unchanged in the current best accepted result.
+
+The current best is an intermediate R3 tuning result, not the final frozen R3 configuration.
+
+---
+
+## PDF Q25-Q32 status at this checkpoint
+
+    Q25 add third robot                        COMPLETE
+    Q26 create required ROS 2 nodes           COMPLETE
+    Q27 define inter-robot topics             COMPLETE
+    Q28 implement leader-follower strategy    COMPLETE
+    Q29 R2 follows R1                         COMPLETE
+    Q30 R3 follows R2                         COMPLETE
+    Q31 straight platooning test              FUNCTIONALLY TESTED / FINAL REPORT EVIDENCE PENDING
+    Q32 curved platooning test                FUNCTIONALLY TESTED / FINAL REPORT EVIDENCE PENDING
+
+The combined stress trajectory contains both long straight segments and demanding curved/hairpin segments, so both behaviors have already been exercised in the three-robot visual and tuning runs.
+
+Dedicated final quantitative Q31/Q32 evidence will be generated after the R3 tuning configuration is frozen.
+
+As with Q24, final reporting must distinguish:
+
+    implemented control variable:
+        5 m along-path bumper-to-bumper gap
+
+from:
+
+    handout analysis variable:
+        Euclidean reference-point d12(t) / d23(t)
+
+The documentation must not claim that the Euclidean reference-point distances converge to 5 m unless a later implementation changes the formation definition.
+
+---
+
+## Current project state
+
+R1:
+
+    FROZEN validated leader
+
+R2:
+
+    FROZEN V2.2 tuned follower
+
+R3:
+
+    architecture complete
+    visual chained-platoon validation complete
+    V2.3 tuning in progress
+    brake stage locked
+    gap / heading / speed stages still open
+
+Next technical step:
+
+    continue the existing r3_cyclic_v23_01 Optuna study
+    from the saved 30-trial checkpoint

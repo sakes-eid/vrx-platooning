@@ -759,34 +759,366 @@ STATUS: COMPLETE WITH DOCUMENTED DISTANCE-DEFINITION DISCREPANCY.
 
 ---
 
-# Current conclusion
+---
 
-R1 is frozen as the validated leader baseline.
+# Part 5 — Three-Robot Platooning
 
-R2 V2.2 is now the current tuned follower baseline and the two-robot leader-follower architecture required by Q19-Q24 is implemented. Q24 is documented with an explicit distinction between the implemented 5 m along-path bumper gap and the handout's Euclidean reference-point distance.
+The final architecture required by the handout is:
 
-The current recommended R2 files are:
-
-    proactive_follower_controller_v22.py
-    proactive_follower_planner_v22.py
-    follower_logger_v22.py
-    follower_stress_pathgap_v22.launch.py
-    follower_stress_visual.launch.py
-    r2_follower_v22_tuned.yaml
-
-Current R2 headline result:
-
-    path-gap RMSE = 0.173 m
-    mean gap      = 4.973 m
-    lost episodes = 0
-    min hull gap  = 3.457 m
-    PDF mean d12   = 10.457 m
-    straight 5 m bumper-gap reference separation = 10.371 m
-
-The next implementation stage is:
-
-    Q25-Q32
-    Three-robot platooning
     R1 -> R2 -> R3
 
-with R3 following R2 using the same generic follower architecture after the remaining R3-specific terminal/launch assumptions are generalized.
+with:
+
+    R1 = Leader
+    R2 = Follower 1
+    R3 = Follower 2
+
+The implemented controller uses a 5 m along-path bumper-to-bumper spacing target for each predecessor/follower pair. As documented for Q24, this differs from the handout's Euclidean reference-point distance definition. Final performance plots will report both quantities explicitly.
+
+---
+
+## Q25. Add the third robot to the simulation environment.
+
+A third WAM-V instance is now included in the VRX Sydney Regatta simulation.
+
+Models:
+
+    R1 = wamv
+    R2 = wamv2
+    R3 = wamv3
+
+Nominal starting positions:
+
+    R1 = (-532, 162)
+    R2 = (-520, 162)
+    R3 = (-508, 162)
+
+The three-robot launches use the light WAM-V simulation profile so that GPS/IMU state estimation and vessel dynamics are retained while unnecessary high-cost sensors are disabled.
+
+The current visual launch is:
+
+    three_robot_stress_visual.launch.py
+
+A separate smoke launch and headless R3 tuning launch are also available:
+
+    three_wamv_smoke.launch.py
+    three_robot_r3_tuning.launch.py
+
+STATUS: COMPLETE.
+
+---
+
+## Q26. Set up the required ROS 2 nodes.
+
+Each WAM-V has an independent state-estimation node:
+
+    /r1/multi_vehicle_state
+    /r2/multi_vehicle_state
+    /r3/multi_vehicle_state
+
+The three-robot control stack contains:
+
+    R1:
+        stress_course_planner
+        leader_stress_controller
+
+    R2:
+        proactive_follower_planner_v22
+        proactive_follower_controller_v22
+
+    R3:
+        proactive_follower_planner_v22
+        proactive_follower_controller_v22
+
+The same generic follower implementation is therefore reused for both follower pairs rather than duplicating control code.
+
+Additional monitoring/visualization nodes provide:
+
+    R1 logging
+    R3 follower logging during tuning
+    R1/R2/R3 RViz visualization
+
+STATUS: COMPLETE.
+
+---
+
+## Q27. Define the communication topics between the robots.
+
+The principal state topics are:
+
+    /r1/vehicle_state
+    /r2/vehicle_state
+    /r3/vehicle_state
+
+For R2 <- R1:
+
+    R2 predecessor state:
+        /r1/vehicle_state
+
+    R2 follower state:
+        /r2/vehicle_state
+
+    R2 raw/smoothed breadcrumb guidance:
+        /planner/r2/breadcrumb_path
+
+    R2 longitudinal formation measurement:
+        /planner/r2/path_gap
+        /planner/r2/path_gap_valid
+
+    R2 mission state:
+        /r2/mission_state
+
+    R2 release state:
+        /planner/r2/released
+
+    R2 pair success:
+        /r2/pair_success
+
+For R3 <- R2:
+
+    R3 predecessor state:
+        /r2/vehicle_state
+
+    R3 follower state:
+        /r3/vehicle_state
+
+    R3 breadcrumb guidance:
+        /planner/r3/breadcrumb_path
+
+    R3 longitudinal formation measurement:
+        /planner/r3/path_gap
+        /planner/r3/path_gap_valid
+
+    R3 mission state:
+        /r3/mission_state
+
+    R3 pair success:
+        /r3/pair_success
+
+R3 additionally subscribes to:
+
+    /planner/r2/released
+    /r2/mission_state
+    /r2/pair_success
+
+R3 does NOT subscribe to:
+
+    /planner/reference_path
+
+This preserves the intended information hierarchy.
+
+STATUS: COMPLETE.
+
+---
+
+## Q28. Implement the leader-follower strategy.
+
+The implemented chain is:
+
+    R1 -> R2 -> R3
+
+R1 follows the global/reference trajectory.
+
+R2 follows R1 using R1 vehicle state and R1 breadcrumb history.
+
+R3 follows R2 using R2 vehicle state and R2 breadcrumb history.
+
+For both follower pairs:
+
+    raw predecessor breadcrumb history
+        -> longitudinal progress / 5 m path-gap measurement
+
+    smoothed local breadcrumb curve
+        -> lateral / heading guidance
+
+    exact oriented hull geometry
+        -> collision warning / avoidance only
+
+The follower controller contains:
+
+    gap PID
+    heading PID + cross-track correction
+    speed PID
+    terminal braking PID
+
+Thruster steering angles remain fixed straight. Turning is produced only by differential left/right thrust.
+
+STATUS: COMPLETE.
+
+---
+
+## Q29. Make Robot 2 follow Robot 1.
+
+R2 continues to use the final frozen V2.2 follower configuration already validated in Q19-Q24.
+
+Current R2 result:
+
+    mean path gap              = 4.973 m
+    path-gap RMSE              = 0.173 m
+    path-gap P95 abs error     = 0.361 m
+    initial catch-up           = 21.8 s
+    lost-gap episodes          = 0
+    minimum hull clearance     = 3.457 m
+    collision                  = false
+
+During three-robot development R2 was deliberately frozen so that R3 tuning could not improve its score by changing upstream R1/R2 behavior.
+
+STATUS: COMPLETE.
+
+---
+
+## Q30. Make Robot 3 follow Robot 2.
+
+R3 uses the same generic follower implementation as R2 but is configured with:
+
+    follower_id    = r3
+    predecessor_id = r2
+
+R3 has no global/reference path input.
+
+A synchronized release mechanism allows R3 to begin with R2:
+
+    R2 publishes:
+        /planner/r2/released
+
+    R3 uses:
+        release_mode = predecessor_release_bootstrap
+
+The release bootstrap is temporary and does not contaminate the authoritative raw R2 breadcrumb history.
+
+Once sufficient genuine R2 history is available, R3 switches to normal chronological breadcrumb following.
+
+Follower progress was also restricted to chronological local predecessor history after initial acquisition, preventing incorrect path jumps where the stress trajectory passes near itself.
+
+A complete visual three-robot Gazebo run was performed successfully after these corrections.
+
+R3 is currently being tuned with V2.3. After the first 30 optimization trials:
+
+    BRAKE   = LOCKED
+    GAP     = OPEN
+    HEADING = OPEN
+    SPEED   = OPEN
+
+Current best accepted R3 trial:
+
+    Trial 23
+    Stage = HEADING
+    Score = 31.6835
+
+Current best headline metrics:
+
+    mean path gap              = 5.192 m
+    path-gap RMSE              = 1.012 m
+    path-gap P95 abs error     = 2.670 m
+    initial catch-up           = 33.9 s
+    lost-gap time              = 26.0 s
+    lost-gap episodes          = 2
+
+    CTE RMSE                   = 1.314 m
+    heading RMSE               = 5.888 deg
+
+    speed RMSE                 = 0.440 m/s
+
+    terminal speed             = 0.026 m/s
+    terminal path-gap error    = 0.093 m
+    formation settle time      = 1.10 s
+
+    minimum hull clearance     = 2.449 m
+    collision                  = false
+
+The controller architecture and R3 <- R2 following behavior are complete, but R3 tuning is not yet frozen.
+
+STATUS: COMPLETE FOR ARCHITECTURE/FOLLOWING; TUNING STILL IN PROGRESS.
+
+---
+
+## Q31. Test platooning on a straight trajectory.
+
+The three-robot system has already traversed the long straight portions of the combined stress trajectory in visual and automated tuning runs.
+
+During these tests:
+
+    R1 followed the reference trajectory
+    R2 followed R1
+    R3 followed R2
+
+and the chain remained operational through the straight sections.
+
+However, the final R3 configuration has not yet been frozen.
+
+Therefore the dedicated quantitative straight-platooning evidence required for the final report should be generated after R3 tuning is complete.
+
+That final evidence should include:
+
+    trajectories of R1, R2 and R3
+    d12(t)
+    d23(t)
+    e12(t)
+    e23(t)
+    convergence time
+    mean / maximum / RMSE errors
+    minimum physical hull clearances
+
+STATUS: FUNCTIONALLY TESTED; FINAL QUANTITATIVE REPORT EVIDENCE PENDING.
+
+---
+
+## Q32. Test platooning on a curved trajectory.
+
+The combined stress trajectory contains multiple curved sections, including tight turns, connected turns and hairpins.
+
+The complete three-robot system has already been exercised through these sections during visual validation and R3 tuning.
+
+A major R3 development requirement was specifically to prevent breadcrumb-history jumps where different parts of the curved trajectory pass close to each other.
+
+After the chronological/local breadcrumb corrections, the self-near curved section was visually validated successfully.
+
+As with Q31, the final quantitative curved-platooning evidence should be regenerated after R3 tuning is frozen.
+
+The final analysis should compare straight and curved behavior using:
+
+    d12(t)
+    d23(t)
+    e12(t)
+    e23(t)
+    follower path-gap errors
+    leader tracking error
+    minimum physical separation
+    convergence / lost-gap behavior
+
+STATUS: FUNCTIONALLY TESTED; FINAL QUANTITATIVE REPORT EVIDENCE PENDING.
+
+---
+
+# Current conclusion
+
+R1 is frozen as the validated leader.
+
+R2 is frozen as the current V2.2 tuned first follower.
+
+R3 chained following is implemented and visually validated:
+
+    R1 -> R2 -> R3
+
+The current three-robot architecture satisfies the implementation requirements of Q25-Q30.
+
+Q31 and Q32 have been functionally exercised on the combined stress course, but their final dedicated quantitative evidence remains pending until R3 tuning is frozen.
+
+The first R3 V2.3 study completed 30 optimization trials. Only the braking stage is formally locked at this checkpoint; gap, heading/guidance and speed remain open.
+
+Current next step:
+
+    continue R3 V2.3 tuning from the existing checkpoint
+
+Final reporting must continue to distinguish:
+
+    control variable:
+        5 m along-path bumper-to-bumper gap
+
+from:
+
+    handout analysis variables:
+        Euclidean reference-point d12(t)
+        Euclidean reference-point d23(t)
+
+Do not claim that the Euclidean reference-point distances converge to 5 m unless the formation definition is changed and validated accordingly.

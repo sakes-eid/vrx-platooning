@@ -6,7 +6,7 @@ The project investigates trajectory tracking and cooperative control for a plato
 
 - **R1 — Leader:** follows a predefined trajectory using GPS-based state estimation, local Cartesian planning, and differential-thrust control.
 - **R2 — Follower:** follows R1 while regulating inter-vessel spacing and using proactive information about the leader's motion.
-- **R3 — Planned:** will extend the same follower architecture so that additional vessels can follow the preceding vessel.
+- **R3 — Follower 2:** follows R2 using the same generic V2.2 follower architecture. R3 receives only predecessor-chain information from R2 and does not subscribe to the global reference path.
 
 The project includes trajectory planning, GPS-to-local state estimation, differential-thrust control, experiment logging, RViz visualization, stress testing, and **Optuna-based automated controller tuning**.
 
@@ -63,6 +63,24 @@ ros2 launch platoon_bringup follower_stress_visual.launch.py \
   planner_params_file:=~/vrx_ws/src/vrx_platooning/platoon_planner/config/r2_follower_v22_tuned.yaml \
   follower_id:=r2 predecessor_id:=r1
 ```
+
+For the current three-robot visual experiment:
+
+```bash
+cd ~/vrx_ws
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+
+ros2 launch platoon_bringup three_robot_stress_visual.launch.py
+```
+
+This launches the chained platoon:
+
+```text
+R1 -> R2 -> R3
+```
+
+R1 is the frozen leader, R2 uses its final V2.2 tune, and R3 follows R2 without access to `/planner/reference_path`.
 
 ---
 
@@ -178,6 +196,137 @@ The measured 10.457 m mean Euclidean separation is therefore consistent with the
 
 
 Older V2.1 and reactive implementations remain in the repository for development traceability.
+---
+
+### R3 — Second Follower / Three-Robot Platoon
+
+The three-robot architecture is implemented as:
+
+```text
+R1 -> R2 -> R3
+```
+
+R1 remains the frozen leader. R2 remains the frozen V2.2 follower and follows R1. R3 reuses the same generic V2.2 follower planner/controller but is configured with:
+
+```text
+follower_id    = r3
+predecessor_id = r2
+```
+
+R3 has no global reference-path subscription. Its guidance, release, terminal handoff and completion information are propagated through R2.
+
+The main three-robot files are:
+
+| Component | Current file |
+|---|---|
+| Generic follower controller | `platoon_control/platoon_control/proactive_follower_controller_v22.py` |
+| Generic follower planner | `platoon_planner/platoon_planner/proactive_follower_planner_v22.py` |
+| R3 seed controller | `platoon_control/config/r3_follower_v22_seed.yaml` |
+| R3 seed planner | `platoon_planner/config/r3_follower_v22_seed.yaml` |
+| Three-robot smoke launch | `platoon_bringup/launch/three_wamv_smoke.launch.py` |
+| Three-robot visual launch | `platoon_bringup/launch/three_robot_stress_visual.launch.py` |
+| R3 tuning launch | `platoon_bringup/launch/three_robot_r3_tuning.launch.py` |
+| R3 follower logger | `platoon_monitor/platoon_monitor/follower_logger_v22.py` |
+| Current R3 autotuner | `platoon_tuning/platoon_tuning/follower_stress_autotune_v23.py` |
+
+### Chained breadcrumb hierarchy
+
+The raw predecessor breadcrumb history is authoritative for longitudinal progress and the 5 m along-path bumper-gap measurement. A smoothed local curve is used only for lateral guidance.
+
+During R3 development, breadcrumb progress was tightened so that after initial acquisition it advances chronologically through local predecessor history. This prevents a follower from jumping to a nonlocal path segment when the stress course passes near itself.
+
+### Synchronized release
+
+R2 publishes a latched release state:
+
+```text
+/planner/r2/released
+```
+
+R3 uses:
+
+```text
+release_mode = predecessor_release_bootstrap
+```
+
+so R3 is released with R2 instead of waiting for a second full trail buildup.
+
+Bootstrap guidance is temporary and separate from the authoritative raw R2 breadcrumb history. Once enough genuine R2 history exists, R3 switches to normal chronological breadcrumb following.
+
+### Three-robot terminal behavior
+
+Both followers use:
+
+```text
+terminal_behavior = hold
+```
+
+R2 brakes and holds behind R1. R3 receives R2 mission state and then brakes and holds behind R2. Pair-success information propagates downstream without either follower reversing or leaving formation.
+
+A complete visual three-robot Gazebo run was completed successfully before R3 autotuning.
+
+### Current R3 tuning checkpoint
+
+R3 uses the cyclic V2.3 Optuna tuner:
+
+```text
+4 GAP -> 4 HEADING -> 3 SPEED -> 1 BRAKE -> 3 JOINT -> repeat
+```
+
+Locked stages are skipped but continuously checked after accepted candidates. If a later accepted controller degrades a locked stage, that stage is reopened.
+
+The tuner intentionally performs no separate initial or final verification run. The supplied R2-derived R3 seed is protected until a candidate actually satisfies an acceptance condition.
+
+Study:
+
+```text
+r3_cyclic_v23_01
+```
+
+After the first 30 optimization trials:
+
+```text
+BRAKE   = LOCKED
+GAP     = OPEN
+HEADING = OPEN
+SPEED   = OPEN
+```
+
+Current best accepted result:
+
+```text
+Trial                    = 23
+Stage                    = HEADING
+Score                    = 31.6835
+
+Mean path gap            = 5.192 m
+Path-gap RMSE            = 1.012 m
+Path-gap P95 abs error   = 2.670 m
+Path-gap bias            = +0.192 m
+Initial catch-up         = 33.9 s
+Lost-gap time            = 26.0 s
+Lost-gap episodes        = 2
+
+CTE RMSE                 = 1.314 m
+CTE P95                  = 2.778 m
+Maximum abs CTE          = 3.193 m
+Heading RMSE             = 5.888 deg
+
+Speed RMSE               = 0.440 m/s
+Speed P95 abs error      = 0.827 m/s
+
+Terminal speed           = 0.026 m/s
+Terminal path-gap error  = 0.093 m
+Formation settle time    = 1.10 s
+
+Minimum hull clearance   = 2.449 m
+Collision warnings       = 0
+Avoidance activations    = 0
+Collision                = false
+```
+
+This is an intermediate tuning checkpoint, not the final R3 tune. Only the braking stage has formally locked so far.
+
 ---
 
 ## Available R2 Launch Modes
@@ -476,6 +625,26 @@ Using `--help` is recommended before launching an automated tuning session becau
 
 ---
 
+### R3
+
+The current R3 autotuner is:
+
+```text
+platoon_tuning/platoon_tuning/follower_stress_autotune_v23.py
+```
+
+It runs the three-robot headless launch:
+
+```text
+platoon_bringup/launch/three_robot_r3_tuning.launch.py
+```
+
+with R1 and R2 frozen while only R3 is optimized.
+
+V2.3 adds cyclic stage scheduling, locked-stage degradation checks, checkpoint/resume, robust stale-process cleanup, a simulation-time stall watchdog, and successful-summary terminal detection to avoid waiting indefinitely on a terminal callback race.
+
+---
+
 # Important Control Constraint
 
 The WAM-V thruster steering angles are intentionally kept fixed straight.
@@ -552,5 +721,29 @@ R2 visual launch:
 R2 V2.2 core launch:
     follower_stress_pathgap_v22.launch.py
 ```
+
+R3 / three-robot platoon:
+
+    generic controller:
+        proactive_follower_controller_v22.py
+
+    generic planner:
+        proactive_follower_planner_v22.py
+
+    R3 seed controller YAML:
+        r3_follower_v22_seed.yaml
+
+    R3 seed planner YAML:
+        r3_follower_v22_seed.yaml
+
+    three-robot visual launch:
+        three_robot_stress_visual.launch.py
+
+    R3 tuning launch:
+        three_robot_r3_tuning.launch.py
+
+    current R3 autotuner:
+        follower_stress_autotune_v23.py
+
 
 Unless studying the development history, users should start with these files rather than the older implementations retained in the repository.
