@@ -221,19 +221,14 @@ STAGE_HIERARCHY = (
     "brake",
 )
 
-# Repeating optimization schedule.
+# Strict hierarchical optimization order.
 #
-# Locked stages are skipped immediately but remain continuously
-# monitored for degradation on every accepted candidate.
+# The active stage repeats until it locks. Only then does tuning
+# advance to the next stage. Locked stages remain monitored and can
+# reopen if a later accepted controller degrades them.
 #
-# JOINT varies only currently-unlocked stage parameter groups.
-TUNING_SCHEDULE = (
-    "gap", "gap", "gap", "gap",
-    "heading", "heading", "heading", "heading",
-    "speed", "speed", "speed",
-    "brake",
-    "joint", "joint", "joint",
-)
+# No JOINT stage is scheduled.
+TUNING_SCHEDULE = STAGE_HIERARCHY
 
 
 # ---------------------------------------------------------------------------
@@ -452,33 +447,18 @@ def next_scheduled_stage(
     schedule_index,
 ):
     """
-    Return the next eligible cyclic schedule entry and the index
-    following that entry.
+    Return the first unlocked stage in the fixed hierarchy.
 
-    Locked ordinary stages are skipped. JOINT remains eligible while
-    at least one ordinary stage is still unlocked.
+    The current stage repeats until it locks. If a previously locked
+    earlier stage is reopened by degradation monitoring, tuning
+    immediately returns to that earlier stage.
     """
     if all_stages_locked(locked):
         return None, schedule_index
 
-    count = len(TUNING_SCHEDULE)
-
-    for offset in range(count):
-        index = (
-            schedule_index + offset
-        ) % count
-
-        stage = TUNING_SCHEDULE[index]
-
-        next_index = (
-            index + 1
-        ) % count
-
-        if stage == "joint":
-            return stage, next_index
-
+    for index, stage in enumerate(STAGE_HIERARCHY):
         if not locked.get(stage, False):
-            return stage, next_index
+            return stage, index
 
     return None, schedule_index
 
@@ -2633,8 +2613,8 @@ def main():
     )
     print(
         "Schedule    : "
-        "4 gap -> 4 heading -> 3 speed -> "
-        "1 brake -> 3 joint -> repeat"
+        "GAP until locked -> HEADING until locked -> "
+        "SPEED until locked -> BRAKE if reopened"
     )
     print(
         f"Thresholds  : {THRESHOLD_PROFILE}"
@@ -2673,8 +2653,10 @@ def main():
     print()
 
     # -------------------------------------------------------
-    # Cyclic adaptive optimization.
+    # Strict hierarchical adaptive optimization.
     #
+    # Each stage repeats until locked before the next stage starts.
+    # No JOINT stage is scheduled.
     # No initial verification run.
     # No final verification run.
     # -------------------------------------------------------

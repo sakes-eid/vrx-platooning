@@ -1110,6 +1110,16 @@ Current next step:
 
     continue R3 V2.3 tuning from the existing checkpoint
 
+Current tuning order:
+
+    GAP until locked
+      ->
+    HEADING until locked
+      ->
+    SPEED until locked
+
+BRAKE is already locked and JOINT tuning is disabled.
+
 Final reporting must continue to distinguish:
 
     control variable:

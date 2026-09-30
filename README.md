@@ -267,13 +267,13 @@ A complete visual three-robot Gazebo run was completed successfully before R3 au
 
 ### Current R3 tuning checkpoint
 
-R3 uses the cyclic V2.3 Optuna tuner:
+R3 uses the V2.3 Optuna tuner in strict hierarchical mode:
 
 ```text
-4 GAP -> 4 HEADING -> 3 SPEED -> 1 BRAKE -> 3 JOINT -> repeat
+GAP until locked -> HEADING until locked -> SPEED until locked
 ```
 
-Locked stages are skipped but continuously checked after accepted candidates. If a later accepted controller degrades a locked stage, that stage is reopened.
+BRAKE is already locked from the first 30-trial study, so it is skipped unless later degradation reopens it. There is no JOINT stage. Locked stages are still checked after accepted candidates; if a later accepted controller degrades an earlier locked stage, tuning returns to that stage.
 
 The tuner intentionally performs no separate initial or final verification run. The supplied R2-derived R3 seed is protected until a candidate actually satisfies an acceptance condition.
 

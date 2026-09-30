@@ -2678,3 +2678,28 @@ Next technical step:
 
     continue the existing r3_cyclic_v23_01 Optuna study
     from the saved 30-trial checkpoint
+
+---
+
+## 2026-09-30 — R3 tuner returned to strict hierarchical stages
+
+After reviewing the first 30-trial R3 study, the cyclic schedule was retired for the next tuning continuation.
+
+The active tuning policy is now:
+
+    GAP
+        repeat until locked
+        ->
+    HEADING
+        repeat until locked
+        ->
+    SPEED
+        repeat until locked
+
+BRAKE is already locked from the first 30-trial checkpoint and is therefore skipped unless degradation monitoring reopens it.
+
+The JOINT stage is no longer scheduled.
+
+Locked-stage degradation monitoring is retained. If an accepted later-stage controller pushes an earlier locked stage outside its threshold, that stage is reopened and immediately becomes active again.
+
+The existing Optuna study and checkpoint remain valid; tuning resumes from the 30 completed trials rather than starting a new study.
