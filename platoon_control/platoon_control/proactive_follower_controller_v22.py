@@ -267,13 +267,6 @@ class FollowerPidController(Node):
             'cross_track_heading_gain': 0.12,
             'max_cross_track_correction_deg': 35.0,
 
-            # Chronological projection on the follower breadcrumb
-            # curve. Never select a later self-near loop merely
-            # because it is geometrically closer.
-            'guidance_capture_radius': 0.35,
-            'guidance_progress_corridor_m': 3.5,
-            'guidance_max_advances_per_cycle': 60.0,
-
             # V2.2:
             # 5 m formation distance is measured bumper-to-bumper
             # ALONG the unsmoothed breadcrumb path.
@@ -606,7 +599,7 @@ class FollowerPidController(Node):
             return
 
         self.get_logger().info(
-            f'{self.follower_id} mode -> {new_mode}'
+            f'R2 mode -> {new_mode}'
         )
 
         if new_mode == 'FORMATION_BRAKE':
@@ -1142,13 +1135,12 @@ class FollowerPidController(Node):
 
     def follow_curve_guidance(self):
         """
-        Follow the smooth breadcrumb curve in strict chronological
-        order.
+        Project R2 onto the smooth breadcrumb curve and use the
+        local forward tangent for heading.
 
-        The published path starts a few points behind the planner's
-        current follower progress. Walk forward only through segments
-        the vehicle has actually consumed. Never perform a global
-        nearest-segment search across later self-near loops.
+        Individual breadcrumbs are never steering targets. If R2
+        passes one, the planner advances monotonically and this
+        projection simply follows the next part of the curve.
         """
         if self.follower is None or len(self.path) < 2:
             return None
@@ -1157,97 +1149,55 @@ class FollowerPidController(Node):
             self.path
         )
 
+        best = None
+        best_distance = float('inf')
+
         px = float(self.follower.x)
         py = float(self.follower.y)
 
-        active = 0
-        advances = 0
-
-        max_advances = max(
-            1,
-            int(round(
-                self.guidance_max_advances_per_cycle
-            )),
-        )
-
-        while (
-            active < len(self.path) - 2
-            and advances < max_advances
-        ):
-            a = self.path[active]
-            b = self.path[active + 1]
+        for i in range(len(self.path) - 1):
+            a = self.path[i]
+            b = self.path[i + 1]
 
             dx = b[0] - a[0]
             dy = b[1] - a[1]
+            length2 = dx * dx + dy * dy
 
-            segment_length = math.hypot(dx, dy)
-
-            if segment_length < 1e-9:
-                active += 1
-                advances += 1
+            if length2 < 1e-12:
                 continue
 
-            ux = dx / segment_length
-            uy = dy / segment_length
+            t = (
+                (px - a[0]) * dx
+                + (py - a[1]) * dy
+            ) / length2
 
-            rel_x = px - a[0]
-            rel_y = py - a[1]
+            t = clamp(t, 0.0, 1.0)
 
-            along = rel_x * ux + rel_y * uy
+            qx = a[0] + t * dx
+            qy = a[1] + t * dy
 
-            lateral = abs(
-                rel_x * (-uy)
-                + rel_y * ux
+            d = math.hypot(
+                px - qx,
+                py - qy,
             )
 
-            endpoint_distance = math.hypot(
-                px - b[0],
-                py - b[1],
-            )
+            if d < best_distance:
+                segment_length = math.sqrt(length2)
 
-            captured = (
-                endpoint_distance
-                <= self.guidance_capture_radius
-            )
+                best_distance = d
+                best = (
+                    i,
+                    t,
+                    qx,
+                    qy,
+                    cumulative[i]
+                    + t * segment_length,
+                )
 
-            crossed = (
-                along >= segment_length
-                and lateral
-                <= self.guidance_progress_corridor_m
-            )
-
-            if captured or crossed:
-                active += 1
-                advances += 1
-                continue
-
-            break
-
-        a = self.path[active]
-        b = self.path[active + 1]
-
-        dx = b[0] - a[0]
-        dy = b[1] - a[1]
-
-        length2 = dx * dx + dy * dy
-
-        if length2 < 1e-12:
+        if best is None:
             return None
 
-        t = (
-            (px - a[0]) * dx
-            + (py - a[1]) * dy
-        ) / length2
-
-        t = clamp(t, 0.0, 1.0)
-
-        qx = a[0] + t * dx
-        qy = a[1] + t * dy
-
-        projection_s = (
-            cumulative[active]
-            + t * math.sqrt(length2)
-        )
+        _, _, qx, qy, projection_s = best
 
         half_window = max(
             0.10,
@@ -1268,20 +1218,23 @@ class FollowerPidController(Node):
 
         tx = after[0] - before[0]
         ty = after[1] - before[1]
-
-        tangent_length = math.hypot(
-            tx,
-            ty,
-        )
+        tangent_length = math.hypot(tx, ty)
 
         if tangent_length < 1e-6:
-            tx = b[0] - a[0]
-            ty = b[1] - a[1]
-
-            tangent_length = math.hypot(
-                tx,
-                ty,
+            # One-sided fallback at a very short endpoint.
+            i = min(
+                len(self.path) - 2,
+                best[0],
             )
+            tx = (
+                self.path[i + 1][0]
+                - self.path[i][0]
+            )
+            ty = (
+                self.path[i + 1][1]
+                - self.path[i][1]
+            )
+            tangent_length = math.hypot(tx, ty)
 
         if tangent_length < 1e-6:
             return None
@@ -1294,6 +1247,8 @@ class FollowerPidController(Node):
             tx,
         )
 
+        # Positive cross-track means R2 is left of the forward
+        # tangent. The correction steers right, hence the minus sign.
         nx = -ty
         ny = tx
 

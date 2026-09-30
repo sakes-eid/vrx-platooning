@@ -223,12 +223,6 @@ class FollowerPlanner(Node):
             'curve_backtrack_points': 4.0,
             'passed_point_margin': 0.05,
 
-            # Chronological follower progress.
-            # Never jump to a geometrically-near later loop.
-            'progress_capture_radius': 0.35,
-            'progress_corridor_m': 3.5,
-            'max_progress_advances_per_cycle': 8.0,
-
             'parking_separation': 18.0,
             'parking_escape_distance': 10.0,
             'parking_spacing': 0.5,
@@ -739,13 +733,16 @@ class FollowerPlanner(Node):
             distance(point, projection),
         )
 
-    def advance_follower_progress(self, history, target_index):
+    def advance_r2_progress(self, history, target_index):
         """
-        Advance strictly in breadcrumb chronology.
+        Advance monotonically through the breadcrumb trail.
 
-        The follower may consume only the current segment, then the
-        next one, and so on. No global nearest-segment search is
-        allowed because self-near loops can otherwise be skipped.
+        Two checks are used:
+        1. nearest forward segment projection, and
+        2. the user's skipped-point test: if the vector from R2 to
+           the next breadcrumb has a negative dot product with the
+           local forward tangent, that breadcrumb is behind R2 and
+           is considered passed.
         """
         if self.follower is None or len(history) < 2:
             return
@@ -758,78 +755,67 @@ class FollowerPlanner(Node):
         if max_segment < 0:
             return
 
+        # Under normal operation max_segment only increases. The
+        # deque-rollover helper above shifts the index when needed, so
+        # we never intentionally move progress backwards.
         if self.follower_progress_index > max_segment:
             return
 
-        position = (
+        r2_position = (
             float(self.follower.x),
             float(self.follower.y),
         )
 
-        advances = 0
-        max_advances = max(
-            1,
-            int(round(
-                self.max_progress_advances_per_cycle
-            )),
+        # First jump forward to the closest admissible segment.
+        best_index = self.follower_progress_index
+        best_distance = float('inf')
+
+        for i in range(
+            self.follower_progress_index,
+            max_segment + 1,
+        ):
+            _, _, d = self.segment_projection(
+                r2_position,
+                history[i],
+                history[i + 1],
+            )
+
+            if d < best_distance:
+                best_distance = d
+                best_index = i
+
+        self.follower_progress_index = max(
+            self.follower_progress_index,
+            best_index,
         )
 
-        while (
-            self.follower_progress_index < max_segment
-            and advances < max_advances
-        ):
+        # Then explicitly discard breadcrumbs that are behind R2
+        # along the local trail tangent.
+        while self.follower_progress_index < max_segment:
             i = self.follower_progress_index
-
             a = history[i]
             b = history[i + 1]
 
-            dx = b[0] - a[0]
-            dy = b[1] - a[1]
+            tx = b[0] - a[0]
+            ty = b[1] - a[1]
+            length = math.hypot(tx, ty)
 
-            segment_length = math.hypot(dx, dy)
-
-            if segment_length < 1e-9:
+            if length < 1e-9:
                 self.follower_progress_index += 1
-                advances += 1
                 continue
 
-            ux = dx / segment_length
-            uy = dy / segment_length
+            tx /= length
+            ty /= length
 
-            rel_x = position[0] - a[0]
-            rel_y = position[1] - a[1]
+            vx = b[0] - r2_position[0]
+            vy = b[1] - r2_position[1]
 
-            along = rel_x * ux + rel_y * uy
+            along = vx * tx + vy * ty
 
-            lateral = abs(
-                rel_x * (-uy)
-                + rel_y * ux
-            )
-
-            endpoint_distance = distance(
-                position,
-                b,
-            )
-
-            captured = (
-                endpoint_distance
-                <= self.progress_capture_radius
-            )
-
-            crossed = (
-                along
-                >= segment_length
-                + self.passed_point_margin
-                and lateral
-                <= self.progress_corridor_m
-            )
-
-            if captured or crossed:
+            if along < -self.passed_point_margin:
                 self.follower_progress_index += 1
-                advances += 1
-                continue
-
-            break
+            else:
+                break
 
     def path_gap_measurement(self):
         """
@@ -866,8 +852,8 @@ class FollowerPlanner(Node):
 
         latest_segment = len(history) - 2
 
-        # Reuse the strict chronological follower progress hierarchy.
-        self.advance_follower_progress(
+        # Reuse the existing monotonic R2 progress hierarchy.
+        self.advance_r2_progress(
             history,
             latest_segment,
         )
@@ -1060,7 +1046,7 @@ class FollowerPlanner(Node):
 
         latest_segment = len(history) - 2
 
-        self.advance_follower_progress(
+        self.advance_r2_progress(
             history,
             latest_segment,
         )
