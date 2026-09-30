@@ -87,11 +87,11 @@ BASE_PLANNER = {
 # ---------------------------------------------------------------------------
 # Objective weights and adaptive acceptance thresholds.
 #
-# Formation gap, heading/guidance, speed and braking are tuned in that
-# hierarchy. Once a stage satisfies its PASS threshold repeatedly, it is
-# locked. Locked stages remain monitored; if an accepted later-stage
-# controller drifts beyond an UNLOCK threshold, that earlier stage is
-# immediately reopened and becomes the next stage to tune.
+# Formation gap, heading/guidance, speed and braking use one shared
+# R2/R3 threshold profile. Locked stages are skipped by the cyclic
+# schedule but remain monitored on every accepted working controller.
+# If a locked stage degrades beyond its unlock threshold, it is reopened
+# and re-enters its normal slots in the cyclic schedule.
 # ---------------------------------------------------------------------------
 
 MAX_PENALTY = 1e6
@@ -2475,7 +2475,7 @@ def main():
 
     study = optuna.create_study(
         study_name=(
-            f"{args.study_name}_v22"
+            f"{args.study_name}_v23"
         ),
         storage=(
             f"sqlite:///{storage_path}"
