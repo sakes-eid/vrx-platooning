@@ -329,6 +329,7 @@ class FollowerPlanner(Node):
         self.trail_ready = False
 
         self.predecessor_released = False
+        self.release_bootstrap_active = False
         self.release_bootstrap_complete = False
 
         self.leader_done = False
@@ -621,122 +622,155 @@ class FollowerPlanner(Node):
 
     def maybe_bootstrap_release(self):
         """
-        Bootstrap a later follower from local pair geometry only.
+        Synchronize a later follower's logical release with its
+        predecessor without modifying the real breadcrumb history.
 
-        The synthetic initial breadcrumb line runs from the current
-        follower position to the current predecessor position. It
-        provides the historical straight segment that physically
-        existed before the predecessor began moving.
-
-        No global path, R1 path, or future trajectory is used.
+        During bootstrap, steering uses a temporary LOCAL pair-based
+        guidance path. Genuine predecessor breadcrumbs continue to
+        accumulate independently.
         """
         if (
             self.release_mode
             != 'predecessor_release_bootstrap'
-            or self.release_bootstrap_complete
+            or self.trail_ready
             or not self.predecessor_released
             or self.predecessor is None
             or self.follower is None
         ):
             return
 
-        follower_position = (
-            float(self.follower.x),
-            float(self.follower.y),
+        self.trail_ready = True
+        self.release_bootstrap_active = True
+        self.release_bootstrap_complete = False
+
+        self.get_logger().info(
+            f'{self.follower_id} synchronized release '
+            f'with {self.predecessor_id}; '
+            f'using temporary local pair guidance until '
+            f'real breadcrumb history is ready.'
         )
 
-        predecessor_position = (
-            float(self.predecessor.x),
-            float(self.predecessor.y),
-        )
+        self.publish_release_state()
 
-        separation = distance(
-            follower_position,
-            predecessor_position,
-        )
+    def update_release_bootstrap_state(self):
+        if not self.release_bootstrap_active:
+            return
 
         required = (
             self.breadcrumb_lag_distance
             + self.minimum_extra_trail
         )
 
-        if separation < required:
+        trail = self.breadcrumb_length()
+
+        if trail < required:
             return
 
-        spacing = max(
-            0.05,
-            self.breadcrumb_spacing,
-        )
+        self.release_bootstrap_active = False
+        self.release_bootstrap_complete = True
 
-        segment_count = max(
-            1,
-            int(math.ceil(
-                separation / spacing
-            )),
-        )
-
-        self.breadcrumbs.clear()
-        self.breadcrumb_speeds.clear()
-
-        follower_speed = float(
-            self.follower.speed
-        )
-
-        predecessor_speed = float(
-            self.predecessor.speed
-        )
-
-        for i in range(segment_count + 1):
-            t = i / segment_count
-
-            point = (
-                follower_position[0]
-                + t * (
-                    predecessor_position[0]
-                    - follower_position[0]
-                ),
-
-                follower_position[1]
-                + t * (
-                    predecessor_position[1]
-                    - follower_position[1]
-                ),
-            )
-
-            speed = (
-                follower_speed
-                + t * (
-                    predecessor_speed
-                    - follower_speed
-                )
-            )
-
-            self.append_breadcrumb(
-                point,
-                speed,
-            )
-
-        self.filtered_predecessor = (
-            predecessor_position
-        )
-
+        # Acquire the genuine predecessor trail from scratch.
         self.follower_progress_index = 0
         self.progress_acquired = False
 
-        self.trail_ready = True
-        self.release_bootstrap_complete = True
-
         self.get_logger().info(
-            f'{self.follower_id} synchronized release '
-            f'from {self.predecessor_id}; '
-            f'bootstrapped {segment_count + 1} breadcrumbs '
-            f'over {separation:.2f} m using pair geometry only.'
+            f'{self.follower_id} bootstrap complete; '
+            f'switching to genuine {self.predecessor_id} '
+            f'breadcrumb history at {trail:.2f} m.'
         )
 
-        # Publish TRUE immediately rather than waiting for the
-        # following 10 Hz planner cycle. This also supports future
-        # chained followers such as R4 <- R3.
-        self.publish_release_state()
+    def build_release_bootstrap_path(self):
+        """
+        Temporary guidance while genuine predecessor history is short.
+
+        Target a point one desired reference separation behind the
+        predecessor. When predecessor motion is established, use its
+        actual course. At very low speed, use current pair geometry.
+
+        This path is guidance only. It is NEVER inserted into the raw
+        predecessor breadcrumb history.
+        """
+        if self.predecessor is None or self.follower is None:
+            return None
+
+        follower = (
+            float(self.follower.x),
+            float(self.follower.y),
+        )
+
+        predecessor = (
+            float(self.predecessor.x),
+            float(self.predecessor.y),
+        )
+
+        separation = distance(
+            follower,
+            predecessor,
+        )
+
+        if float(self.predecessor.speed) > 0.05:
+            heading = float(
+                self.predecessor.course_angle
+            )
+
+            ux = math.cos(heading)
+            uy = math.sin(heading)
+
+        elif separation > 1e-6:
+            # Before meaningful predecessor motion exists, use only
+            # the local line of sight. This avoids trusting a stale
+            # course estimate at zero speed.
+            ux = (
+                predecessor[0] - follower[0]
+            ) / separation
+
+            uy = (
+                predecessor[1] - follower[1]
+            ) / separation
+
+        else:
+            heading = float(
+                self.predecessor.body_yaw
+            )
+
+            ux = math.cos(heading)
+            uy = math.sin(heading)
+
+        desired_reference_separation = (
+            self.predecessor_rear_extent
+            + self.formation_distance
+            + self.follower_front_extent
+        )
+
+        target = (
+            predecessor[0]
+            - desired_reference_separation * ux,
+
+            predecessor[1]
+            - desired_reference_separation * uy,
+        )
+
+        # A short forward continuation gives the controller a stable
+        # tangent once R3 reaches the desired trailing point.
+        guide_ahead = 3.0
+
+        forward_point = (
+            target[0] + guide_ahead * ux,
+            target[1] + guide_ahead * uy,
+        )
+
+        points = [follower]
+
+        if distance(points[-1], target) > 0.05:
+            points.append(target)
+
+        if distance(points[-1], forward_point) > 0.05:
+            points.append(forward_point)
+
+        if len(points) < 2:
+            return None
+
+        return points
 
     def clearance_callback(self, msg):
         self.hitbox_clearance = float(
@@ -1176,6 +1210,28 @@ class FollowerPlanner(Node):
             or self.follower is None
         ):
             return None
+
+        # Before enough genuine predecessor breadcrumbs exist,
+        # use direct local pair separation only for the temporary
+        # synchronized-release phase. These samples belong to
+        # acquisition, not steady 5 m formation scoring.
+        if self.release_bootstrap_active:
+            reference_separation = distance(
+                (
+                    float(self.predecessor.x),
+                    float(self.predecessor.y),
+                ),
+                (
+                    float(self.follower.x),
+                    float(self.follower.y),
+                ),
+            )
+
+            return float(
+                reference_separation
+                - self.predecessor_rear_extent
+                - self.follower_front_extent
+            )
 
         history = list(self.breadcrumbs)
 
@@ -1628,9 +1684,13 @@ class FollowerPlanner(Node):
         # breadcrumb chain from predecessor/follower geometry when
         # the predecessor is released.
         self.maybe_bootstrap_release()
+        self.update_release_bootstrap_state()
 
         # Single authoritative chronological progress update.
-        self.update_follower_progress()
+        # During bootstrap the raw trail is deliberately untouched;
+        # acquisition begins only after genuine history is long enough.
+        if not self.release_bootstrap_active:
+            self.update_follower_progress()
 
         # V2.2: unsmoothed breadcrumb arc-length formation gap.
         self.publish_path_gap()
@@ -1647,6 +1707,16 @@ class FollowerPlanner(Node):
             )
 
             trail = self.breadcrumb_length()
+
+            if self.release_bootstrap_active:
+                path = self.build_release_bootstrap_path()
+
+                if path:
+                    self.breadcrumb_pub.publish(
+                        self.path_message(path)
+                    )
+
+                return
 
             if trail < required:
                 return
