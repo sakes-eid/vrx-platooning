@@ -6,7 +6,7 @@ from rclpy.node import Node
 
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
-from std_msgs.msg import Bool, Float64, Float64MultiArray, String
+from std_msgs.msg import Bool, Float64, Float64MultiArray, Int32, String
 
 from platoon_interfaces.msg import VehicleState
 
@@ -223,6 +223,14 @@ class FollowerPlanner(Node):
             'curve_backtrack_points': 4.0,
             'passed_point_margin': 0.05,
 
+            # Breadcrumb hierarchy:
+            # acquire the correct trail segment ONCE while the
+            # initial trail is still short, then progress only
+            # chronologically through subsequent segments.
+            'progress_capture_radius': 0.35,
+            'progress_corridor_m': 3.5,
+            'max_progress_advances_per_cycle': 8.0,
+
             'parking_separation': 18.0,
             'parking_escape_distance': 10.0,
             'parking_spacing': 0.5,
@@ -266,6 +274,7 @@ class FollowerPlanner(Node):
         # Monotonic progress through the leader's historical trail.
         # Once R2 passes a breadcrumb, this index never moves back.
         self.follower_progress_index = 0
+        self.progress_acquired = False
 
         self.mode = self.FOLLOW
         self.previous_mode = None
@@ -306,6 +315,24 @@ class FollowerPlanner(Node):
         self.path_gap_valid_pub = self.create_publisher(
             Bool,
             f'/planner/{self.follower_id}/path_gap_valid',
+            10,
+        )
+
+        self.progress_index_pub = self.create_publisher(
+            Int32,
+            f'/planner/{self.follower_id}/progress_index',
+            10,
+        )
+
+        self.progress_acquired_pub = self.create_publisher(
+            Bool,
+            f'/planner/{self.follower_id}/progress_acquired',
+            10,
+        )
+
+        self.breadcrumb_count_pub = self.create_publisher(
+            Int32,
+            f'/planner/{self.follower_id}/breadcrumb_count',
             10,
         )
 
@@ -735,14 +762,20 @@ class FollowerPlanner(Node):
 
     def advance_r2_progress(self, history, target_index):
         """
-        Advance monotonically through the breadcrumb trail.
+        Track the follower through predecessor breadcrumbs in
+        chronological order.
 
-        Two checks are used:
-        1. nearest forward segment projection, and
-        2. the user's skipped-point test: if the vector from R2 to
-           the next breadcrumb has a negative dot product with the
-           local forward tangent, that breadcrumb is behind R2 and
-           is considered passed.
+        Startup is special:
+        - once enough initial trail exists, perform ONE global
+          nearest-segment acquisition;
+        - the initial trail is still short and contains no
+          self-near stress-course loops.
+
+        After acquisition:
+        - never search arbitrary future segments again;
+        - consume only the current chronological segment;
+        - advance when its endpoint is captured or its
+          perpendicular plane is crossed inside the corridor.
         """
         if self.follower is None or len(history) < 2:
             return
@@ -755,67 +788,156 @@ class FollowerPlanner(Node):
         if max_segment < 0:
             return
 
-        # Under normal operation max_segment only increases. The
-        # deque-rollover helper above shifts the index when needed, so
-        # we never intentionally move progress backwards.
-        if self.follower_progress_index > max_segment:
-            return
-
-        r2_position = (
+        follower_position = (
             float(self.follower.x),
             float(self.follower.y),
         )
 
-        # First jump forward to the closest admissible segment.
-        best_index = self.follower_progress_index
-        best_distance = float('inf')
+        # ----------------------------------------------------
+        # ONE-TIME acquisition.
+        #
+        # Do not acquire until the same amount of trail needed
+        # to release the follower already exists. At ~11.4 m,
+        # this is still on the initial straight and therefore
+        # cannot contain a later self-near loop.
+        # ----------------------------------------------------
 
-        for i in range(
-            self.follower_progress_index,
-            max_segment + 1,
-        ):
-            _, _, d = self.segment_projection(
-                r2_position,
-                history[i],
-                history[i + 1],
+        if not self.progress_acquired:
+            required = (
+                self.breadcrumb_lag_distance
+                + self.minimum_extra_trail
             )
 
-            if d < best_distance:
-                best_distance = d
-                best_index = i
+            trail_length = sum(
+                distance(a, b)
+                for a, b in zip(
+                    history[:-1],
+                    history[1:],
+                )
+            )
 
-        self.follower_progress_index = max(
-            self.follower_progress_index,
-            best_index,
+            if trail_length < required:
+                return
+
+            best_index = 0
+            best_distance = float('inf')
+
+            for i in range(max_segment + 1):
+                _, _, d = self.segment_projection(
+                    follower_position,
+                    history[i],
+                    history[i + 1],
+                )
+
+                if d < best_distance:
+                    best_distance = d
+                    best_index = i
+
+            self.follower_progress_index = best_index
+            self.progress_acquired = True
+
+            self.get_logger().info(
+                f'{self.follower_id} breadcrumb progress acquired '
+                f'at segment {best_index}; '
+                f'distance={best_distance:.2f} m.'
+            )
+
+            return
+
+        # ----------------------------------------------------
+        # LOCKED chronological progression.
+        # ----------------------------------------------------
+
+        if self.follower_progress_index > max_segment:
+            return
+
+        advances = 0
+
+        max_advances = max(
+            1,
+            int(round(
+                self.max_progress_advances_per_cycle
+            )),
         )
 
-        # Then explicitly discard breadcrumbs that are behind R2
-        # along the local trail tangent.
-        while self.follower_progress_index < max_segment:
+        while (
+            self.follower_progress_index < max_segment
+            and advances < max_advances
+        ):
             i = self.follower_progress_index
+
             a = history[i]
             b = history[i + 1]
 
-            tx = b[0] - a[0]
-            ty = b[1] - a[1]
-            length = math.hypot(tx, ty)
+            dx = b[0] - a[0]
+            dy = b[1] - a[1]
 
-            if length < 1e-9:
+            segment_length = math.hypot(dx, dy)
+
+            if segment_length < 1e-9:
                 self.follower_progress_index += 1
+                advances += 1
                 continue
 
-            tx /= length
-            ty /= length
+            ux = dx / segment_length
+            uy = dy / segment_length
 
-            vx = b[0] - r2_position[0]
-            vy = b[1] - r2_position[1]
+            rel_x = follower_position[0] - a[0]
+            rel_y = follower_position[1] - a[1]
 
-            along = vx * tx + vy * ty
+            along = (
+                rel_x * ux
+                + rel_y * uy
+            )
 
-            if along < -self.passed_point_margin:
+            lateral = abs(
+                rel_x * (-uy)
+                + rel_y * ux
+            )
+
+            endpoint_distance = distance(
+                follower_position,
+                b,
+            )
+
+            endpoint_captured = (
+                endpoint_distance
+                <= self.progress_capture_radius
+            )
+
+            segment_crossed = (
+                along
+                >= segment_length
+                + self.passed_point_margin
+                and lateral
+                <= self.progress_corridor_m
+            )
+
+            if endpoint_captured or segment_crossed:
                 self.follower_progress_index += 1
-            else:
-                break
+                advances += 1
+                continue
+
+            break
+
+    def publish_progress_diagnostics(self):
+        index = Int32()
+        index.data = int(
+            self.follower_progress_index
+        )
+        self.progress_index_pub.publish(index)
+
+        acquired = Bool()
+        acquired.data = bool(
+            self.progress_acquired
+        )
+        self.progress_acquired_pub.publish(acquired)
+
+        count = Int32()
+        count.data = int(
+            len(self.breadcrumbs)
+        )
+        self.breadcrumb_count_pub.publish(count)
 
     def path_gap_measurement(self):
         """
@@ -1303,6 +1425,7 @@ class FollowerPlanner(Node):
 
         # V2.2: unsmoothed breadcrumb arc-length formation gap.
         self.publish_path_gap()
+        self.publish_progress_diagnostics()
 
         if self.predecessor is None or self.follower is None:
             return
