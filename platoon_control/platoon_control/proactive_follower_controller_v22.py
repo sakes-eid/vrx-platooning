@@ -267,6 +267,12 @@ class FollowerPidController(Node):
             'cross_track_heading_gain': 0.12,
             'max_cross_track_correction_deg': 35.0,
 
+            # The planner already publishes the breadcrumb path
+            # beginning just behind the follower's chronological
+            # progress. Guidance may search only this local prefix;
+            # later self-near loop branches are ineligible.
+            'guidance_search_distance': 6.0,
+
             # V2.2:
             # 5 m formation distance is measured bumper-to-bumper
             # ALONG the unsmoothed breadcrumb path.
@@ -1155,7 +1161,19 @@ class FollowerPidController(Node):
         px = float(self.follower.x)
         py = float(self.follower.y)
 
-        for i in range(len(self.path) - 1):
+        # Restrict projection to the local chronological prefix
+        # of the planner-provided path. The planner has already
+        # removed old history except for a few tangent-support
+        # points, so there is no reason to search distant future
+        # branches of a self-near loop.
+        search_segment_count = len(self.path) - 1
+
+        for i in range(len(cumulative)):
+            if cumulative[i] > self.guidance_search_distance:
+                search_segment_count = max(1, i)
+                break
+
+        for i in range(search_segment_count):
             a = self.path[i]
             b = self.path[i + 1]
 
