@@ -318,6 +318,15 @@ class FollowerPlanner(Node):
             10,
         )
 
+        # Latched logical release state for chained followers.
+        # R3 can later synchronize its release to R2 without
+        # receiving R1's global reference path.
+        self.release_state_pub = self.create_publisher(
+            Bool,
+            f'/planner/{self.follower_id}/released',
+            qos,
+        )
+
         self.progress_index_pub = self.create_publisher(
             Int32,
             f'/planner/{self.follower_id}/progress_index',
@@ -934,6 +943,11 @@ class FollowerPlanner(Node):
             len(history) - 2,
         )
 
+    def publish_release_state(self):
+        msg = Bool()
+        msg.data = bool(self.trail_ready)
+        self.release_state_pub.publish(msg)
+
     def publish_progress_diagnostics(self):
         index = Int32()
         index.data = int(
@@ -1434,6 +1448,7 @@ class FollowerPlanner(Node):
         # V2.2: unsmoothed breadcrumb arc-length formation gap.
         self.publish_path_gap()
         self.publish_progress_diagnostics()
+        self.publish_release_state()
 
         if self.predecessor is None or self.follower is None:
             return
