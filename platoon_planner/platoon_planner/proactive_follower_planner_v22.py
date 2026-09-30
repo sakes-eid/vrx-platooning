@@ -920,6 +920,20 @@ class FollowerPlanner(Node):
 
             break
 
+    def update_follower_progress(self):
+        if self.follower is None:
+            return
+
+        history = list(self.breadcrumbs)
+
+        if len(history) < 2:
+            return
+
+        self.advance_r2_progress(
+            history,
+            len(history) - 2,
+        )
+
     def publish_progress_diagnostics(self):
         index = Int32()
         index.data = int(
@@ -972,13 +986,8 @@ class FollowerPlanner(Node):
         if len(history) < 2:
             return None
 
-        latest_segment = len(history) - 2
-
-        # Reuse the existing monotonic R2 progress hierarchy.
-        self.advance_r2_progress(
-            history,
-            latest_segment,
-        )
+        # Progress is advanced exactly once per planner cycle
+        # in update(). Measurements only consume the locked index.
 
         # Cumulative arc length of the ORIGINAL breadcrumb chain.
         cumulative = [0.0]
@@ -1166,12 +1175,8 @@ class FollowerPlanner(Node):
         if len(history) < 2:
             return None
 
-        latest_segment = len(history) - 2
-
-        self.advance_r2_progress(
-            history,
-            latest_segment,
-        )
+        # Progress is advanced exactly once per planner cycle
+        # in update(). Path construction only consumes that index.
 
         # Include a few already-passed points only so the interpolated
         # curve has a stable tangent immediately behind the projection.
@@ -1422,6 +1427,9 @@ class FollowerPlanner(Node):
         self.publish_target_capture()
         self.publish_mode()
         self.publish_reference_distance()
+
+        # Single authoritative chronological progress update.
+        self.update_follower_progress()
 
         # V2.2: unsmoothed breadcrumb arc-length formation gap.
         self.publish_path_gap()
