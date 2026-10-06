@@ -45,6 +45,10 @@ from platoon_planner.astar_router import (
     grid_path_to_ned,
 )
 
+from platoon_planner.vehicle_state_source import (
+    get_vehicle_state_once,
+)
+
 from platoon_planner.coverage_approach import (
     build_approach_path,
 )
@@ -1838,15 +1842,48 @@ def main():
     # R1 -> first coverage lane
     # --------------------------------------------------------
 
-    # Standalone validation start.
-    # During ROS integration these values will come from
-    # /r1/vehicle_state.
-    r1_start_ned = (
-        162.0,
-        -532.0,
+    # --------------------------------------------------------
+    # Live R1 start state
+    # --------------------------------------------------------
+
+    print()
+    print(
+        "Waiting for live R1 state "
+        "from /r1/vehicle_state..."
     )
 
-    r1_start_heading = 0.0
+    (
+        r1_north,
+        r1_east,
+        r1_start_heading,
+    ) = get_vehicle_state_once(
+        topic="/r1/vehicle_state",
+        timeout_sec=30.0,
+    )
+
+    r1_start_ned = (
+        r1_north,
+        r1_east,
+    )
+
+    print(
+        "Live R1 start:"
+    )
+    print(
+        "  North   :",
+        round(r1_north, 3),
+        "m",
+    )
+    print(
+        "  East    :",
+        round(r1_east, 3),
+        "m",
+    )
+    print(
+        "  Heading :",
+        round(r1_start_heading, 4),
+        "rad",
+    )
 
     (
         approach,
