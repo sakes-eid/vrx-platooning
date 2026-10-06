@@ -909,3 +909,737 @@ def clearance_at(
             column,
         ]
     )
+
+
+# ============================================================
+# 3D VESSEL COLLISION BAND
+# ============================================================
+
+# Nominal floating base_link height measured in Sydney Regatta.
+WAMV_NOMINAL_FLOATING_BASE_Z = -0.034248
+
+# Static collision envelope relative to base_link.
+WAMV_LOWEST_COLLISION_Z = -0.431
+WAMV_HIGHEST_COLLISION_Z = 1.460
+
+DEFAULT_VERTICAL_SAFETY_MARGIN = 0.5
+
+
+def wamv_navigation_vertical_band(
+    vertical_safety_margin=DEFAULT_VERTICAL_SAFETY_MARGIN,
+):
+    """
+    Return the conservative world-Z interval occupied by the WAM-V.
+
+    Terrain geometry completely above or below this interval does not
+    physically intersect the vessel's swept vertical volume.
+
+    The safety margin also provides tolerance for small heave, pitch,
+    roll, waves, and model uncertainty.
+    """
+
+    if vertical_safety_margin < 0.0:
+        raise ValueError(
+            "vertical_safety_margin must be >= 0"
+        )
+
+    lower = (
+        WAMV_NOMINAL_FLOATING_BASE_Z
+        + WAMV_LOWEST_COLLISION_Z
+        - vertical_safety_margin
+    )
+
+    upper = (
+        WAMV_NOMINAL_FLOATING_BASE_Z
+        + WAMV_HIGHEST_COLLISION_Z
+        + vertical_safety_margin
+    )
+
+    return (
+        float(lower),
+        float(upper),
+    )
+
+
+def filter_triangles_by_vertical_band(
+    vertices,
+    triangles,
+    z_min,
+    z_max,
+):
+    """
+    Keep only terrain triangles whose vertical extent overlaps the
+    vessel navigation band.
+
+    A triangle is relevant if:
+
+        triangle_max_z >= z_min
+        AND
+        triangle_min_z <= z_max
+
+    This naturally removes:
+
+        - deep seabed below the vessel
+        - bridge decks completely above the vessel
+
+    while retaining:
+
+        - shoreline
+        - shallow underwater hazards
+        - bridge supports
+        - low bridge geometry
+        - terrain intersecting the vessel height
+    """
+
+    if z_max < z_min:
+        raise ValueError(
+            "z_max must be >= z_min"
+        )
+
+    filtered = []
+
+    for triangle in triangles:
+
+        triangle_z = [
+            float(
+                vertices[index][2]
+            )
+            for index in triangle
+        ]
+
+        triangle_min = min(
+            triangle_z
+        )
+
+        triangle_max = max(
+            triangle_z
+        )
+
+        if (
+            triangle_max >= z_min
+            and
+            triangle_min <= z_max
+        ):
+            filtered.append(
+                triangle
+            )
+
+    return filtered
+
+
+# ============================================================
+# PRECISE 3D VERTICAL-SLAB RASTERIZATION
+# ============================================================
+
+def _clip_polygon_against_z(
+    polygon,
+    z_value,
+    keep_above,
+):
+    """
+    Clip a convex 3D polygon against a horizontal Z plane.
+
+    Args:
+        polygon:
+            sequence of (north, east, z)
+
+        z_value:
+            clipping plane height
+
+        keep_above:
+            True  -> keep z >= z_value
+            False -> keep z <= z_value
+
+    Returns:
+        clipped convex polygon
+    """
+
+    if not polygon:
+        return []
+
+    def inside(point):
+        if keep_above:
+            return point[2] >= z_value
+        return point[2] <= z_value
+
+    def intersection(first, second):
+        dz = second[2] - first[2]
+
+        if abs(dz) < 1e-12:
+            return tuple(first)
+
+        fraction = (
+            z_value - first[2]
+        ) / dz
+
+        return (
+            first[0]
+            + fraction
+            * (second[0] - first[0]),
+
+            first[1]
+            + fraction
+            * (second[1] - first[1]),
+
+            z_value,
+        )
+
+    output = []
+
+    previous = polygon[-1]
+    previous_inside = inside(previous)
+
+    for current in polygon:
+        current_inside = inside(current)
+
+        if current_inside:
+
+            if not previous_inside:
+                output.append(
+                    intersection(
+                        previous,
+                        current,
+                    )
+                )
+
+            output.append(
+                tuple(current)
+            )
+
+        elif previous_inside:
+
+            output.append(
+                intersection(
+                    previous,
+                    current,
+                )
+            )
+
+        previous = current
+        previous_inside = current_inside
+
+    return output
+
+
+def clip_triangle_to_vertical_band(
+    triangle_vertices,
+    z_min,
+    z_max,
+):
+    """
+    Clip one 3D triangle to the vessel's vertical navigation slab.
+
+    Returns a convex polygon containing only the part of the triangle
+    that physically intersects:
+
+        z_min <= z <= z_max
+
+    The returned polygon may have 0, 3, 4, or more vertices.
+    """
+
+    if z_max < z_min:
+        raise ValueError(
+            "z_max must be >= z_min"
+        )
+
+    polygon = [
+        tuple(vertex)
+        for vertex in triangle_vertices
+    ]
+
+    polygon = _clip_polygon_against_z(
+        polygon,
+        z_min,
+        keep_above=True,
+    )
+
+    polygon = _clip_polygon_against_z(
+        polygon,
+        z_max,
+        keep_above=False,
+    )
+
+    return polygon
+
+
+def _points_inside_convex_polygon(
+    north_points,
+    east_points,
+    polygon_xy,
+):
+    """
+    Vectorized point-in-convex-polygon test.
+
+    polygon_xy contains (north, east) coordinates.
+    """
+
+    import numpy as np
+
+    if len(polygon_xy) < 3:
+        return np.zeros(
+            north_points.shape,
+            dtype=bool,
+        )
+
+    signed_area = 0.0
+
+    for index in range(
+        len(polygon_xy)
+    ):
+        first = polygon_xy[index]
+        second = polygon_xy[
+            (index + 1)
+            % len(polygon_xy)
+        ]
+
+        signed_area += (
+            first[0] * second[1]
+            - second[0] * first[1]
+        )
+
+    eps = 1e-9
+
+    inside = np.ones(
+        north_points.shape,
+        dtype=bool,
+    )
+
+    counterclockwise = (
+        signed_area >= 0.0
+    )
+
+    for index in range(
+        len(polygon_xy)
+    ):
+        first = polygon_xy[index]
+        second = polygon_xy[
+            (index + 1)
+            % len(polygon_xy)
+        ]
+
+        edge_north = (
+            second[0]
+            - first[0]
+        )
+
+        edge_east = (
+            second[1]
+            - first[1]
+        )
+
+        point_north = (
+            north_points
+            - first[0]
+        )
+
+        point_east = (
+            east_points
+            - first[1]
+        )
+
+        cross = (
+            edge_north
+            * point_east
+            - edge_east
+            * point_north
+        )
+
+        if counterclockwise:
+            inside &= (
+                cross >= -eps
+            )
+        else:
+            inside &= (
+                cross <= eps
+            )
+
+    return inside
+
+
+def build_vertical_slab_occupancy_grid(
+    vertices,
+    triangles,
+    z_min,
+    z_max,
+    resolution=2.0,
+    margin=10.0,
+):
+    """
+    Build a precise 2D navigation occupancy grid from 3D terrain.
+
+    Instead of projecting an entire terrain triangle whenever any part
+    intersects the vessel height, each triangle is first clipped to the
+    actual WAM-V vertical navigation slab.
+
+    Therefore:
+
+        elevated bridge deck -> disappears
+        low part of bridge ramp -> remains
+        bridge supports -> remain
+        shoreline -> remains
+        deep seabed -> disappears
+
+    Grid:
+        0 = free
+        1 = collision-relevant geometry
+    """
+
+    import math
+    import numpy as np
+
+    if resolution <= 0.0:
+        raise ValueError(
+            "resolution must be > 0"
+        )
+
+    if margin < 0.0:
+        raise ValueError(
+            "margin must be >= 0"
+        )
+
+    if z_max < z_min:
+        raise ValueError(
+            "z_max must be >= z_min"
+        )
+
+    bounds = terrain_bounds(
+        vertices
+    )
+
+    north_min = (
+        math.floor(
+            (
+                bounds["north_min"]
+                - margin
+            )
+            / resolution
+        )
+        * resolution
+    )
+
+    north_max = (
+        math.ceil(
+            (
+                bounds["north_max"]
+                + margin
+            )
+            / resolution
+        )
+        * resolution
+    )
+
+    east_min = (
+        math.floor(
+            (
+                bounds["east_min"]
+                - margin
+            )
+            / resolution
+        )
+        * resolution
+    )
+
+    east_max = (
+        math.ceil(
+            (
+                bounds["east_max"]
+                + margin
+            )
+            / resolution
+        )
+        * resolution
+    )
+
+    height = int(
+        math.ceil(
+            (
+                north_max
+                - north_min
+            )
+            / resolution
+        )
+    )
+
+    width = int(
+        math.ceil(
+            (
+                east_max
+                - east_min
+            )
+            / resolution
+        )
+    )
+
+    occupancy = np.zeros(
+        (
+            height,
+            width,
+        ),
+        dtype=np.uint8,
+    )
+
+    vertex_array = np.asarray(
+        vertices,
+        dtype=np.float64,
+    )
+
+    north_centers = (
+        north_min
+        + (
+            np.arange(height)
+            + 0.5
+        )
+        * resolution
+    )
+
+    east_centers = (
+        east_min
+        + (
+            np.arange(width)
+            + 0.5
+        )
+        * resolution
+    )
+
+    intersecting_triangles = 0
+    clipped_polygons = 0
+
+    for triangle in triangles:
+
+        triangle_xyz = vertex_array[
+            list(triangle)
+        ]
+
+        clipped = (
+            clip_triangle_to_vertical_band(
+                triangle_xyz,
+                z_min,
+                z_max,
+            )
+        )
+
+        if len(clipped) < 3:
+            continue
+
+        intersecting_triangles += 1
+
+        polygon_xy = [
+            (
+                float(point[0]),
+                float(point[1]),
+            )
+            for point in clipped
+        ]
+
+        # Remove consecutive duplicate XY points that can be created
+        # when a triangle vertex lies exactly on a clipping plane.
+        cleaned = []
+
+        for point in polygon_xy:
+            if (
+                not cleaned
+                or
+                abs(
+                    point[0]
+                    - cleaned[-1][0]
+                ) > 1e-10
+                or
+                abs(
+                    point[1]
+                    - cleaned[-1][1]
+                ) > 1e-10
+            ):
+                cleaned.append(
+                    point
+                )
+
+        if (
+            len(cleaned) >= 2
+            and
+            abs(
+                cleaned[0][0]
+                - cleaned[-1][0]
+            ) < 1e-10
+            and
+            abs(
+                cleaned[0][1]
+                - cleaned[-1][1]
+            ) < 1e-10
+        ):
+            cleaned.pop()
+
+        if len(cleaned) < 3:
+            continue
+
+        polygon_xy = cleaned
+
+        n_values = [
+            point[0]
+            for point in polygon_xy
+        ]
+
+        e_values = [
+            point[1]
+            for point in polygon_xy
+        ]
+
+        n0 = min(
+            n_values
+        )
+
+        n1 = max(
+            n_values
+        )
+
+        e0 = min(
+            e_values
+        )
+
+        e1 = max(
+            e_values
+        )
+
+        row0 = max(
+            0,
+            int(
+                math.floor(
+                    (
+                        n0
+                        - north_min
+                    )
+                    / resolution
+                )
+            ),
+        )
+
+        row1 = min(
+            height - 1,
+            int(
+                math.floor(
+                    (
+                        n1
+                        - north_min
+                    )
+                    / resolution
+                )
+            ),
+        )
+
+        col0 = max(
+            0,
+            int(
+                math.floor(
+                    (
+                        e0
+                        - east_min
+                    )
+                    / resolution
+                )
+            ),
+        )
+
+        col1 = min(
+            width - 1,
+            int(
+                math.floor(
+                    (
+                        e1
+                        - east_min
+                    )
+                    / resolution
+                )
+            ),
+        )
+
+        if (
+            row1 < row0
+            or
+            col1 < col0
+        ):
+            continue
+
+        ns = north_centers[
+            row0:
+            row1 + 1
+        ]
+
+        es = east_centers[
+            col0:
+            col1 + 1
+        ]
+
+        nn, ee = np.meshgrid(
+            ns,
+            es,
+            indexing="ij",
+        )
+
+        inside = (
+            _points_inside_convex_polygon(
+                nn,
+                ee,
+                polygon_xy,
+            )
+        )
+
+        if np.any(inside):
+
+            subgrid = occupancy[
+                row0:
+                row1 + 1,
+                col0:
+                col1 + 1,
+            ]
+
+            subgrid[
+                inside
+            ] = 1
+
+            clipped_polygons += 1
+
+    metadata = {
+        "frame_id":
+            "world_ned",
+
+        "resolution":
+            float(resolution),
+
+        "north_min":
+            float(north_min),
+
+        "north_max":
+            float(north_max),
+
+        "east_min":
+            float(east_min),
+
+        "east_max":
+            float(east_max),
+
+        "height":
+            int(height),
+
+        "width":
+            int(width),
+
+        "z_min":
+            float(z_min),
+
+        "z_max":
+            float(z_max),
+
+        "intersecting_triangles":
+            int(
+                intersecting_triangles
+            ),
+
+        "clipped_polygons":
+            int(
+                clipped_polygons
+            ),
+    }
+
+    return (
+        occupancy,
+        metadata,
+    )
