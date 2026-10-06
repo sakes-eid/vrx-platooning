@@ -1011,3 +1011,99 @@ def validate_path_on_safe_grid(
         "checked_cells":
             len(checked_cells),
     }
+
+
+def generate_dubins_via_waypoints(
+    points,
+    start_heading,
+    goal_heading,
+    turning_radius,
+    step=0.5,
+):
+    """
+    Dubins-smooth a waypoint route while preserving the requested
+    heading at the beginning and end.
+
+    Interior waypoint headings follow the chord between their
+    neighbouring waypoints.
+    """
+
+    if len(points) < 2:
+        raise ValueError(
+            "At least two waypoints are required"
+        )
+
+    points = [
+        (
+            float(point[0]),
+            float(point[1]),
+        )
+        for point in points
+    ]
+
+    headings = []
+
+    for index in range(len(points)):
+
+        if index == 0:
+            heading = float(start_heading)
+
+        elif index == len(points) - 1:
+            heading = float(goal_heading)
+
+        else:
+            heading = heading_between(
+                points[index - 1],
+                points[index + 1],
+            )
+
+        headings.append(heading)
+
+    states = [
+        (
+            point[0],
+            point[1],
+            heading,
+        )
+        for point, heading
+        in zip(points, headings)
+    ]
+
+    combined = []
+    info = []
+
+    for index in range(
+        len(states) - 1
+    ):
+
+        samples, segment_info = (
+            generate_dubins_path(
+                states[index],
+                states[index + 1],
+                turning_radius=turning_radius,
+                step=step,
+            )
+        )
+
+        segment_info = dict(
+            segment_info
+        )
+
+        segment_info["segment"] = index
+
+        info.append(
+            segment_info
+        )
+
+        if index == 0:
+            combined.extend(samples)
+        else:
+            combined.extend(samples[1:])
+
+    return (
+        np.asarray(
+            combined,
+            dtype=float,
+        ),
+        info,
+    )
