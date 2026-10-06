@@ -1,0 +1,9 @@
+{
+  "samples": 65,
+  "mean_d12_m": 12.072627495719148,
+  "minimum_d12_m": 11.10463931518239,
+  "maximum_d12_m": 13.975066972187616,
+  "mean_error_from_pdf_5m_m": 7.072627495719149,
+  "rmse_error_from_pdf_5m_m": 7.129073557230208,
+  "p95_abs_error_from_pdf_5m_m": 8.735872723437499
+}
