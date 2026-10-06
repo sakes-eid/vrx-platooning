@@ -1659,6 +1659,135 @@ def plot_result(
 
 
 # ============================================================
+# COMPLETE COVERAGE MISSION BUILDER
+# ============================================================
+
+def build_complete_mission(
+    first,
+    second,
+    line_spacing,
+    r1_start_ned,
+    r1_start_heading,
+    safe_grid,
+    clearance,
+    metadata,
+):
+    """
+    Build the complete R1 mission:
+
+        live R1 pose
+        -> A* approach
+        -> Dubins smoothing
+        -> coverage mission
+
+    Returns:
+        complete_mission
+        segments
+        mission
+        connector_types
+        coverage_validation
+        complete_validation
+        approach_validation
+        approach_grid
+        lane_step
+    """
+
+    bounds = rectangle_grid_bounds(
+        first,
+        second,
+        metadata,
+        safe_grid.shape,
+    )
+
+    start_cell = nearest_safe_cell(
+        safe_grid,
+        metadata,
+        first,
+        bounds,
+    )
+
+    reachable = reachable_safe_water(
+        safe_grid,
+        start_cell,
+    )
+
+    segments, _, lane_step = (
+        generate_coverage_segments(
+            safe_grid,
+            reachable,
+            metadata,
+            first,
+            second,
+            line_spacing,
+        )
+    )
+
+    if not segments:
+        raise RuntimeError(
+            "No reachable coverage lanes were produced"
+        )
+
+    (
+        approach,
+        approach_grid,
+        approach_validation,
+    ) = build_approach_path(
+        start_ned=r1_start_ned,
+        start_heading=r1_start_heading,
+        first_segment=segments[0],
+        line_spacing=line_spacing,
+        safe_grid=safe_grid,
+        clearance=clearance,
+        metadata=metadata,
+    )
+
+    (
+        mission,
+        connector_types,
+        coverage_validation,
+    ) = build_coverage_mission(
+        segments,
+        line_spacing,
+        safe_grid,
+        clearance,
+        metadata,
+    )
+
+    complete_mission = np.vstack(
+        (
+            approach,
+            mission[1:],
+        )
+    )
+
+    complete_validation = validate_path_on_safe_grid(
+        complete_mission,
+        safe_grid,
+        clearance,
+        metadata,
+    )
+
+    if not complete_validation["safe"]:
+        raise RuntimeError(
+            "Combined R1 approach + coverage mission "
+            "failed collision validation."
+        )
+
+    return (
+        complete_mission,
+        segments,
+        mission,
+        connector_types,
+        coverage_validation,
+        complete_validation,
+        approach_validation,
+        approach_grid,
+        lane_step,
+    )
+
+
+
+# ============================================================
 # MAIN INTERACTIVE DEMO
 # ============================================================
 
@@ -1762,18 +1891,6 @@ def main():
         safe_grid.shape,
     )
 
-    start_cell = nearest_safe_cell(
-        safe_grid,
-        metadata,
-        first,
-        bounds,
-    )
-
-    reachable = reachable_safe_water(
-        safe_grid,
-        start_cell,
-    )
-
     (
         row_min,
         row_max,
@@ -1820,32 +1937,6 @@ def main():
             total_count,
         )
 
-    segments, _, lane_step = (
-        generate_coverage_segments(
-            safe_grid,
-            reachable,
-            metadata,
-            first,
-            second,
-            line_spacing,
-        )
-    )
-
-    if not segments:
-
-        raise RuntimeError(
-            "No reachable coverage lanes were produced"
-        )
-
-
-    # --------------------------------------------------------
-    # R1 -> first coverage lane
-    # --------------------------------------------------------
-
-    # --------------------------------------------------------
-    # Live R1 start state
-    # --------------------------------------------------------
-
     print()
     print(
         "Waiting for live R1 state "
@@ -1886,14 +1977,21 @@ def main():
     )
 
     (
-        approach,
-        approach_grid,
+        complete_mission,
+        segments,
+        mission,
+        connector_types,
+        validation,
+        complete_validation,
         approach_validation,
-    ) = build_approach_path(
-        start_ned=r1_start_ned,
-        start_heading=r1_start_heading,
-        first_segment=segments[0],
+        approach_grid,
+        lane_step,
+    ) = build_complete_mission(
+        first=first,
+        second=second,
         line_spacing=line_spacing,
+        r1_start_ned=r1_start_ned,
+        r1_start_heading=r1_start_heading,
         safe_grid=safe_grid,
         clearance=clearance,
         metadata=metadata,
@@ -1906,10 +2004,6 @@ def main():
         len(approach_grid),
     )
     print(
-        "  Approach samples  :",
-        len(approach),
-    )
-    print(
         "  Min clearance     :",
         round(
             approach_validation[
@@ -1919,45 +2013,6 @@ def main():
         ),
         "m",
     )
-
-    mission, connector_types, validation = (
-        build_coverage_mission(
-            segments,
-            line_spacing,
-            safe_grid,
-            clearance,
-            metadata,
-        )
-    )
-
-
-    # --------------------------------------------------------
-    # Complete mission:
-    # R1 approach -> coverage trajectory
-    # --------------------------------------------------------
-
-    # Both trajectories share the first coverage waypoint,
-    # therefore skip mission[0] to avoid duplicating it.
-    complete_mission = np.vstack(
-        (
-            approach,
-            mission[1:],
-        )
-    )
-
-    complete_validation = validate_path_on_safe_grid(
-        complete_mission,
-        safe_grid,
-        clearance,
-        metadata,
-    )
-
-    if not complete_validation["safe"]:
-
-        raise RuntimeError(
-            "Combined R1 approach + coverage mission "
-            "failed collision validation."
-        )
 
     print()
     print("Complete mission:")
