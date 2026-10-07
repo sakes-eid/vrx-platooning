@@ -16,6 +16,23 @@ from platoon_planner.mission_plan import (
     MissionPlan,
 )
 
+from platoon_planner.sydney_environment import (
+    find_sydney_mesh,
+    load_shore_vertices,
+    load_shore_triangles,
+    wamv_navigation_vertical_band,
+    build_vertical_slab_occupancy_grid,
+    build_safe_occupancy,
+)
+
+from platoon_planner.mission_validation import (
+    validate_complete_mission,
+)
+
+from platoon_planner.mission_preview import (
+    preview_and_approve,
+)
+
 
 Point = Tuple[float, float]
 
@@ -153,6 +170,7 @@ class StressCoursePlanner(Node):
         self.speed_profile: List[float] = []
         self.controller_active_index = 1
         self.initialized = False
+        self.mission_cancelled = False
 
         self.create_subscription(
             VehicleState,
@@ -595,35 +613,240 @@ class StressCoursePlanner(Node):
         )
 
     def state_callback(self, msg: VehicleState):
+
         self.r1 = msg
 
-        if self.initialized:
+        if (
+            self.initialized
+            or self.mission_cancelled
+        ):
             return
 
-        start_x = float(msg.x)
-        start_y = float(msg.y)
-        self.path_points = self.build_course(start_x, start_y)
-        self.path_s = self.cumulative_lengths(self.path_points)
-        self.curvature = self.estimate_curvature(self.path_points)
-        self.speed_profile = self.build_speed_profile(
-            self.path_points,
-            self.path_s,
-            self.curvature,
+        start_x = float(
+            msg.x
+        )
+
+        start_y = float(
+            msg.y
+        )
+
+        print()
+        print("=" * 60)
+        print("STANDARD STRESS MISSION SETUP")
+        print("=" * 60)
+
+        # -----------------------------------------------------
+        # Build fixed standard mission
+        # -----------------------------------------------------
+
+        mission = self.build_mission_plan(
+            start_x,
+            start_y,
+        )
+
+        # -----------------------------------------------------
+        # Sydney map + collision validation
+        # -----------------------------------------------------
+
+        print(
+            "Building Sydney navigation map..."
+        )
+
+        mesh = find_sydney_mesh()
+
+        vertices = load_shore_vertices(
+            mesh
+        )
+
+        triangles = load_shore_triangles(
+            mesh
+        )
+
+        z_min, z_max = (
+            wamv_navigation_vertical_band(
+                vertical_safety_margin=0.5,
+            )
+        )
+
+        raw_grid, metadata = (
+            build_vertical_slab_occupancy_grid(
+                vertices,
+                triangles,
+                z_min,
+                z_max,
+                resolution=2.0,
+                margin=10.0,
+            )
+        )
+
+        (
+            safe_grid,
+            clearance,
+            required_clearance,
+        ) = build_safe_occupancy(
+            raw_grid,
+            metadata,
+            safety_margin=1.0,
+        )
+
+        validation = (
+            validate_complete_mission(
+                mission.path_points,
+                raw_grid,
+                safe_grid,
+                clearance,
+                metadata,
+            )
+        )
+
+        if not validation[
+            "safe"
+        ]:
+
+            raise RuntimeError(
+                "Standard stress course failed "
+                "Sydney collision validation: "
+                f"{validation}"
+            )
+
+        mission.minimum_clearance = float(
+            validation[
+                "minimum_clearance"
+            ]
+        )
+
+        mission.collision_checked = True
+
+        mission.diagnostics.update(
+            {
+                "spawn_escape_used":
+                    bool(
+                        validation[
+                            "spawn_escape_used"
+                        ]
+                    ),
+
+                "safe_start_index":
+                    int(
+                        validation[
+                            "safe_start_index"
+                        ]
+                    ),
+            }
+        )
+
+        # -----------------------------------------------------
+        # Preview fixed course
+        # -----------------------------------------------------
+
+        decision = preview_and_approve(
+            mission=mission,
+            raw_grid=raw_grid,
+            safe_grid=safe_grid,
+            metadata=metadata,
+            r1_start_ned=(
+                start_x,
+                start_y,
+            ),
+            important_points=None,
+            allow_modify=False,
+        )
+
+        if decision == "cancel":
+
+            print()
+            print("=" * 60)
+            print("MISSION CANCELLED")
+            print("=" * 60)
+
+            print(
+                "No reference path has been published."
+            )
+
+            # Prevent every subsequent VehicleState message
+            # from immediately reopening the fixed preview.
+            self.mission_cancelled = True
+
+            return
+
+        # -----------------------------------------------------
+        # ACCEPT: only now prepare + publish
+        # -----------------------------------------------------
+
+        self.path_points = list(
+            mission.path_points
+        )
+
+        self.path_s = (
+            self.cumulative_lengths(
+                self.path_points
+            )
+        )
+
+        self.curvature = (
+            self.estimate_curvature(
+                self.path_points
+            )
+        )
+
+        self.speed_profile = (
+            self.build_speed_profile(
+                self.path_points,
+                self.path_s,
+                self.curvature,
+            )
         )
 
         self.initialized = True
         self.controller_active_index = 1
+
         self.publish_full_path()
 
         count = Int32()
-        count.data = len(self.path_points)
-        self.waypoint_count_pub.publish(count)
+        count.data = len(
+            self.path_points
+        )
+
+        self.waypoint_count_pub.publish(
+            count
+        )
+
+        print()
+        print("=" * 60)
+        print("STANDARD STRESS MISSION READY")
+        print("=" * 60)
+
+        print(
+            "Mission samples    :",
+            mission.waypoint_count,
+        )
+
+        print(
+            "Mission length     :",
+            f"{mission.path_length:.2f} m",
+        )
+
+        print(
+            "Minimum clearance  :",
+            f"{mission.minimum_clearance:.2f} m",
+        )
+
+        print(
+            "Collision check    : PASS"
+        )
+
+        print(
+            "Maximum speed      :",
+            f"{self.max_speed:.2f} m/s",
+        )
+
+        print("=" * 60)
 
         self.get_logger().info(
-            'Stress course published in world_ned: '
-            f'{len(self.path_points)} points, '
-            f'{self.path_s[-1]:.1f} m total length. '
-            f'R1 ceiling={self.max_speed:.2f} m/s.'
+            "Stress course published in world_ned: "
+            f"{len(self.path_points)} points, "
+            f"{self.path_s[-1]:.1f} m total length. "
+            f"R1 ceiling={self.max_speed:.2f} m/s."
         )
 
     def advisory_loop(self):

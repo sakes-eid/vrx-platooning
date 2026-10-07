@@ -39,11 +39,11 @@ from platoon_planner.sydney_environment import (
 
 from platoon_planner.coverage_router import (
     select_coverage_rectangle,
-    build_complete_mission,
+    build_coverage_mission_plan,
 )
 
-from platoon_planner.dubins_router import (
-    path_length,
+from platoon_planner.mission_preview import (
+    preview_and_approve,
 )
 
 
@@ -211,58 +211,145 @@ class CoverageMissionPlanner(
                 "Black  = collision-relevant terrain"
             )
 
-            first, second = (
-                select_coverage_rectangle(
-                    raw_grid,
-                    safe_grid,
-                    metadata,
+            # =================================================
+            # Select + build + preview + approve Coverage
+            # =================================================
+
+            while True:
+
+                first, second = (
+                    select_coverage_rectangle(
+                        raw_grid,
+                        safe_grid,
+                        metadata,
+                    )
                 )
-            )
 
-            print()
-            print(
-                "Coverage area selected."
-            )
-
-            line_spacing = (
-                self.ask_line_spacing()
-            )
-
-            (
-                complete_mission,
-                segments,
-                mission,
-                connector_types,
-                coverage_validation,
-                complete_validation,
-                approach_validation,
-                approach_grid,
-                lane_step,
-            ) = build_complete_mission(
-                first=first,
-                second=second,
-                line_spacing=line_spacing,
-                r1_start_ned=(
-                    start_north,
-                    start_east,
-                ),
-                r1_start_heading=start_heading,
-                safe_grid=safe_grid,
-                clearance=clearance,
-                metadata=metadata,
-                raw_grid=raw_grid,
-            )
-
-            # Convert numpy mission samples into the
-            # existing planner's normal point format.
-            self.path_points = [
-                (
-                    float(point[0]),
-                    float(point[1]),
+                print()
+                print(
+                    "Coverage area selected."
                 )
-                for point
-                in complete_mission
-            ]
+
+                line_spacing = (
+                    self.ask_line_spacing()
+                )
+
+                try:
+
+                    mission = (
+                        build_coverage_mission_plan(
+                            first=first,
+                            second=second,
+                            line_spacing=line_spacing,
+                            r1_start_ned=(
+                                start_north,
+                                start_east,
+                            ),
+                            r1_start_heading=(
+                                start_heading
+                            ),
+                            raw_grid=raw_grid,
+                            safe_grid=safe_grid,
+                            clearance=clearance,
+                            metadata=metadata,
+                        )
+                    )
+
+                except (
+                    RuntimeError,
+                    ValueError,
+                ) as exc:
+
+                    print()
+                    print("=" * 60)
+                    print("COVERAGE MISSION REJECTED")
+                    print("=" * 60)
+
+                    print(
+                        str(
+                            exc
+                        )
+                    )
+
+                    print()
+                    print(
+                        "Select another coverage area."
+                    )
+
+                    continue
+
+                decision = (
+                    preview_and_approve(
+                        mission=mission,
+                        raw_grid=raw_grid,
+                        safe_grid=safe_grid,
+                        metadata=metadata,
+                        r1_start_ned=(
+                            start_north,
+                            start_east,
+                        ),
+                        important_points=[
+                            {
+                                "label":
+                                    "Preferred Start Corner",
+
+                                "point":
+                                    first,
+
+                                "marker":
+                                    "x",
+                            },
+                            {
+                                "label":
+                                    "Opposite Corner",
+
+                                "point":
+                                    second,
+
+                                "marker":
+                                    "x",
+                            },
+                        ],
+                    )
+                )
+
+                if decision == "modify":
+
+                    print()
+                    print(
+                        "Reopening Coverage "
+                        "mission selector..."
+                    )
+
+                    continue
+
+                if decision == "cancel":
+
+                    print()
+                    print("=" * 60)
+                    print("MISSION CANCELLED")
+                    print("=" * 60)
+
+                    print(
+                        "No reference path "
+                        "has been published."
+                    )
+
+                    self.get_logger().info(
+                        "Coverage mission cancelled "
+                        "before publication."
+                    )
+
+                    return
+
+                # ACCEPT
+                break
+
+            self.mission_plan = mission
+
+            self.path_points = list(
+                mission.path_points
+            )
 
             if len(
                 self.path_points
@@ -318,45 +405,31 @@ class CoverageMissionPlanner(
 
             print(
                 "A* waypoints       :",
-                len(
-                    approach_grid
-                ),
+                mission.diagnostics[
+                    "approach_astar_waypoints"
+                ],
             )
 
             print(
                 "Coverage segments  :",
-                len(
-                    segments
-                ),
+                mission.diagnostics[
+                    "coverage_segments"
+                ],
             )
 
             print(
                 "Mission samples    :",
-                len(
-                    self.path_points
-                ),
+                mission.waypoint_count,
             )
 
             print(
                 "Mission length     :",
-                round(
-                    path_length(
-                        complete_mission
-                    ),
-                    2,
-                ),
-                "m",
+                f"{mission.path_length:.2f} m",
             )
 
             print(
                 "Minimum clearance  :",
-                round(
-                    complete_validation[
-                        "minimum_clearance"
-                    ],
-                    2,
-                ),
-                "m",
+                f"{mission.minimum_clearance:.2f} m",
             )
 
             print(

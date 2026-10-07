@@ -51,6 +51,10 @@ from platoon_planner.curve_mission import (
     build_curve_mission_plan,
 )
 
+from platoon_planner.mission_preview import (
+    preview_and_approve,
+)
+
 
 class CurveMissionPlanner(
     StressCoursePlanner
@@ -195,7 +199,7 @@ class CurveMissionPlanner(
             )
 
             # =================================================
-            # Select curve
+            # Select + preview + approve curve
             # =================================================
 
             while True:
@@ -217,31 +221,17 @@ class CurveMissionPlanner(
                     )
                 )
 
-                selected_start = (
-                    selected[0]
-                )
-
-                selected_apogee = (
-                    selected[1]
-                )
-
-                selected_end = (
-                    selected[2]
-                )
+                selected_start = selected[0]
+                selected_apogee = selected[1]
+                selected_end = selected[2]
 
                 try:
 
                     mission = (
                         build_curve_mission_plan(
-                            selected_start=(
-                                selected_start
-                            ),
-                            selected_apogee=(
-                                selected_apogee
-                            ),
-                            selected_end=(
-                                selected_end
-                            ),
+                            selected_start=selected_start,
+                            selected_apogee=selected_apogee,
+                            selected_end=selected_end,
                             r1_start_ned=(
                                 start_north,
                                 start_east,
@@ -256,8 +246,6 @@ class CurveMissionPlanner(
                         )
                     )
 
-                    break
-
                 except (
                     RuntimeError,
                     ValueError,
@@ -268,17 +256,92 @@ class CurveMissionPlanner(
                     print("CURVE MISSION REJECTED")
                     print("=" * 60)
 
-                    print(
-                        str(
-                            exc
-                        )
-                    )
+                    print(str(exc))
 
                     print()
                     print(
                         "Select another START, "
                         "APOGEE and END."
                     )
+
+                    continue
+
+                decision = (
+                    preview_and_approve(
+                        mission=mission,
+                        raw_grid=raw_grid,
+                        safe_grid=safe_grid,
+                        metadata=metadata,
+                        r1_start_ned=(
+                            start_north,
+                            start_east,
+                        ),
+                        important_points=[
+                            {
+                                "label":
+                                    "Curve Start",
+
+                                "point":
+                                    selected_start,
+
+                                "marker":
+                                    "x",
+                            },
+                            {
+                                "label":
+                                    "Apogee",
+
+                                "point":
+                                    selected_apogee,
+
+                                "marker":
+                                    "x",
+                            },
+                            {
+                                "label":
+                                    "Curve End",
+
+                                "point":
+                                    selected_end,
+
+                                "marker":
+                                    "x",
+                            },
+                        ],
+                    )
+                )
+
+                if decision == "modify":
+
+                    print()
+                    print(
+                        "Reopening Curve "
+                        "mission selector..."
+                    )
+
+                    continue
+
+                if decision == "cancel":
+
+                    print()
+                    print("=" * 60)
+                    print("MISSION CANCELLED")
+                    print("=" * 60)
+
+                    print(
+                        "No reference path "
+                        "has been published."
+                    )
+
+                    self.get_logger().info(
+                        "Curve mission cancelled "
+                        "before publication."
+                    )
+
+                    return
+
+                # ACCEPT
+                break
 
             self.mission_plan = mission
 

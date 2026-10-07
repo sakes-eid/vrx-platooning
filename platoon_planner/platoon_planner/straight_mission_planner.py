@@ -50,6 +50,10 @@ from platoon_planner.straight_mission import (
     build_straight_mission_plan,
 )
 
+from platoon_planner.mission_preview import (
+    preview_and_approve,
+)
+
 
 class StraightMissionPlanner(
     StressCoursePlanner
@@ -194,7 +198,7 @@ class StraightMissionPlanner(
             )
 
             # =================================================
-            # Mission selection
+            # Mission selection + preview + approval
             # =================================================
 
             while True:
@@ -246,8 +250,6 @@ class StraightMissionPlanner(
                         )
                     )
 
-                    break
-
                 except RuntimeError as exc:
 
                     print()
@@ -266,6 +268,79 @@ class StraightMissionPlanner(
                         "Select another "
                         "START and END."
                     )
+
+                    continue
+
+                # =============================================
+                # Common mission preview
+                # =============================================
+
+                decision = (
+                    preview_and_approve(
+                        mission=mission,
+                        raw_grid=raw_grid,
+                        safe_grid=safe_grid,
+                        metadata=metadata,
+                        r1_start_ned=(
+                            start_north,
+                            start_east,
+                        ),
+                        important_points=[
+                            {
+                                "label":
+                                    "Straight Start",
+
+                                "point":
+                                    selected_start,
+
+                                "marker":
+                                    "x",
+                            },
+                            {
+                                "label":
+                                    "Straight End",
+
+                                "point":
+                                    selected_end,
+
+                                "marker":
+                                    "x",
+                            },
+                        ],
+                    )
+                )
+
+                if decision == "modify":
+
+                    print()
+                    print(
+                        "Reopening Straight "
+                        "mission selector..."
+                    )
+
+                    continue
+
+                if decision == "cancel":
+
+                    print()
+                    print("=" * 60)
+                    print("MISSION CANCELLED")
+                    print("=" * 60)
+
+                    print(
+                        "No reference path "
+                        "has been published."
+                    )
+
+                    self.get_logger().info(
+                        "Straight mission cancelled "
+                        "before publication."
+                    )
+
+                    return
+
+                # ACCEPT
+                break
 
             self.mission_plan = mission
 
