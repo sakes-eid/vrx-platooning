@@ -26,8 +26,14 @@ def generate_launch_description():
     run_name = LaunchConfiguration('run_name')
     headless = LaunchConfiguration('headless')
     show_map = LaunchConfiguration('show_map')
+    enable_planner = LaunchConfiguration('enable_planner')
 
     return LaunchDescription([
+        DeclareLaunchArgument(
+            'enable_planner',
+            default_value='true',
+        ),
+
         DeclareLaunchArgument(
             'run_name',
             default_value='r1_stress_baseline_01',
@@ -48,6 +54,7 @@ def generate_launch_description():
             launch_arguments={
                 'run_name': run_name,
                 'headless': headless,
+                'enable_planner': enable_planner,
             }.items(),
         ),
 

@@ -199,6 +199,9 @@ def launch_experiment(context):
         executable='stress_course_planner',
         name='trajectory_planner',
         output='screen',
+        condition=IfCondition(
+            LaunchConfiguration('enable_planner')
+        ),
         parameters=[
             planner_config,
             {
@@ -390,6 +393,14 @@ def generate_launch_description():
     # Launch arguments
     # =========================================================
 
+    enable_planner_argument = DeclareLaunchArgument(
+        'enable_planner',
+        default_value='true',
+        description=(
+            'Start the built-in R1 stress planner'
+        )
+    )
+
     trajectory_argument = DeclareLaunchArgument(
         'trajectory_type',
         default_value='straight',
@@ -442,6 +453,7 @@ def generate_launch_description():
     # =========================================================
 
     return LaunchDescription([
+        enable_planner_argument,
         trajectory_argument,
         run_name_argument,
         simulation_profile_argument,

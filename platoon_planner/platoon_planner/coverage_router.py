@@ -1186,239 +1186,6 @@ def connect_segments(
 
 
 
-def build_approach_path(
-    start_ned,
-    start_heading,
-    first_segment,
-    line_spacing,
-    safe_grid,
-    clearance,
-    metadata,
-):
-    """
-    Route R1 safely from its current position to the beginning of the
-    first coverage lane.
-
-    Pipeline:
-        A*
-        -> safe simplification
-        -> Dubins smoothing
-        -> collision validation
-    """
-
-    turn_radius = (
-        line_spacing / 2.0
-    )
-
-    start_cell = ned_to_grid(
-        start_ned[0],
-        start_ned[1],
-        metadata,
-    )
-
-    goal_cell = (
-        first_segment[
-            "start_cell"
-        ]
-    )
-
-    if safe_grid[start_cell] != 0:
-        raise RuntimeError(
-            "R1 start position is not in safe water."
-        )
-
-    astar = astar_grid(
-        safe_grid,
-        clearance,
-        start_cell,
-        goal_cell,
-        resolution=metadata[
-            "resolution"
-        ],
-        preferred_clearance=max(
-            12.0,
-            line_spacing,
-        ),
-        clearance_weight=1.5,
-    )
-
-    simplified = simplify_grid_path(
-        astar,
-        safe_grid,
-    )
-
-    route_points = grid_path_to_ned(
-        simplified,
-        metadata,
-    )
-
-    # Preserve the exact vehicle position rather than merely the
-    # centre of its occupancy-grid cell.
-    route_points[0] = (
-        float(start_ned[0]),
-        float(start_ned[1]),
-    )
-
-    route_points[-1] = (
-        first_segment[
-            "start_ned"
-        ]
-    )
-
-    approach, _ = generate_dubins_via_waypoints(
-        route_points,
-        start_heading=float(
-            start_heading
-        ),
-        goal_heading=float(
-            first_segment[
-                "heading"
-            ]
-        ),
-        turning_radius=turn_radius,
-        step=0.5,
-    )
-
-    validation = validate_path_on_safe_grid(
-        approach,
-        safe_grid,
-        clearance,
-        metadata,
-    )
-
-    if not validation[
-        "safe"
-    ]:
-
-        raise RuntimeError(
-            "A* found a route to the coverage area, "
-            "but the Dubins-smoothed approach failed "
-            "collision validation."
-        )
-
-    return (
-        approach,
-        simplified,
-        validation,
-    )
-
-
-def build_approach_path(
-    start_ned,
-    start_heading,
-    first_segment,
-    line_spacing,
-    safe_grid,
-    clearance,
-    metadata,
-):
-    """
-    Route R1 safely from its current position to the beginning of the
-    first coverage lane.
-
-    Pipeline:
-        A*
-        -> safe simplification
-        -> Dubins smoothing
-        -> collision validation
-    """
-
-    turn_radius = (
-        line_spacing / 2.0
-    )
-
-    start_cell = ned_to_grid(
-        start_ned[0],
-        start_ned[1],
-        metadata,
-    )
-
-    goal_cell = (
-        first_segment[
-            "start_cell"
-        ]
-    )
-
-    if safe_grid[start_cell] != 0:
-        raise RuntimeError(
-            "R1 start position is not in safe water."
-        )
-
-    astar = astar_grid(
-        safe_grid,
-        clearance,
-        start_cell,
-        goal_cell,
-        resolution=metadata[
-            "resolution"
-        ],
-        preferred_clearance=max(
-            12.0,
-            line_spacing,
-        ),
-        clearance_weight=1.5,
-    )
-
-    simplified = simplify_grid_path(
-        astar,
-        safe_grid,
-    )
-
-    route_points = grid_path_to_ned(
-        simplified,
-        metadata,
-    )
-
-    # Preserve the exact vehicle position rather than merely the
-    # centre of its occupancy-grid cell.
-    route_points[0] = (
-        float(start_ned[0]),
-        float(start_ned[1]),
-    )
-
-    route_points[-1] = (
-        first_segment[
-            "start_ned"
-        ]
-    )
-
-    approach, _ = generate_dubins_via_waypoints(
-        route_points,
-        start_heading=float(
-            start_heading
-        ),
-        goal_heading=float(
-            first_segment[
-                "heading"
-            ]
-        ),
-        turning_radius=turn_radius,
-        step=0.5,
-    )
-
-    validation = validate_path_on_safe_grid(
-        approach,
-        safe_grid,
-        clearance,
-        metadata,
-    )
-
-    if not validation[
-        "safe"
-    ]:
-
-        raise RuntimeError(
-            "A* found a route to the coverage area, "
-            "but the Dubins-smoothed approach failed "
-            "collision validation."
-        )
-
-    return (
-        approach,
-        simplified,
-        validation,
-    )
-
 
 # ============================================================
 # COMPLETE COVERAGE MISSION
@@ -1671,6 +1438,7 @@ def build_complete_mission(
     safe_grid,
     clearance,
     metadata,
+    raw_grid=None,
 ):
     """
     Build the complete R1 mission:
@@ -1739,6 +1507,7 @@ def build_complete_mission(
         safe_grid=safe_grid,
         clearance=clearance,
         metadata=metadata,
+        raw_grid=raw_grid,
     )
 
     (
@@ -1760,18 +1529,78 @@ def build_complete_mission(
         )
     )
 
-    complete_validation = validate_path_on_safe_grid(
-        complete_mission,
-        safe_grid,
-        clearance,
-        metadata,
+    # --------------------------------------------------------
+    # Final mission validation
+    #
+    # If R1 spawned inside the additional orange planning
+    # buffer, coverage_approach already validated the short
+    # escape separately against:
+    #
+    #   - raw terrain
+    #   - physical WAM-V footprint clearance
+    #
+    # Strict normal safe-grid validation therefore begins at
+    # the first waypoint that has entered ordinary safe water.
+    # --------------------------------------------------------
+
+    safe_start_index = int(
+        approach_validation.get(
+            "safe_start_index",
+            0,
+        )
     )
 
-    if not complete_validation["safe"]:
+    strict_complete_validation = (
+        validate_path_on_safe_grid(
+            complete_mission[
+                safe_start_index:
+            ],
+            safe_grid,
+            clearance,
+            metadata,
+        )
+    )
+
+    if not strict_complete_validation["safe"]:
         raise RuntimeError(
             "Combined R1 approach + coverage mission "
-            "failed collision validation."
+            "failed collision validation after "
+            "entering normal safe water."
         )
+
+    complete_validation = dict(
+        strict_complete_validation
+    )
+
+    complete_validation[
+        "escape_used"
+    ] = bool(
+        approach_validation.get(
+            "escape_used",
+            False,
+        )
+    )
+
+    complete_validation[
+        "safe_start_index"
+    ] = safe_start_index
+
+    # Report the true minimum terrain clearance across both
+    # the permitted spawn escape and the strict safe mission.
+    complete_validation[
+        "minimum_clearance"
+    ] = min(
+        float(
+            approach_validation[
+                "minimum_clearance"
+            ]
+        ),
+        float(
+            strict_complete_validation[
+                "minimum_clearance"
+            ]
+        ),
+    )
 
     return (
         complete_mission,
@@ -1995,6 +1824,7 @@ def main():
         safe_grid=safe_grid,
         clearance=clearance,
         metadata=metadata,
+        raw_grid=raw_grid,
     )
 
     print()

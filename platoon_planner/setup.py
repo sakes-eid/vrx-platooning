@@ -39,6 +39,7 @@ setup(
             'platoon_planner.trajectory_planner:main',
         
             'coverage_planner = platoon_planner.coverage_planner:main',
+            'coverage_mission_planner = platoon_planner.coverage_mission_planner:main',
         
             'two_robot_planner = platoon_planner.two_robot_planner:main',
             'follower_planner = platoon_planner.two_robot_planner:main',
