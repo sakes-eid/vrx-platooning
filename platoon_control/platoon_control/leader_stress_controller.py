@@ -963,10 +963,27 @@ class LeaderPIDController(Node):
         message,
     ):
 
-        self.planner_target_speed = clamp(
+        new_target_speed = clamp(
             float(message.data),
             0.0,
             self.max_planner_speed,
+        )
+
+        # If the planner requests a lower speed, discard the
+        # positive integral accumulated while holding the
+        # previous faster speed.
+        #
+        # The planner remains authoritative for desired speed.
+        # The PID remains authoritative for thrust.
+        if (
+            new_target_speed
+            < self.planner_target_speed
+            - 1e-6
+        ):
+            self.speed_pid.reset()
+
+        self.planner_target_speed = (
+            new_target_speed
         )
 
     def planner_lookahead_callback(

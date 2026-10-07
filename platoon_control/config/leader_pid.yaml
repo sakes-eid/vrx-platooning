@@ -13,9 +13,9 @@ leader_pid_controller:
     goal_tolerance: 1.0
     heading_slowdown_angle: 0.5283476090300474
     speed_kp: 77.49640833032895
-    speed_ki: 16.564166376336193
+    speed_ki: 40.0
     speed_kd: 49.19260599818982
-    speed_integral_limit: 3.0
+    speed_integral_limit: 10.0
     heading_kp: 1388.5269897997275
     heading_ki: 26.45969942764789
     heading_kd: 201.59814882921654
