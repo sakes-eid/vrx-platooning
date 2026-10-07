@@ -53,6 +53,10 @@ from platoon_planner.coverage_approach import (
     build_approach_path,
 )
 
+from platoon_planner.mission_plan import (
+    MissionPlan,
+)
+
 from platoon_planner.dubins_router import (
     generate_dubins_path,
     generate_dubins_via_waypoints,
@@ -1613,6 +1617,143 @@ def build_complete_mission(
         approach_grid,
         lane_step,
     )
+
+
+
+# ============================================================
+# COMMON MISSION INTERFACE
+# ============================================================
+
+def build_coverage_mission_plan(
+    first,
+    second,
+    line_spacing,
+    r1_start_ned,
+    r1_start_heading,
+    raw_grid,
+    safe_grid,
+    clearance,
+    metadata,
+):
+    """
+    Build the existing map-aware coverage mission and expose it
+    through the common MissionPlan interface.
+
+    Routing behaviour is unchanged.
+    """
+
+    (
+        complete_mission,
+        segments,
+        coverage_mission,
+        connector_types,
+        coverage_validation,
+        complete_validation,
+        approach_validation,
+        approach_grid,
+        lane_step,
+    ) = build_complete_mission(
+        first=first,
+        second=second,
+        line_spacing=line_spacing,
+        r1_start_ned=r1_start_ned,
+        r1_start_heading=r1_start_heading,
+        safe_grid=safe_grid,
+        clearance=clearance,
+        metadata=metadata,
+        raw_grid=raw_grid,
+    )
+
+    path_points = [
+        (
+            float(point[0]),
+            float(point[1]),
+        )
+        for point in complete_mission
+    ]
+
+    mission = MissionPlan(
+        mission_type="coverage",
+
+        path_points=path_points,
+
+        parameters={
+            "first_corner": (
+                float(first[0]),
+                float(first[1]),
+            ),
+
+            "opposite_corner": (
+                float(second[0]),
+                float(second[1]),
+            ),
+
+            "line_spacing":
+                float(line_spacing),
+
+            "r1_start_heading":
+                float(r1_start_heading),
+        },
+
+        minimum_clearance=float(
+            complete_validation[
+                "minimum_clearance"
+            ]
+        ),
+
+        collision_checked=True,
+
+        diagnostics={
+            "coverage_segments":
+                len(segments),
+
+            "coverage_samples":
+                len(coverage_mission),
+
+            "approach_astar_waypoints":
+                len(approach_grid),
+
+            "direct_turns":
+                connector_types.count(
+                    "dubins"
+                ),
+
+            "astar_rerouted_turns":
+                connector_types.count(
+                    "astar+dubins"
+                ),
+
+            "lane_step_m":
+                float(
+                    lane_step
+                    * metadata[
+                        "resolution"
+                    ]
+                ),
+
+            "spawn_escape_used":
+                bool(
+                    approach_validation.get(
+                        "escape_used",
+                        False,
+                    )
+                ),
+
+            "spawn_clearance":
+                approach_validation.get(
+                    "spawn_clearance"
+                ),
+
+            "coverage_minimum_clearance":
+                coverage_validation.get(
+                    "minimum_clearance"
+                ),
+        },
+    )
+
+    mission.validate()
+
+    return mission
 
 
 

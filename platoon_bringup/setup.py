@@ -118,6 +118,9 @@ setup(
             'experiment_launcher = '
             'platoon_bringup.'
             'experiment_launcher:main',
+            'platoon_startup = '
+            'platoon_bringup.'
+            'platoon_startup:main',
         ],
     },
 )
