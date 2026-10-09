@@ -1,165 +1,286 @@
 Panels:
-- Class: rviz_common/Displays
-  Name: Displays
-- Class: rviz_common/Views
-  Name: Views
-
+  - Class: rviz_common/Displays
+    Help Height: 70
+    Name: Displays
+    Property Tree Widget:
+      Expanded: ~
+      Splitter Ratio: 0.5
+    Tree Height: 363
+  - Class: rviz_common/Views
+    Expanded:
+      - /Current View1
+    Name: Views
+    Splitter Ratio: 0.5
 Visualization Manager:
-  Class: ''
+  Class: ""
   Displays:
-
-  - Alpha: 0.45
-    Cell Size: 10
-    Class: rviz_default_plugins/Grid
-    Color: 120; 120; 120
-    Enabled: true
-    Name: World grid
-    Plane: XY
-    Plane Cell Count: 80
-    Reference Frame: world_ned
-
-  - Alpha: 1
-    Buffer Length: 1
-    Class: rviz_default_plugins/Path
-    Color: 80; 255; 80
-    Enabled: true
-    Line Style: Lines
-    Line Width: 0.12
-    Name: R1 reference course
-    Topic:
-      Depth: 5
-      Durability Policy: Transient Local
-      Reliability Policy: Reliable
-      Value: /planner/reference_path
-
-  - Alpha: 1
-    Buffer Length: 1
-    Class: rviz_default_plugins/Path
-    Color: 255; 150; 30
-    Enabled: true
-    Line Style: Lines
-    Line Width: 0.18
-    Name: R2 breadcrumb path
-    Topic:
-      Depth: 5
-      Durability Policy: Transient Local
-      Reliability Policy: Reliable
-      Value: /planner/r2/breadcrumb_path
-
-  - Alpha: 1
-    Buffer Length: 1
-    Class: rviz_default_plugins/Path
-    Color: 30; 140; 255
-    Enabled: true
-    Line Style: Lines
-    Line Width: 0.18
-    Name: R3 breadcrumb path
-    Topic:
-      Depth: 5
-      Durability Policy: Transient Local
-      Reliability Policy: Reliable
-      Value: /planner/r3/breadcrumb_path
-
-  - Alpha: 1
-    Buffer Length: 1
-    Class: rviz_default_plugins/Path
-    Color: 100; 255; 100
-    Enabled: true
-    Line Style: Lines
-    Line Width: 0.14
-    Name: R1 actual trail
-    Topic:
-      Depth: 5
-      Durability Policy: Transient Local
-      Reliability Policy: Reliable
-      Value: /viz/r1/trail
-
-  - Alpha: 1
-    Buffer Length: 1
-    Class: rviz_default_plugins/Path
-    Color: 255; 150; 30
-    Enabled: true
-    Line Style: Lines
-    Line Width: 0.14
-    Name: R2 actual trail
-    Topic:
-      Depth: 5
-      Durability Policy: Transient Local
-      Reliability Policy: Reliable
-      Value: /viz/r2/trail
-
-  - Alpha: 1
-    Buffer Length: 1
-    Class: rviz_default_plugins/Path
-    Color: 30; 140; 255
-    Enabled: true
-    Line Style: Lines
-    Line Width: 0.14
-    Name: R3 actual trail
-    Topic:
-      Depth: 5
-      Durability Policy: Transient Local
-      Reliability Policy: Reliable
-      Value: /viz/r3/trail
-
-  - Class: rviz_default_plugins/MarkerArray
-    Enabled: true
-    Name: R1
-    Topic:
-      Depth: 5
-      Reliability Policy: Reliable
-      Value: /viz/r1/markers
-
-  - Class: rviz_default_plugins/MarkerArray
-    Enabled: true
-    Name: R2
-    Topic:
-      Depth: 5
-      Reliability Policy: Reliable
-      Value: /viz/r2/markers
-
-  - Class: rviz_default_plugins/MarkerArray
-    Enabled: true
-    Name: R3
-    Topic:
-      Depth: 5
-      Reliability Policy: Reliable
-      Value: /viz/r3/markers
-
+    - Alpha: 0.44999998807907104
+      Cell Size: 10
+      Class: rviz_default_plugins/Grid
+      Color: 120; 120; 120
+      Enabled: true
+      Line Style:
+        Line Width: 0.029999999329447746
+        Value: Lines
+      Name: World grid
+      Normal Cell Count: 0
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Plane: XY
+      Plane Cell Count: 80
+      Reference Frame: world_ned
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz_default_plugins/Path
+      Color: 80; 255; 80
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.11999999731779099
+      Name: R1 reference course
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic:
+        Depth: 5
+        Durability Policy: Transient Local
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /planner/reference_path
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz_default_plugins/Path
+      Color: 255; 150; 30
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.18000000715255737
+      Name: R2 breadcrumb path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic:
+        Depth: 5
+        Durability Policy: Transient Local
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /planner/r2/breadcrumb_path
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz_default_plugins/Path
+      Color: 30; 140; 255
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.18000000715255737
+      Name: R3 breadcrumb path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic:
+        Depth: 5
+        Durability Policy: Transient Local
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /planner/r3/breadcrumb_path
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz_default_plugins/Path
+      Color: 100; 255; 100
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.14000000059604645
+      Name: R1 actual trail
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic:
+        Depth: 5
+        Durability Policy: Transient Local
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /viz/r1/trail
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz_default_plugins/Path
+      Color: 255; 150; 30
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.14000000059604645
+      Name: R2 actual trail
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic:
+        Depth: 5
+        Durability Policy: Transient Local
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /viz/r2/trail
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz_default_plugins/Path
+      Color: 30; 140; 255
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.14000000059604645
+      Name: R3 actual trail
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic:
+        Depth: 5
+        Durability Policy: Transient Local
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /viz/r3/trail
+      Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: R1
+      Namespaces:
+        r1: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /viz/r1/markers
+      Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: R2
+      Namespaces:
+        r2: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /viz/r2/markers
+      Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: R3
+      Namespaces:
+        r3: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /viz/r3/markers
+      Value: true
   Enabled: true
-
   Global Options:
     Background Color: 35; 35; 35
     Fixed Frame: world_ned
     Frame Rate: 30
-
   Name: root
-
   Tools:
-  - Class: rviz_default_plugins/Interact
-  - Class: rviz_default_plugins/MoveCamera
-  - Class: rviz_default_plugins/Select
-  - Class: rviz_default_plugins/FocusCamera
-  - Class: rviz_default_plugins/Measure
-
+    - Class: rviz_default_plugins/Interact
+      Hide Inactive Objects: true
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+    - Class: rviz_default_plugins/FocusCamera
+    - Class: rviz_default_plugins/Measure
+      Line color: 128; 128; 0
   Transformation:
     Current:
       Class: rviz_default_plugins/TF
-
+  Value: true
   Views:
     Current:
       Angle: 0
       Class: rviz_default_plugins/TopDownOrtho
-      Name: Three-robot platoon
-      Near Clip Distance: 0.01
-      Scale: 7
+      Enable Stereo Rendering:
+        Stereo Eye Separation: 0.05999999865889549
+        Stereo Focal Distance: 1
+        Swap Stereo Eyes: false
+        Value: false
+      Invert Z Axis: false
+      Name: Current View
+      Near Clip Distance: 0.009999999776482582
+      Scale: 6.956728935241699
       Target Frame: world_ned
-      X: 209
-      Y: -519
-    Saved: null
-
+      Value: TopDownOrtho (rviz_default_plugins)
+      X: 267.7908020019531
+      Y: -484.3504638671875
+    Saved: ~
 Window Geometry:
+  Displays:
+    collapsed: false
   Height: 900
+  Hide Left Dock: false
+  Hide Right Dock: false
+  QMainWindow State: 000000ff00000000fd00000001000000000000019b0000032efc0200000002fb000000100044006900730070006c006100790073010000003b000001ec000000c700fffffffb0000000a00560069006500770073010000022d0000013c000000a000ffffff000003730000032e00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  Views:
+    collapsed: false
   Width: 1300
-  X: 40
-  Y: 40
+  X: -24
+  Y: -24

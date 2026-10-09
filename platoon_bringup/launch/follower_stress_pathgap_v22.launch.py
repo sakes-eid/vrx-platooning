@@ -30,6 +30,17 @@ def launch_system(context):
         ).perform(context)
     )
 
+    follower_max_speed = float(
+        LaunchConfiguration(
+            'follower_max_speed'
+        ).perform(context)
+    )
+
+    if follower_max_speed <= 0.0:
+        raise RuntimeError(
+            'follower_max_speed must be > 0'
+        )
+
     predecessor_id = LaunchConfiguration(
         'predecessor_id'
     ).perform(context)
@@ -57,6 +68,16 @@ def launch_system(context):
         == 'true'
     )
 
+    enable_logging = LaunchConfiguration(
+        'enable_logging'
+    )
+
+    logging_enabled = (
+        enable_logging.perform(context)
+        .lower()
+        == 'true'
+    )
+
     run_name = LaunchConfiguration(
         'run_name'
     ).perform(context)
@@ -67,21 +88,23 @@ def launch_system(context):
         ).perform(context)
     )
 
-    os.makedirs(
-        results_root,
-        exist_ok=True,
-    )
-
     follower_csv = os.path.join(
         results_root,
         run_name + '.csv',
     )
 
-    if os.path.exists(follower_csv):
-        raise RuntimeError(
-            'Baseline result already exists: '
-            + follower_csv
+    if logging_enabled:
+
+        os.makedirs(
+            results_root,
+            exist_ok=True,
         )
+
+        if os.path.exists(follower_csv):
+            raise RuntimeError(
+                'Baseline result already exists: '
+                + follower_csv
+            )
 
     # =========================================================
     # LIGHT WAM-V models
@@ -295,7 +318,10 @@ def launch_system(context):
 
                 'use_sim_time':
                     True,
-            }, planner_params_file],
+            }, planner_params_file, {
+                'historical_preview_max_speed':
+                    follower_max_speed,
+            }],
         ),
 
         # =====================================================
@@ -324,7 +350,10 @@ def launch_system(context):
 
                 'use_sim_time':
                     True,
-            }, controller_params_file],
+            }, controller_params_file, {
+                'follow_max_speed':
+                    follower_max_speed,
+            }],
         ),
 
         # =====================================================
@@ -337,6 +366,9 @@ def launch_system(context):
             executable='r1_stress_logger',
             name='r1_stress_logger',
             output='screen',
+            condition=IfCondition(
+                enable_logging
+            ),
             parameters=[{
                 'run_name':
                     run_name + '_r1',
@@ -359,6 +391,9 @@ def launch_system(context):
             namespace='r2',
             name='follower_logger',
             output='screen',
+            condition=IfCondition(
+                enable_logging
+            ),
             parameters=[{
                 'follower_id': follower_id,
 
@@ -491,6 +526,14 @@ def generate_launch_description():
         ),
 
         DeclareLaunchArgument(
+            'follower_max_speed',
+            default_value='2.8',
+            description=(
+                'Maximum follower speed in m/s'
+            ),
+        ),
+
+        DeclareLaunchArgument(
             'enable_planner',
             default_value='true',
             description=(
@@ -501,6 +544,12 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'headless',
             default_value='False',
+        ),
+
+        DeclareLaunchArgument(
+            'enable_logging',
+            default_value='true',
+            description='Enable result logging',
         ),
 
         DeclareLaunchArgument(

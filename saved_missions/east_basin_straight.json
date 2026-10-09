@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "name": "east_basin_straight",
+  "mission_type": "straight",
+  "coordinate_frame": "world_ned",
+  "geometry": {
+    "start": [
+      225.3690322580644,
+      -316.80688172043006
+    ],
+    "end": [
+      225.3690322580644,
+      27.767741935483855
+    ]
+  }
+}

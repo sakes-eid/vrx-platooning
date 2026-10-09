@@ -4,6 +4,7 @@
     brake_ki: 60.634764417119634
     brake_kp: 177.8935198208073
     catchup_distance: 5.345285289922457
+    catchup_speed_gain_scale: 1.5
     catchup_min_speed: 1.2723843447849745
     cross_track_heading_gain: 0.2805635257284035
     distance_kd: 0.25770214280663706
@@ -18,4 +19,5 @@
     max_distance_speed_correction: 0.7765928787144546
     speed_kd: 111.26620408076914
     speed_ki: 44.09953488498377
+    follow_speed_integral_limit: 12.0
     speed_kp: 114.29069944122205

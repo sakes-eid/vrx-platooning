@@ -86,10 +86,13 @@ def build_robot_launch_spec(
     robot_count,
     *,
     headless=False,
+    show_rviz=True,
     show_map=True,
     run_name="platoon_run",
     simulation_profile="light",
     follower_spacing=5.0,
+    leader_max_speed=2.0,
+    follower_speed_margin=0.8,
     results_dir=None,
     repo_root=DEFAULT_REPO_ROOT,
 ):
@@ -108,6 +111,34 @@ def build_robot_launch_spec(
 
     follower_spacing = float(
         follower_spacing
+    )
+
+    leader_max_speed = float(
+        leader_max_speed
+    )
+
+    follower_speed_margin = float(
+        follower_speed_margin
+    )
+
+    if leader_max_speed <= 0.0:
+        raise ValueError(
+            "leader_max_speed must be > 0."
+        )
+
+    if follower_speed_margin <= 0.0:
+        raise ValueError(
+            "follower_speed_margin must be > 0."
+        )
+
+    r2_max_speed = (
+        leader_max_speed
+        + follower_speed_margin
+    )
+
+    r3_max_speed = (
+        r2_max_speed
+        + follower_speed_margin
     )
 
     if follower_spacing <= 0.0:
@@ -156,6 +187,11 @@ def build_robot_launch_spec(
                 "headless":
                     _bool_text(
                         headless
+                    ),
+
+                "show_rviz":
+                    _bool_text(
+                        show_rviz
                     ),
 
                 "show_map":
@@ -235,6 +271,11 @@ def build_robot_launch_spec(
                         follower_spacing
                     ),
 
+                "follower_max_speed":
+                    str(
+                        r2_max_speed
+                    ),
+
                 "run_name":
                     str(
                         run_name
@@ -248,6 +289,11 @@ def build_robot_launch_spec(
                 "headless":
                     _bool_text(
                         headless
+                    ),
+
+                "show_rviz":
+                    _bool_text(
+                        show_rviz
                     ),
 
                 "show_map":
@@ -279,9 +325,24 @@ def build_robot_launch_spec(
                         follower_spacing
                     ),
 
+                "r2_max_speed":
+                    str(
+                        r2_max_speed
+                    ),
+
+                "r3_max_speed":
+                    str(
+                        r3_max_speed
+                    ),
+
                 "headless":
                     _bool_text(
                         headless
+                    ),
+
+                "show_rviz":
+                    _bool_text(
+                        show_rviz
                     ),
             },
         )

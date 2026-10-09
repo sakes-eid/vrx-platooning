@@ -290,8 +290,19 @@ class FollowerPidController(Node):
 
             'catchup_distance': 6.0,
             'catchup_min_speed': 1.20,
-            'follow_max_speed': 1.50,
+
+            # Extra longitudinal PID authority is used only while
+            # the follower is genuinely in catch-up. Normal
+            # formation-following gains remain unchanged.
+            'catchup_speed_gain_scale': 1.50,
+
+            'follow_max_speed': 3.00,
             'max_distance_speed_correction': 0.70,
+
+            # FOLLOW speed PID needs enough integral authority
+            # to sustain the higher 2-3+ m/s catch-up regime.
+            'follow_speed_integral_limit': 12.0,
+
             'catchup_feedforward_thrust': 160.0,
 
             'parking_speed': 0.70,
@@ -344,6 +355,9 @@ class FollowerPidController(Node):
         self.heading_previous = 0.0
         self.speed_integral = 0.0
         self.speed_previous = 0.0
+
+        self.last_follow_target_speed = None
+
         self.distance_integral = 0.0
         self.distance_previous = 0.0
         self.brake_integral = 0.0
@@ -771,6 +785,7 @@ class FollowerPidController(Node):
         self.heading_previous = 0.0
         self.speed_integral = 0.0
         self.speed_previous = 0.0
+        self.last_follow_target_speed = None
         self.distance_integral = 0.0
         self.distance_previous = 0.0
         self.brake_integral = 0.0
@@ -1561,6 +1576,7 @@ class FollowerPidController(Node):
         requested_speed,
         dt,
         feedforward=0.0,
+        speed_gain_scale=1.0,
     ):
         guidance = self.follow_curve_guidance()
 
@@ -1632,11 +1648,35 @@ class FollowerPidController(Node):
             - self.follower.speed
         )
 
+        # Same principle already used by the R1 speed controller:
+        # when the requested speed falls, discard the positive
+        # integral accumulated while chasing the faster target.
+        if (
+            self.last_follow_target_speed is not None
+            and
+            target_speed
+            < self.last_follow_target_speed - 0.05
+            and
+            target_speed
+            <= self.follower.speed + 0.05
+        ):
+            # Only discard accumulated positive integral when
+            # the requested speed has genuinely dropped to the
+            # follower's current speed or below.
+            #
+            # Small target fluctuations during catch-up must NOT
+            # repeatedly erase the integral while the follower
+            # is still substantially slower than requested.
+            self.speed_integral = 0.0
+            self.speed_previous = speed_error
+
+        self.last_follow_target_speed = target_speed
+
         self.speed_integral = clamp(
             self.speed_integral
             + speed_error * dt,
-            -3.0,
-            3.0,
+            -self.follow_speed_integral_limit,
+            self.follow_speed_integral_limit,
         )
 
         speed_derivative = (
@@ -1646,10 +1686,14 @@ class FollowerPidController(Node):
 
         self.speed_previous = speed_error
 
-        forward = (
+        pid_forward = (
             self.speed_kp * speed_error
             + self.speed_ki * self.speed_integral
             + self.speed_kd * speed_derivative
+        )
+
+        forward = (
+            speed_gain_scale * pid_forward
             + feedforward
         )
 
@@ -1877,6 +1921,7 @@ class FollowerPidController(Node):
             )
 
             feedforward = 0.0
+            speed_gain_scale = 1.0
 
             if (
                 self.path_gap
@@ -1889,6 +1934,10 @@ class FollowerPidController(Node):
 
                 feedforward = (
                     self.catchup_feedforward_thrust
+                )
+
+                speed_gain_scale = (
+                    self.catchup_speed_gain_scale
                 )
 
             target_speed = clamp(
@@ -1927,6 +1976,7 @@ class FollowerPidController(Node):
                 target_speed,
                 dt,
                 feedforward=feedforward,
+                speed_gain_scale=speed_gain_scale,
             )
             return
 

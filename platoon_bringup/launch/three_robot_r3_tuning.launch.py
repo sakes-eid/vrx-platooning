@@ -20,6 +20,17 @@ from vrx_gz.model import Model
 
 def launch_system(context):
 
+    follower_spacing = float(
+        LaunchConfiguration(
+            'follower_spacing'
+        ).perform(context)
+    )
+
+    if follower_spacing <= 0.0:
+        raise ValueError(
+            'follower_spacing must be > 0'
+        )
+
     headless = (
         LaunchConfiguration('headless')
         .perform(context)
@@ -268,7 +279,7 @@ def launch_system(context):
                         '/r2/pair_success',
 
                     'formation_distance':
-                        5.0,
+                        follower_spacing,
 
                     'use_sim_time':
                         True,
@@ -302,7 +313,7 @@ def launch_system(context):
                         '/r2/mission_state',
 
                     'formation_distance':
-                        5.0,
+                        follower_spacing,
 
                     'use_sim_time':
                         True,
@@ -366,7 +377,7 @@ def launch_system(context):
                         '/r3/pair_success',
 
                     'formation_distance':
-                        5.0,
+                        follower_spacing,
 
                     'use_sim_time':
                         True,
@@ -396,7 +407,7 @@ def launch_system(context):
                         '/r3/mission_state',
 
                     'formation_distance':
-                        5.0,
+                        follower_spacing,
 
                     'use_sim_time':
                         True,
@@ -463,7 +474,7 @@ def launch_system(context):
                     '/r3/pair_success',
 
                 'formation_distance':
-                    5.0,
+                    follower_spacing,
 
                 'output_file':
                     follower_csv,
@@ -528,6 +539,14 @@ def generate_launch_description():
         SetEnvironmentVariable(
             name='GZ_SIM_RESOURCE_PATH',
             value=':'.join(paths),
+        ),
+
+        DeclareLaunchArgument(
+            'follower_spacing',
+            default_value='5.0',
+            description=(
+                'Desired inter-robot formation distance in metres'
+            ),
         ),
 
         DeclareLaunchArgument(

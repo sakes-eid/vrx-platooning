@@ -35,6 +35,7 @@ setup(
     entry_points={
         'console_scripts': [
             'stress_course_planner = platoon_planner.stress_course_planner:main',
+            'saved_mission_planner = platoon_planner.saved_mission_planner:main',
             'trajectory_planner = '
             'platoon_planner.trajectory_planner:main',
         

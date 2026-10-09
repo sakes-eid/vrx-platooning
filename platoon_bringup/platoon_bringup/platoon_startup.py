@@ -13,6 +13,10 @@ from platoon_bringup.startup_config import (
     StartupConfig,
 )
 
+from platoon_bringup.preflight import (
+    run_preflight,
+)
+
 from platoon_planner.mission_storage import (
     choose_saved_mission,
     DEFAULT_MISSION_DIRECTORY,
@@ -439,22 +443,8 @@ def collect_configuration():
     # Simulation profile
     # ---------------------------------------------------------
 
-    config.simulation_profile = ask_choice(
-        "Simulation profile:",
-        (
-            (
-                1,
-                "Light",
-                "light",
-            ),
-            (
-                2,
-                "Full",
-                "full",
-            ),
-        ),
-        default=1,
-    )
+    # The platoon uses the lightweight WAM-V configuration.
+    config.simulation_profile = "light"
 
     # ---------------------------------------------------------
     # Display
@@ -549,7 +539,7 @@ def collect_configuration():
 
         config.tuning_time_limit_sec = (
             ask_optional_positive_float(
-                "Tuning time limit [s]"
+                "Per-trial wall-clock timeout [s]"
             )
         )
 
@@ -746,25 +736,37 @@ def print_summary(
 
     print()
     print(
-        "STEP 1 COMPLETE:"
-    )
-
-    print(
-        "Configuration validated."
-    )
-
-    print(
-        "Nothing has been launched."
+        "Configuration ready."
     )
 
 
 def main():
 
-    config = (
-        collect_configuration()
+    from platoon_bringup.startup_gui import (
+        collect_configuration_gui,
     )
 
+    config = (
+        collect_configuration_gui()
+    )
+
+    if config is None:
+        print("Startup cancelled.")
+        return
+
     print_summary(
+        config
+    )
+
+    run_preflight(
+        config
+    )
+
+    from platoon_bringup.master_run import (
+        run_configured_session,
+    )
+
+    run_configured_session(
         config
     )
 

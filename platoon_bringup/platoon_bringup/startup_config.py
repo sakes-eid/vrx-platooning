@@ -27,7 +27,6 @@ VALID_RUN_MODES = (
 
 VALID_SIMULATION_PROFILES = (
     "light",
-    "full",
 )
 
 

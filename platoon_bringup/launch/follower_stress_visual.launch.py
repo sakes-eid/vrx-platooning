@@ -33,6 +33,9 @@ def generate_launch_description():
     follower_spacing = LaunchConfiguration(
         'follower_spacing'
     )
+    follower_max_speed = LaunchConfiguration(
+        'follower_max_speed'
+    )
     predecessor_id = LaunchConfiguration('predecessor_id')
 
     controller_params_file = LaunchConfiguration(
@@ -42,6 +45,9 @@ def generate_launch_description():
         'planner_params_file'
     )
 
+    enable_logging = LaunchConfiguration(
+        'enable_logging'
+    )
     run_name = LaunchConfiguration('run_name')
     results_root = LaunchConfiguration('results_root')
     enable_planner = LaunchConfiguration(
@@ -49,12 +55,18 @@ def generate_launch_description():
     )
     headless = LaunchConfiguration('headless')
     show_map = LaunchConfiguration('show_map')
+    show_rviz = LaunchConfiguration('show_rviz')
 
     return LaunchDescription([
 
         DeclareLaunchArgument(
             'follower_spacing',
             default_value='5.0',
+        ),
+
+        DeclareLaunchArgument(
+            'follower_max_speed',
+            default_value='2.8',
         ),
 
         DeclareLaunchArgument(
@@ -73,6 +85,12 @@ def generate_launch_description():
 
         DeclareLaunchArgument(
             'planner_params_file',
+        ),
+
+        DeclareLaunchArgument(
+            'enable_logging',
+            default_value='true',
+            description='Enable result logging',
         ),
 
         DeclareLaunchArgument(
@@ -102,6 +120,10 @@ def generate_launch_description():
             'show_map',
             default_value='True',
         ),
+        DeclareLaunchArgument(
+            'show_rviz',
+            default_value='True',
+        ),
 
         # Existing proven R1 + R2 simulation/control stack.
         IncludeLaunchDescription(
@@ -110,11 +132,15 @@ def generate_launch_description():
                 'follower_id': follower_id,
                 'follower_spacing':
                     follower_spacing,
+                'follower_max_speed':
+                    follower_max_speed,
                 'predecessor_id': predecessor_id,
                 'controller_params_file':
                     controller_params_file,
                 'planner_params_file':
                     planner_params_file,
+                'enable_logging':
+                    enable_logging,
                 'run_name': run_name,
                 'results_root': results_root,
                 'enable_planner':
@@ -139,7 +165,7 @@ def generate_launch_description():
                 '--frame-id', 'world_ned',
                 '--child-frame-id', 'rviz_anchor',
             ],
-            condition=IfCondition(show_map),
+            condition=IfCondition(show_rviz),
         ),
 
         # R1 visualization.
@@ -151,7 +177,7 @@ def generate_launch_description():
             parameters=[
                 {'use_sim_time': True}
             ],
-            condition=IfCondition(show_map),
+            condition=IfCondition(show_rviz),
         ),
 
         # R2 visualization.
@@ -163,7 +189,7 @@ def generate_launch_description():
             parameters=[
                 {'use_sim_time': True}
             ],
-            condition=IfCondition(show_map),
+            condition=IfCondition(show_rviz),
         ),
 
         Node(
@@ -175,6 +201,6 @@ def generate_launch_description():
                 '-d',
                 rviz_config,
             ],
-            condition=IfCondition(show_map),
+            condition=IfCondition(show_rviz),
         ),
     ])

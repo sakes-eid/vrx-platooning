@@ -308,82 +308,133 @@ def ask_mission_decision(
     allow_modify=True,
 ):
     """
+    Graphical mission approval.
+
     Return:
         accept
         modify
         cancel
     """
 
-    print()
-    print(
-        "Mission decision:"
+    import tkinter as tk
+    from tkinter import ttk
+
+    result = {
+        "decision": "cancel"
+    }
+
+    root = tk.Tk()
+
+    root.title(
+        "Mission Approval"
     )
 
-    print(
-        "  1. Accept mission"
+    root.geometry(
+        "480x180"
+    )
+
+    root.resizable(
+        False,
+        False,
+    )
+
+    frame = ttk.Frame(
+        root,
+        padding=20,
+    )
+
+    frame.pack(
+        fill="both",
+        expand=True,
+    )
+
+    ttk.Label(
+        frame,
+        text="Mission preview complete",
+        font=(
+            "Arial",
+            14,
+            "bold",
+        ),
+    ).pack(
+        pady=(0, 8),
+    )
+
+    ttk.Label(
+        frame,
+        text=(
+            "Review the mission preview, "
+            "then choose what to do."
+        ),
+    ).pack(
+        pady=(0, 18),
+    )
+
+    buttons = ttk.Frame(
+        frame
+    )
+
+    buttons.pack()
+
+    def choose(decision):
+
+        result[
+            "decision"
+        ] = decision
+
+        root.destroy()
+
+    ttk.Button(
+        buttons,
+        text="Accept Mission",
+        command=lambda:
+            choose(
+                "accept"
+            ),
+    ).pack(
+        side="left",
+        padx=6,
     )
 
     if allow_modify:
 
-        print(
-            "  2. Modify mission"
+        ttk.Button(
+            buttons,
+            text="Modify",
+            command=lambda:
+                choose(
+                    "modify"
+                ),
+        ).pack(
+            side="left",
+            padx=6,
         )
 
-        print(
-            "  3. Cancel"
-        )
+    ttk.Button(
+        buttons,
+        text="Cancel",
+        command=lambda:
+            choose(
+                "cancel"
+            ),
+    ).pack(
+        side="left",
+        padx=6,
+    )
 
-    else:
+    root.protocol(
+        "WM_DELETE_WINDOW",
+        lambda:
+            choose(
+                "cancel"
+            ),
+    )
 
-        print(
-            "  2. Cancel"
-        )
+    root.mainloop()
 
-    while True:
-
-        answer = input(
-            "Select [1]: "
-        ).strip()
-
-        if answer == "":
-            answer = "1"
-
-        if answer == "1":
-
-            return "accept"
-
-        if (
-            allow_modify
-            and answer == "2"
-        ):
-
-            return "modify"
-
-        if (
-            allow_modify
-            and answer == "3"
-        ):
-
-            return "cancel"
-
-        if (
-            not allow_modify
-            and answer == "2"
-        ):
-
-            return "cancel"
-
-        if allow_modify:
-
-            print(
-                "Choose 1, 2, or 3."
-            )
-
-        else:
-
-            print(
-                "Choose 1 or 2."
-            )
+    return result[
+        "decision"
+    ]
 
 
 def preview_and_approve(

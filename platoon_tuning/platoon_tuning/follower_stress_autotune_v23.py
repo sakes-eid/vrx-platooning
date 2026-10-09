@@ -107,7 +107,8 @@ TARGET_GAP_M = 5.0
 # counting as "leader acquired".
 ACQUISITION_BAND_M = 0.25
 ACQUISITION_HOLD_S = 2.0
-LOST_GAP_M = 5.75
+LOST_GAP_MARGIN_M = 0.75
+LOST_GAP_M = TARGET_GAP_M + LOST_GAP_MARGIN_M
 
 # Exact oriented-hull geometry is SAFETY ONLY.
 # A warning/avoidance event is penalized but does not fail a trial.
@@ -1817,6 +1818,7 @@ def run_trial(
     stage_name: str,
     follower_id: str,
     predecessor_id: str,
+    follower_spacing: float,
     controller_values: dict,
     planner_values: dict,
     wall_timeout: float,
@@ -1875,6 +1877,7 @@ def run_trial(
         f"planner_params_file:={planner_yaml} "
         f"follower_id:={follower_id} "
         f"predecessor_id:={predecessor_id} "
+        f"follower_spacing:={follower_spacing} "
         "headless:=True"
     )
 
@@ -2131,6 +2134,7 @@ def validate_launch_args(
         "planner_params_file",
         "follower_id",
         "predecessor_id",
+        "follower_spacing",
         "run_name",
         "results_root",
         "headless",
@@ -2197,6 +2201,15 @@ def main():
     parser.add_argument(
         "--predecessor-id",
         default="r1",
+    )
+
+    parser.add_argument(
+        "--follower-spacing",
+        type=float,
+        default=5.0,
+        help=(
+            "desired bumper-to-bumper follower spacing in metres"
+        ),
     )
 
     parser.add_argument(
@@ -2298,6 +2311,22 @@ def main():
         raise SystemExit(
             "--trials must be >= 0"
         )
+
+    if args.follower_spacing <= 0.0:
+        raise SystemExit(
+            "--follower-spacing must be > 0"
+        )
+
+    global TARGET_GAP_M, LOST_GAP_M
+
+    TARGET_GAP_M = float(
+        args.follower_spacing
+    )
+
+    LOST_GAP_M = (
+        TARGET_GAP_M
+        + LOST_GAP_MARGIN_M
+    )
 
     if args.resume and args.overwrite:
         raise SystemExit(
@@ -2631,8 +2660,10 @@ def main():
         "warning/avoidance=soft penalty"
     )
     print(
-        "Catch-up    : BREADCRUMB + 5.00+/-0.25 m for 2 s; "
-        "then strong penalty for gap > 5.75 m"
+        "Catch-up    : BREADCRUMB + "
+        f"{TARGET_GAP_M:.2f}+/-{ACQUISITION_BAND_M:.2f} m "
+        f"for {ACQUISITION_HOLD_S:.0f} s; "
+        f"then strong penalty for gap > {LOST_GAP_M:.2f} m"
     )
     print(
         f"Max trials  : {args.trials}"
@@ -2745,6 +2776,7 @@ def main():
                 stage_name=stage,
                 follower_id=args.follower_id,
                 predecessor_id=args.predecessor_id,
+                follower_spacing=args.follower_spacing,
                 controller_values=(
                     controller_candidate
                 ),

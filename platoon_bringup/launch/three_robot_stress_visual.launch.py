@@ -25,11 +25,79 @@ def launch_system(context):
         'enable_planner'
     )
 
+    show_rviz = LaunchConfiguration(
+        'show_rviz'
+    )
+
     follower_spacing = float(
         LaunchConfiguration(
             'follower_spacing'
         ).perform(context)
     )
+
+    enable_logging = LaunchConfiguration(
+        'enable_logging'
+    )
+
+    logging_enabled = (
+        enable_logging.perform(context)
+        .lower()
+        == 'true'
+    )
+
+    run_name = LaunchConfiguration(
+        'run_name'
+    ).perform(context)
+
+    results_root = os.path.expanduser(
+        LaunchConfiguration(
+            'results_root'
+        ).perform(context)
+    )
+
+    r2_csv = os.path.join(
+        results_root,
+        run_name + '_r2.csv',
+    )
+
+    r3_csv = os.path.join(
+        results_root,
+        run_name + '_r3.csv',
+    )
+
+    if logging_enabled:
+
+        os.makedirs(
+            results_root,
+            exist_ok=True,
+        )
+
+        for output_file in (
+            r2_csv,
+            r3_csv,
+        ):
+            if os.path.exists(output_file):
+                raise RuntimeError(
+                    'Result file already exists: '
+                    + output_file
+                )
+
+    r2_max_speed = float(
+        LaunchConfiguration(
+            'r2_max_speed'
+        ).perform(context)
+    )
+
+    r3_max_speed = float(
+        LaunchConfiguration(
+            'r3_max_speed'
+        ).perform(context)
+    )
+
+    if r2_max_speed <= 0.0 or r3_max_speed <= 0.0:
+        raise RuntimeError(
+            'Follower maximum speeds must be > 0'
+        )
 
     headless = (
         LaunchConfiguration('headless')
@@ -241,6 +309,10 @@ def launch_system(context):
                     'config',
                     'r2_follower_v22_tuned.yaml',
                 ),
+                {
+                    'historical_preview_max_speed':
+                        r2_max_speed,
+                },
             ],
         )
     )
@@ -275,6 +347,10 @@ def launch_system(context):
                     'config',
                     'r2_follower_v22_tuned.yaml',
                 ),
+                {
+                    'follow_max_speed':
+                        r2_max_speed,
+                },
             ],
         )
     )
@@ -339,6 +415,10 @@ def launch_system(context):
                     'config',
                     'r3_follower_v22_seed.yaml',
                 ),
+                {
+                    'historical_preview_max_speed':
+                        r3_max_speed,
+                },
             ],
         )
     )
@@ -373,7 +453,125 @@ def launch_system(context):
                     'config',
                     'r3_follower_v22_seed.yaml',
                 ),
+                {
+                    'follow_max_speed':
+                        r3_max_speed,
+                },
             ],
+        )
+    )
+
+    # ---------------------------------------------------------
+    # Logging
+    # ---------------------------------------------------------
+
+    actions.append(
+        Node(
+            package='platoon_monitor',
+            executable='r1_stress_logger',
+            name='r1_stress_logger',
+            output='screen',
+            condition=IfCondition(
+                enable_logging
+            ),
+            parameters=[{
+                'run_name':
+                    run_name + '_r1',
+
+                'results_root':
+                    results_root,
+
+                'use_sim_time':
+                    True,
+            }],
+        )
+    )
+
+    actions.append(
+        Node(
+            package='platoon_monitor',
+            executable='follower_logger_v22',
+            namespace='r2',
+            name='follower_logger',
+            output='screen',
+            condition=IfCondition(
+                enable_logging
+            ),
+            parameters=[{
+                'follower_id':
+                    'r2',
+
+                'predecessor_id':
+                    'r1',
+
+                'predecessor_actuator_prefix':
+                    '/wamv',
+
+                'follower_actuator_prefix':
+                    '/wamv2',
+
+                'mission_state_topic':
+                    '/r2/mission_state',
+
+                'predecessor_success_topic':
+                    '/r1/success',
+
+                'pair_success_topic':
+                    '/r2/pair_success',
+
+                'formation_distance':
+                    follower_spacing,
+
+                'output_file':
+                    r2_csv,
+
+                'use_sim_time':
+                    True,
+            }],
+        )
+    )
+
+    actions.append(
+        Node(
+            package='platoon_monitor',
+            executable='follower_logger_v22',
+            namespace='r3',
+            name='follower_logger',
+            output='screen',
+            condition=IfCondition(
+                enable_logging
+            ),
+            parameters=[{
+                'follower_id':
+                    'r3',
+
+                'predecessor_id':
+                    'r2',
+
+                'predecessor_actuator_prefix':
+                    '/wamv2',
+
+                'follower_actuator_prefix':
+                    '/wamv3',
+
+                'mission_state_topic':
+                    '/r3/mission_state',
+
+                'predecessor_success_topic':
+                    '/r2/pair_success',
+
+                'pair_success_topic':
+                    '/r3/pair_success',
+
+                'formation_distance':
+                    follower_spacing,
+
+                'output_file':
+                    r3_csv,
+
+                'use_sim_time':
+                    True,
+            }],
         )
     )
 
@@ -385,6 +583,7 @@ def launch_system(context):
         Node(
             package='tf2_ros',
             executable='static_transform_publisher',
+            condition=IfCondition(show_rviz),
             name='world_ned_rviz_anchor_tf',
             output='screen',
             arguments=[
@@ -404,6 +603,7 @@ def launch_system(context):
         Node(
             package='platoon_monitor',
             executable='r1_stress_viz',
+            condition=IfCondition(show_rviz),
             name='r1_stress_viz',
             output='screen',
             parameters=[{
@@ -416,6 +616,7 @@ def launch_system(context):
         Node(
             package='platoon_monitor',
             executable='follower_stress_viz',
+            condition=IfCondition(show_rviz),
             namespace='r2',
             name='stress_viz',
             output='screen',
@@ -433,6 +634,7 @@ def launch_system(context):
         Node(
             package='platoon_monitor',
             executable='follower_stress_viz',
+            condition=IfCondition(show_rviz),
             namespace='r3',
             name='stress_viz',
             output='screen',
@@ -450,6 +652,7 @@ def launch_system(context):
         Node(
             package='rviz2',
             executable='rviz2',
+            condition=IfCondition(show_rviz),
             name='r1_r2_r3_stress_rviz',
             output='screen',
             arguments=[
@@ -529,10 +732,45 @@ def generate_launch_description():
         ),
 
         DeclareLaunchArgument(
+            'r2_max_speed',
+            default_value='2.8',
+            description='Maximum R2 follower speed in m/s',
+        ),
+
+        DeclareLaunchArgument(
+            'r3_max_speed',
+            default_value='3.6',
+            description='Maximum R3 follower speed in m/s',
+        ),
+
+        DeclareLaunchArgument(
             'enable_planner',
             default_value='true',
             description=(
                 'Start the built-in R1 global planner'
+            ),
+        ),
+
+        DeclareLaunchArgument(
+            'show_rviz',
+            default_value='True',
+        ),
+
+        DeclareLaunchArgument(
+            'enable_logging',
+            default_value='true',
+            description='Enable result logging',
+        ),
+
+        DeclareLaunchArgument(
+            'run_name',
+            default_value='three_robot_run_01',
+        ),
+
+        DeclareLaunchArgument(
+            'results_root',
+            default_value=(
+                '~/vrx_ws/src/vrx_platooning/results'
             ),
         ),
 

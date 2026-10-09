@@ -57,6 +57,16 @@ def launch_experiment(context):
         ).perform(context)
     )
 
+    enable_logging = LaunchConfiguration(
+        'enable_logging'
+    )
+
+    logging_enabled = (
+        enable_logging.perform(context)
+        .lower()
+        == 'true'
+    )
+
     # =========================================================
     # Validate simulation profile
     # =========================================================
@@ -77,23 +87,25 @@ def launch_experiment(context):
     # Results directory
     # =========================================================
 
-    os.makedirs(
-        results_dir,
-        exist_ok=True
-    )
-
     output_file = os.path.join(
         results_dir,
         f'{run_name}.csv'
     )
 
-    if os.path.exists(output_file):
-        raise RuntimeError(
-            '\n'
-            'RESULT FILE ALREADY EXISTS:\n'
-            f'{output_file}\n\n'
-            'Choose a different run_name.'
+    if logging_enabled:
+
+        os.makedirs(
+            results_dir,
+            exist_ok=True
         )
+
+        if os.path.exists(output_file):
+            raise RuntimeError(
+                '\n'
+                'RESULT FILE ALREADY EXISTS:\n'
+                f'{output_file}\n\n'
+                'Choose a different run_name.'
+            )
 
     # =========================================================
     # Configuration files
@@ -223,6 +235,9 @@ def launch_experiment(context):
         executable='trajectory_logger',
         name='trajectory_logger',   
         output='screen',
+        condition=IfCondition(
+            enable_logging
+        ),
 
         parameters=[
             {
@@ -435,6 +450,12 @@ def generate_launch_description():
         )
     )
 
+    enable_logging_argument = DeclareLaunchArgument(
+        'enable_logging',
+        default_value='true',
+        description='Enable result logging'
+    )
+
     results_dir_argument = DeclareLaunchArgument(
         'results_dir',
 
@@ -458,6 +479,7 @@ def generate_launch_description():
         run_name_argument,
         simulation_profile_argument,
         show_live_map_argument,
+        enable_logging_argument,
         results_dir_argument,
 
         set_gz_resources,

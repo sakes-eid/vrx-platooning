@@ -1,17 +1,33 @@
 Panels:
   - Class: rviz_common/Displays
+    Help Height: 70
     Name: Displays
+    Property Tree Widget:
+      Expanded: ~
+      Splitter Ratio: 0.5
+    Tree Height: 363
   - Class: rviz_common/Views
+    Expanded:
+      - /Current View1
     Name: Views
+    Splitter Ratio: 0.5
 Visualization Manager:
   Class: ""
   Displays:
-    - Alpha: 0.45
+    - Alpha: 0.44999998807907104
       Cell Size: 10
       Class: rviz_default_plugins/Grid
       Color: 120; 120; 120
       Enabled: true
+      Line Style:
+        Line Width: 0.029999999329447746
+        Value: Lines
       Name: World grid
+      Normal Cell Count: 0
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
       Plane: XY
       Plane Cell Count: 80
       Reference Frame: world_ned
@@ -21,11 +37,11 @@ Visualization Manager:
       Class: rviz_default_plugins/Path
       Color: 80; 255; 80
       Enabled: true
-      Head Diameter: 0.3
-      Head Length: 0.2
-      Length: 0.3
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
       Line Style: Lines
-      Line Width: 0.12
+      Line Width: 0.11999999731779099
       Name: R1 reference course
       Offset:
         X: 0
@@ -33,9 +49,9 @@ Visualization Manager:
         Z: 0
       Pose Color: 255; 255; 255
       Pose Style: None
-      Radius: 0.03
-      Shaft Diameter: 0.1
-      Shaft Length: 0.1
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
       Topic:
         Depth: 5
         Durability Policy: Transient Local
@@ -44,19 +60,26 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /planner/reference_path
       Value: true
-    - Alpha: 0.95
+    - Alpha: 0.949999988079071
       Buffer Length: 1
       Class: rviz_default_plugins/Path
       Color: 255; 190; 40
       Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
       Line Style: Lines
-      Line Width: 0.20
+      Line Width: 0.20000000298023224
       Name: Planner preview / heads-up
       Offset:
         X: 0
         Y: 0
-        Z: 0.05
+        Z: 0.05000000074505806
+      Pose Color: 255; 85; 255
       Pose Style: None
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
       Topic:
         Depth: 5
         Durability Policy: Transient Local
@@ -70,14 +93,21 @@ Visualization Manager:
       Class: rviz_default_plugins/Path
       Color: 70; 150; 255
       Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
       Line Style: Lines
-      Line Width: 0.16
+      Line Width: 0.1599999964237213
       Name: R1 actual trail
       Offset:
         X: 0
         Y: 0
-        Z: 0.10
+        Z: 0.10000000149011612
+      Pose Color: 255; 85; 255
       Pose Style: None
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
       Topic:
         Depth: 5
         Durability Policy: Transient Local
@@ -94,19 +124,22 @@ Visualization Manager:
       Topic:
         Depth: 5
         Durability Policy: Volatile
-        Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /viz/r1/markers
       Value: true
-    - Class: rviz_default_plugins/Pose
-      Enabled: true
-      Name: Closest reference point
-      Shape: Sphere
-      Color: 255; 255; 255
-      Alpha: 1
+    - Alpha: 1
       Axes Length: 0.5
-      Axes Radius: 0.1
+      Axes Radius: 0.10000000149011612
+      Class: rviz_default_plugins/Pose
+      Color: 255; 255; 255
+      Enabled: true
+      Head Length: 0.30000001192092896
+      Head Radius: 0.10000000149011612
+      Name: Closest reference point
+      Shaft Length: 1
+      Shaft Radius: 0.05000000074505806
+      Shape: Sphere
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -115,14 +148,18 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /r1/control/reference_point
       Value: true
-    - Class: rviz_default_plugins/Pose
-      Enabled: true
-      Name: R1 lookahead target
-      Shape: Sphere
+    - Alpha: 1
+      Axes Length: 0.699999988079071
+      Axes Radius: 0.11999999731779099
+      Class: rviz_default_plugins/Pose
       Color: 255; 70; 70
-      Alpha: 1
-      Axes Length: 0.7
-      Axes Radius: 0.12
+      Enabled: true
+      Head Length: 0.30000001192092896
+      Head Radius: 0.10000000149011612
+      Name: R1 lookahead target
+      Shaft Length: 1
+      Shaft Radius: 0.05000000074505806
+      Shape: Sphere
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -131,14 +168,18 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /r1/control/target_point
       Value: true
-    - Class: rviz_default_plugins/Pose
-      Enabled: true
-      Name: Next chronological waypoint
-      Shape: Sphere
+    - Alpha: 1
+      Axes Length: 0.6000000238418579
+      Axes Radius: 0.10000000149011612
+      Class: rviz_default_plugins/Pose
       Color: 255; 80; 255
-      Alpha: 1
-      Axes Length: 0.6
-      Axes Radius: 0.10
+      Enabled: true
+      Head Length: 0.30000001192092896
+      Head Radius: 0.10000000149011612
+      Name: Next chronological waypoint
+      Shaft Length: 1
+      Shaft Radius: 0.05000000074505806
+      Shape: Sphere
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -155,10 +196,12 @@ Visualization Manager:
   Name: root
   Tools:
     - Class: rviz_default_plugins/Interact
+      Hide Inactive Objects: true
     - Class: rviz_default_plugins/MoveCamera
     - Class: rviz_default_plugins/Select
     - Class: rviz_default_plugins/FocusCamera
     - Class: rviz_default_plugins/Measure
+      Line color: 128; 128; 0
   Transformation:
     Current:
       Class: rviz_default_plugins/TF
@@ -167,15 +210,29 @@ Visualization Manager:
     Current:
       Angle: 0
       Class: rviz_default_plugins/TopDownOrtho
-      Name: Top-down stress map
-      Near Clip Distance: 0.01
+      Enable Stereo Rendering:
+        Stereo Eye Separation: 0.05999999865889549
+        Stereo Focal Distance: 1
+        Swap Stereo Eyes: false
+        Value: false
+      Invert Z Axis: false
+      Name: Current View
+      Near Clip Distance: 0.009999999776482582
       Scale: 7
       Target Frame: world_ned
+      Value: TopDownOrtho (rviz_default_plugins)
       X: 209
       Y: -519
     Saved: ~
 Window Geometry:
+  Displays:
+    collapsed: false
   Height: 900
+  Hide Left Dock: false
+  Hide Right Dock: false
+  QMainWindow State: 000000ff00000000fd00000001000000000000019b0000032efc0200000002fb000000100044006900730070006c006100790073010000003b000001ec000000c700fffffffb0000000a00560069006500770073010000022d0000013c000000a000ffffff000003730000032e00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  Views:
+    collapsed: false
   Width: 1300
-  X: 40
-  Y: 40
+  X: 462
+  Y: 59

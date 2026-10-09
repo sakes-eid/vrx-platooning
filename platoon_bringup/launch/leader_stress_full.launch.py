@@ -26,12 +26,28 @@ def generate_launch_description():
     run_name = LaunchConfiguration('run_name')
     headless = LaunchConfiguration('headless')
     show_map = LaunchConfiguration('show_map')
+    show_rviz = LaunchConfiguration('show_rviz')
     enable_planner = LaunchConfiguration('enable_planner')
+    enable_logging = LaunchConfiguration('enable_logging')
+    results_dir = LaunchConfiguration('results_dir')
 
     return LaunchDescription([
         DeclareLaunchArgument(
             'enable_planner',
             default_value='true',
+        ),
+
+        DeclareLaunchArgument(
+            'enable_logging',
+            default_value='true',
+            description='Enable result logging',
+        ),
+
+        DeclareLaunchArgument(
+            'results_dir',
+            default_value=os.path.expanduser(
+                '~/vrx_ws/src/vrx_platooning/results'
+            ),
         ),
 
         DeclareLaunchArgument(
@@ -46,6 +62,10 @@ def generate_launch_description():
             'show_map',
             default_value='True',
         ),
+        DeclareLaunchArgument(
+            'show_rviz',
+            default_value='True',
+        ),
 
         # Reuse the user's already-working R1-only VRX launch for Gazebo,
         # WAM-V spawn, bridges, stress planner and stress controller.
@@ -55,6 +75,8 @@ def generate_launch_description():
                 'run_name': run_name,
                 'headless': headless,
                 'enable_planner': enable_planner,
+                'enable_logging': enable_logging,
+                'results_dir': results_dir,
             }.items(),
         ),
 
@@ -92,7 +114,7 @@ def generate_launch_description():
                 '--frame-id', 'world_ned',
                 '--child-frame-id', 'rviz_anchor',
             ],
-            condition=IfCondition(show_map),
+            condition=IfCondition(show_rviz),
         ),
 
         Node(
@@ -101,7 +123,7 @@ def generate_launch_description():
             name='r1_stress_viz',
             output='screen',
             parameters=[{'use_sim_time': True}],
-            condition=IfCondition(show_map),
+            condition=IfCondition(show_rviz),
         ),
 
         Node(
@@ -109,9 +131,13 @@ def generate_launch_description():
             executable='r1_stress_logger',
             name='r1_stress_logger',
             output='screen',
+            condition=IfCondition(
+                enable_logging
+            ),
             parameters=[
                 {'use_sim_time': True},
                 {'run_name': run_name},
+                {'results_root': results_dir},
             ],
         ),
 
@@ -121,6 +147,6 @@ def generate_launch_description():
             name='r1_stress_rviz',
             output='screen',
             arguments=['-d', rviz_config],
-            condition=IfCondition(show_map),
+            condition=IfCondition(show_rviz),
         ),
     ])

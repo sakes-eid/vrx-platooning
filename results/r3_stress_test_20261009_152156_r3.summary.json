@@ -1,0 +1,66 @@
+{
+  "success": false,
+  "target_path_gap_m": 5.0,
+  "minimum_path_gap_m": 3.60462837809018,
+  "distance_error_policy": "5 m formation error is bumper-to-bumper arc-length along the unsmoothed breadcrumb chain. It is recorded only during steady FOLLOWING while breadcrumb guidance is active. Catch-up and terminal phases are excluded.",
+  "minimum_hitbox_clearance_m": 4.593089216389277,
+  "minimum_reference_distance_m": 8.97562837809018,
+  "collision_warning_samples": 0,
+  "avoidance_active_samples": 0,
+  "mission_state_first_time_s": {
+    "FOLLOW": 0.0
+  },
+  "follow_phase_first_time_s": {
+    "CATCHUP": 16.7,
+    "FOLLOWING": 22.1
+  },
+  "follow_phase_last_time_s": {
+    "CATCHUP": 33.800000000000004,
+    "FOLLOWING": 31.1
+  },
+  "catchup_distance_m": 6.0,
+  "predecessor_target_capture_time_s": null,
+  "follower_longitudinal_state_first_time_s": {
+    "TRACK": 0.0
+  },
+  "follower_longitudinal_state_last_time_s": {
+    "TRACK": 33.800000000000004
+  },
+  "follower_longitudinal_state_samples": {
+    "TRACK": 338
+  },
+  "catchup": {
+    "samples": 90,
+    "mean_path_gap_m": 6.779821694868734,
+    "predecessor_mean_speed_mps": 0.5458324259019915,
+    "follower_mean_speed_mps": 0.8953675431389598,
+    "follower_max_speed_mps": 1.6285371951639762
+  },
+  "following": {
+    "samples": 82,
+    "target_path_gap_m": 5.0,
+    "mean_path_gap_m": 4.575749298077203,
+    "path_gap_bias_m": -0.4242507019227966,
+    "path_gap_rmse_m": 0.8591055765530393,
+    "path_gap_p95_abs_error_m": 1.3789148662994954,
+    "maximum_abs_path_gap_error_m": 1.39537162190982,
+    "predecessor_mean_speed_mps": 1.2052308436170673,
+    "follower_mean_speed_mps": 0.8479159332504165,
+    "follower_max_speed_mps": 1.7000572733710606,
+    "heading_error_rmse_deg": 22.10883005471444,
+    "cross_track_error_rmse_m": 2.0444537037001513
+  },
+  "follow": {
+    "note": "Steady FOLLOWING samples using V2.2 path-gap formation semantics.",
+    "samples": 82,
+    "target_path_gap_m": 5.0,
+    "mean_path_gap_m": 4.575749298077203,
+    "path_gap_bias_m": -0.4242507019227966,
+    "path_gap_rmse_m": 0.8591055765530393,
+    "path_gap_p95_abs_error_m": 1.3789148662994954,
+    "maximum_abs_path_gap_error_m": 1.39537162190982,
+    "mean_reference_distance_m": 10.450538197984791,
+    "heading_error_rmse_deg": 22.10883005471444,
+    "cross_track_error_rmse_m": 2.0444537037001513
+  }
+}

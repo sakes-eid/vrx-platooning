@@ -1,0 +1,19 @@
+{
+  "success": false,
+  "samples": 79,
+  "state_first_time_s": {
+    "TRACK": 0.0
+  },
+  "state_last_time_s": {
+    "TRACK": 7.800000000000001
+  },
+  "max_speed_mps": 0.09918389225307411,
+  "track": {
+    "samples": 79,
+    "mean_speed_mps": 0.017303303173947834,
+    "cross_track_rmse_m": null,
+    "maximum_abs_cross_track_error_m": null,
+    "heading_error_rmse_deg": null,
+    "speed_error_rmse_mps": null
+  }
+}

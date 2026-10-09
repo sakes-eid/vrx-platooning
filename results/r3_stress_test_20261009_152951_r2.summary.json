@@ -1,0 +1,78 @@
+{
+  "success": true,
+  "target_path_gap_m": 5.0,
+  "minimum_path_gap_m": -5.371,
+  "distance_error_policy": "5 m formation error is bumper-to-bumper arc-length along the unsmoothed breadcrumb chain. It is recorded only during steady FOLLOWING while breadcrumb guidance is active. Catch-up and terminal phases are excluded.",
+  "minimum_hitbox_clearance_m": 0.7805912067050914,
+  "minimum_reference_distance_m": 6.530271558000349,
+  "collision_warning_samples": 0,
+  "avoidance_active_samples": 0,
+  "mission_state_first_time_s": {
+    "UNKNOWN": 0.0,
+    "FOLLOW": 0.7240000000000001,
+    "FORMATION_BRAKE": 315.6,
+    "FORMATION_HOLD": 318.20000000000005
+  },
+  "follow_phase_first_time_s": {
+    "FOLLOWING": 8.200000000000001,
+    "CATCHUP": 23.900000000000002
+  },
+  "follow_phase_last_time_s": {
+    "FOLLOWING": 315.5,
+    "CATCHUP": 43.800000000000004
+  },
+  "catchup_distance_m": 6.0,
+  "predecessor_target_capture_time_s": 315.6,
+  "follower_longitudinal_state_first_time_s": {
+    "TRACK": 0.0,
+    "BRAKE": 315.70000000000005,
+    "HOLD": 317.0,
+    "RECOVER": 317.1
+  },
+  "follower_longitudinal_state_last_time_s": {
+    "TRACK": 315.6,
+    "BRAKE": 316.90000000000003,
+    "HOLD": 321.5,
+    "RECOVER": 317.40000000000003
+  },
+  "follower_longitudinal_state_samples": {
+    "TRACK": 3156,
+    "BRAKE": 13,
+    "HOLD": 42,
+    "RECOVER": 4
+  },
+  "catchup": {
+    "samples": 141,
+    "mean_path_gap_m": 7.417502119788449,
+    "predecessor_mean_speed_mps": 1.40603991032059,
+    "follower_mean_speed_mps": 1.7339274901831487,
+    "follower_max_speed_mps": 2.246720702779421
+  },
+  "following": {
+    "samples": 2848,
+    "target_path_gap_m": 5.0,
+    "mean_path_gap_m": 5.098906931494814,
+    "path_gap_bias_m": 0.09890693149481376,
+    "path_gap_rmse_m": 0.6501744903159392,
+    "path_gap_p95_abs_error_m": 0.7826550474863354,
+    "maximum_abs_path_gap_error_m": 6.472626498130348,
+    "predecessor_mean_speed_mps": 1.9022108709942753,
+    "follower_mean_speed_mps": 1.8801521352345476,
+    "follower_max_speed_mps": 2.3580583354353584,
+    "heading_error_rmse_deg": 2.253749123980558,
+    "cross_track_error_rmse_m": 1.4890680358130541
+  },
+  "follow": {
+    "note": "Steady FOLLOWING samples using V2.2 path-gap formation semantics.",
+    "samples": 2848,
+    "target_path_gap_m": 5.0,
+    "mean_path_gap_m": 5.098906931494814,
+    "path_gap_bias_m": 0.09890693149481376,
+    "path_gap_rmse_m": 0.6501744903159392,
+    "path_gap_p95_abs_error_m": 0.7826550474863354,
+    "maximum_abs_path_gap_error_m": 6.472626498130348,
+    "mean_reference_distance_m": 10.903112287928442,
+    "heading_error_rmse_deg": 2.253749123980558,
+    "cross_track_error_rmse_m": 1.4890680358130541
+  }
+}
