@@ -13,6 +13,12 @@ from platoon_bringup.startup_config import (
     StartupConfig,
 )
 
+from platoon_planner.mission_storage import (
+    choose_saved_mission,
+    DEFAULT_MISSION_DIRECTORY,
+    safe_filename,
+)
+
 
 def ask_choice(
     title,
@@ -253,35 +259,160 @@ def collect_configuration():
     )
 
     # ---------------------------------------------------------
-    # Mission
+    # Mission source + mission type
     # ---------------------------------------------------------
 
-    config.mission_type = ask_choice(
-        "Mission / path type:",
-        (
+    while True:
+
+        config.mission_source = ask_choice(
+            "Mission source:",
             (
-                1,
-                "Straight",
-                "straight",
+                (
+                    1,
+                    "Create new mission",
+                    "new",
+                ),
+                (
+                    2,
+                    "Load saved mission",
+                    "saved",
+                ),
             ),
-            (
-                2,
-                "Curve",
-                "curve",
-            ),
-            (
-                3,
-                "Coverage",
-                "coverage",
-            ),
-            (
-                4,
-                "Standard stress course",
-                "stress",
-            ),
-        ),
-        default=4,
-    )
+            default=1,
+        )
+
+        # =====================================================
+        # New mission
+        # =====================================================
+
+        if config.mission_source == "new":
+
+            config.saved_mission_name = None
+            config.saved_mission_file = None
+
+            config.mission_type = ask_choice(
+                "Mission / path type:",
+                (
+                    (
+                        1,
+                        "Straight",
+                        "straight",
+                    ),
+                    (
+                        2,
+                        "Curve",
+                        "curve",
+                    ),
+                    (
+                        3,
+                        "Coverage",
+                        "coverage",
+                    ),
+                    (
+                        4,
+                        "Standard stress course",
+                        "stress",
+                    ),
+                ),
+                default=4,
+            )
+
+            config.save_after_accept = (
+                ask_yes_no(
+                    "Save this mission after "
+                    "it is validated and accepted?",
+                    default=False,
+                )
+            )
+
+            if config.save_after_accept:
+
+                while True:
+
+                    name = input(
+                        "Saved mission name: "
+                    ).strip()
+
+                    if name:
+
+                        config.save_mission_name = (
+                            name
+                        )
+
+                        break
+
+                    print(
+                        "Mission name must not "
+                        "be empty."
+                    )
+
+            else:
+
+                config.save_mission_name = None
+
+            break
+
+        # =====================================================
+        # Load saved mission
+        # =====================================================
+
+        definition = (
+            choose_saved_mission()
+        )
+
+        if definition is None:
+
+            print()
+            print(
+                "Saved mission selection cancelled."
+            )
+
+            print(
+                "Returning to mission source..."
+            )
+
+            continue
+
+        config.saved_mission_name = (
+            definition.name
+        )
+
+        config.saved_mission_file = str(
+            DEFAULT_MISSION_DIRECTORY
+            / safe_filename(
+                definition.name
+            )
+        )
+
+        config.mission_type = (
+            definition.mission_type
+        )
+
+        # Keep a copy of the persistent definition available
+        # to the future master launcher.
+        config.mission_parameters = (
+            definition.to_dict()
+        )
+
+        config.save_after_accept = False
+        config.save_mission_name = None
+
+        print()
+        print(
+            "Loaded saved mission:"
+        )
+
+        print(
+            "  Name :",
+            definition.name,
+        )
+
+        print(
+            "  Type :",
+            definition.mission_type,
+        )
+
+        break
 
     # ---------------------------------------------------------
     # Test / tuning
@@ -494,6 +625,33 @@ def print_summary(
         "Mission            :",
         config.mission_type,
     )
+
+    print(
+        "Mission source     :",
+        config.mission_source,
+    )
+
+    if config.mission_source == "saved":
+
+        print(
+            "Saved mission     :",
+            config.saved_mission_name,
+        )
+
+    if (
+        config.mission_source == "new"
+        and config.save_after_accept
+    ):
+
+        print(
+            "Save after accept :",
+            True,
+        )
+
+        print(
+            "Save mission as   :",
+            config.save_mission_name,
+        )
 
     print(
         "Mission geometry   :",

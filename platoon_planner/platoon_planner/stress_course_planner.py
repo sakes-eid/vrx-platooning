@@ -16,6 +16,10 @@ from platoon_planner.mission_plan import (
     MissionPlan,
 )
 
+from platoon_planner.stress_mission import (
+    build_standard_stress_mission_plan,
+)
+
 from platoon_planner.sydney_environment import (
     find_sydney_mesh,
     load_shore_vertices,
@@ -325,87 +329,36 @@ class StressCoursePlanner(Node):
         start_y: float,
     ) -> MissionPlan:
         """
-        Expose the fixed standard stress course through the
-        common MissionPlan interface.
+        Expose the standardized Stress course through
+        the common MissionPlan interface.
 
-        Geometry remains standardized and non-editable.
+        Geometry remains fixed and non-editable.
         """
 
-        points = self.build_course(
-            start_x,
-            start_y,
+        return build_standard_stress_mission_plan(
+            start_ned=(
+                start_x,
+                start_y,
+            ),
+            point_spacing=self.point_spacing,
+            straight_length=self.straight_length,
+            turn_90_radius=self.turn_90_radius,
+            semicircle_small_radius=(
+                self.semicircle_small_radius
+            ),
+            semicircle_large_radius=(
+                self.semicircle_large_radius
+            ),
+            coverage_lane_length=(
+                self.coverage_lane_length
+            ),
+            coverage_tight_radius=(
+                self.coverage_tight_radius
+            ),
+            coverage_wide_radius=(
+                self.coverage_wide_radius
+            ),
         )
-
-        mission = MissionPlan(
-            mission_type="stress",
-
-            path_points=points,
-
-            parameters={
-                "start_ned": (
-                    float(start_x),
-                    float(start_y),
-                ),
-
-                "standardized":
-                    True,
-
-                "straight_length":
-                    float(
-                        self.straight_length
-                    ),
-
-                "turn_90_radius":
-                    float(
-                        self.turn_90_radius
-                    ),
-
-                "semicircle_small_radius":
-                    float(
-                        self.semicircle_small_radius
-                    ),
-
-                "semicircle_large_radius":
-                    float(
-                        self.semicircle_large_radius
-                    ),
-
-                "coverage_lane_length":
-                    float(
-                        self.coverage_lane_length
-                    ),
-
-                "coverage_tight_radius":
-                    float(
-                        self.coverage_tight_radius
-                    ),
-
-                "coverage_wide_radius":
-                    float(
-                        self.coverage_wide_radius
-                    ),
-            },
-
-            # Map collision validation will be unified for all
-            # mission types during Step 3.
-            minimum_clearance=None,
-
-            collision_checked=False,
-
-            diagnostics={
-                "geometry_editable":
-                    False,
-
-                "standard_course":
-                    True,
-            },
-        )
-
-        mission.validate()
-
-        return mission
-
-
 
     # ------------------------------------------------------------------
     # Curvature / speed profile

@@ -51,7 +51,20 @@ class StartupConfig:
 
     mission_type: str = "stress"
 
-    # Mission-specific geometry will be populated in Step 2.
+    # Mission source:
+    #   new   -> user defines a new mission
+    #   saved -> mission geometry comes from saved_missions/
+    mission_source: str = "new"
+
+    saved_mission_name: Optional[str] = None
+    saved_mission_file: Optional[str] = None
+
+    # For newly created missions, the actual save occurs only
+    # after the mission has passed validation and been accepted.
+    save_after_accept: bool = False
+    save_mission_name: Optional[str] = None
+
+    # Mission-specific geometry will be populated later.
     mission_parameters: Dict[str, Any] = field(
         default_factory=dict
     )
@@ -208,6 +221,49 @@ class StartupConfig:
             raise ValueError(
                 "robot_count must be 1, 2, or 3"
             )
+
+        if self.mission_source not in (
+            "new",
+            "saved",
+        ):
+
+            raise ValueError(
+                "mission_source must be "
+                "new or saved"
+            )
+
+        if self.mission_source == "saved":
+
+            if not self.saved_mission_name:
+
+                raise ValueError(
+                    "A saved mission must be selected."
+                )
+
+            if not self.saved_mission_file:
+
+                raise ValueError(
+                    "Saved mission file is missing."
+                )
+
+            # A loaded mission already exists, so do not
+            # create another copy after acceptance.
+            self.save_after_accept = False
+            self.save_mission_name = None
+
+        if (
+            self.mission_source == "new"
+            and self.save_after_accept
+        ):
+
+            if (
+                self.save_mission_name is None
+                or not self.save_mission_name.strip()
+            ):
+
+                raise ValueError(
+                    "A mission save name is required."
+                )
 
         if (
             self.mission_type

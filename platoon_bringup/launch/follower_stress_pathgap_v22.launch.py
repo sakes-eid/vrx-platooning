@@ -10,6 +10,7 @@ from launch.actions import (
     OpaqueFunction,
     SetEnvironmentVariable,
 )
+from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
@@ -22,6 +23,12 @@ def launch_system(context):
     follower_id = LaunchConfiguration(
         'follower_id'
     ).perform(context)
+
+    follower_spacing = float(
+        LaunchConfiguration(
+            'follower_spacing'
+        ).perform(context)
+    )
 
     predecessor_id = LaunchConfiguration(
         'predecessor_id'
@@ -37,6 +44,10 @@ def launch_system(context):
         LaunchConfiguration(
             'planner_params_file'
         ).perform(context)
+    )
+
+    enable_planner = LaunchConfiguration(
+        'enable_planner'
     )
 
     headless = (
@@ -224,6 +235,9 @@ def launch_system(context):
             executable='stress_course_planner',
             name='trajectory_planner',
             output='screen',
+            condition=IfCondition(
+                enable_planner
+            ),
             parameters=[
                 planner_config,
                 {
@@ -277,7 +291,7 @@ def launch_system(context):
                     '/r2/pair_success',
 
                 'formation_distance':
-                    5.0,
+                    follower_spacing,
 
                 'use_sim_time':
                     True,
@@ -306,7 +320,7 @@ def launch_system(context):
                     '/r2/mission_state',
 
                 'formation_distance':
-                    5.0,
+                    follower_spacing,
 
                 'use_sim_time':
                     True,
@@ -366,7 +380,7 @@ def launch_system(context):
                     '/r2/pair_success',
 
                 'formation_distance':
-                    5.0,
+                    follower_spacing,
 
                 'output_file':
                     follower_csv,
@@ -466,6 +480,22 @@ def generate_launch_description():
         SetEnvironmentVariable(
             name='GZ_SIM_RESOURCE_PATH',
             value=':'.join(paths),
+        ),
+
+        DeclareLaunchArgument(
+            'follower_spacing',
+            default_value='5.0',
+            description=(
+                'Desired R2 <- R1 formation distance in metres'
+            ),
+        ),
+
+        DeclareLaunchArgument(
+            'enable_planner',
+            default_value='true',
+            description=(
+                'Start the built-in R1 global planner'
+            ),
         ),
 
         DeclareLaunchArgument(

@@ -11,6 +11,7 @@ from launch.actions import (
     OpaqueFunction,
     SetEnvironmentVariable,
 )
+from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
@@ -19,6 +20,16 @@ from vrx_gz.model import Model
 
 
 def launch_system(context):
+
+    enable_planner = LaunchConfiguration(
+        'enable_planner'
+    )
+
+    follower_spacing = float(
+        LaunchConfiguration(
+            'follower_spacing'
+        ).perform(context)
+    )
 
     headless = (
         LaunchConfiguration('headless')
@@ -147,6 +158,9 @@ def launch_system(context):
             executable='stress_course_planner',
             name='trajectory_planner',
             output='screen',
+            condition=IfCondition(
+                enable_planner
+            ),
             parameters=[
                 os.path.join(
                     planner,
@@ -216,7 +230,7 @@ def launch_system(context):
                         '/r2/pair_success',
 
                     'formation_distance':
-                        5.0,
+                        follower_spacing,
 
                     'use_sim_time':
                         True,
@@ -250,7 +264,7 @@ def launch_system(context):
                         '/r2/mission_state',
 
                     'formation_distance':
-                        5.0,
+                        follower_spacing,
 
                     'use_sim_time':
                         True,
@@ -314,7 +328,7 @@ def launch_system(context):
                         '/r3/pair_success',
 
                     'formation_distance':
-                        5.0,
+                        follower_spacing,
 
                     'use_sim_time':
                         True,
@@ -348,7 +362,7 @@ def launch_system(context):
                         '/r3/mission_state',
 
                     'formation_distance':
-                        5.0,
+                        follower_spacing,
 
                     'use_sim_time':
                         True,
@@ -458,8 +472,8 @@ def launch_system(context):
         ' R2 : frozen final V2.2 gains\n'
         ' R3 : seeded from final R2 gains\n'
         '\n'
-        ' R2 <- R1 : 5 m bumper gap\n'
-        ' R3 <- R2 : 5 m bumper gap\n'
+        f' R2 <- R1 : {follower_spacing:g} m bumper gap\n'
+        f' R3 <- R2 : {follower_spacing:g} m bumper gap\n'
         '\n'
         ' R2 terminal : HOLD\n'
         ' R3 terminal : HOLD\n'
@@ -504,6 +518,22 @@ def generate_launch_description():
         SetEnvironmentVariable(
             name='GZ_SIM_RESOURCE_PATH',
             value=':'.join(paths),
+        ),
+
+        DeclareLaunchArgument(
+            'follower_spacing',
+            default_value='5.0',
+            description=(
+                'Desired inter-robot formation distance in metres'
+            ),
+        ),
+
+        DeclareLaunchArgument(
+            'enable_planner',
+            default_value='true',
+            description=(
+                'Start the built-in R1 global planner'
+            ),
         ),
 
         DeclareLaunchArgument(

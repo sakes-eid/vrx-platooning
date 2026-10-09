@@ -30,6 +30,9 @@ def generate_launch_description():
     )
 
     follower_id = LaunchConfiguration('follower_id')
+    follower_spacing = LaunchConfiguration(
+        'follower_spacing'
+    )
     predecessor_id = LaunchConfiguration('predecessor_id')
 
     controller_params_file = LaunchConfiguration(
@@ -41,10 +44,18 @@ def generate_launch_description():
 
     run_name = LaunchConfiguration('run_name')
     results_root = LaunchConfiguration('results_root')
+    enable_planner = LaunchConfiguration(
+        'enable_planner'
+    )
     headless = LaunchConfiguration('headless')
     show_map = LaunchConfiguration('show_map')
 
     return LaunchDescription([
+
+        DeclareLaunchArgument(
+            'follower_spacing',
+            default_value='5.0',
+        ),
 
         DeclareLaunchArgument(
             'follower_id',
@@ -78,6 +89,11 @@ def generate_launch_description():
         ),
 
         DeclareLaunchArgument(
+            'enable_planner',
+            default_value='true',
+        ),
+
+        DeclareLaunchArgument(
             'headless',
             default_value='False',
         ),
@@ -92,6 +108,8 @@ def generate_launch_description():
             PythonLaunchDescriptionSource(core_launch),
             launch_arguments={
                 'follower_id': follower_id,
+                'follower_spacing':
+                    follower_spacing,
                 'predecessor_id': predecessor_id,
                 'controller_params_file':
                     controller_params_file,
@@ -99,6 +117,8 @@ def generate_launch_description():
                     planner_params_file,
                 'run_name': run_name,
                 'results_root': results_root,
+                'enable_planner':
+                    enable_planner,
                 'headless': headless,
             }.items(),
         ),
