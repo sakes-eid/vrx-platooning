@@ -51,6 +51,13 @@ def launch_experiment(context):
         'show_live_map'
     ).perform(context)
 
+    headless = (
+        LaunchConfiguration('headless')
+        .perform(context)
+        .lower()
+        == 'true'
+    )
+
     results_dir = os.path.expanduser(
         LaunchConfiguration(
             'results_dir'
@@ -178,7 +185,7 @@ def launch_experiment(context):
                 robot_urdf,
 
             'headless':
-                'False',
+                'True' if headless else 'False',
 
             'paused':
                 'False',
@@ -408,6 +415,12 @@ def generate_launch_description():
     # Launch arguments
     # =========================================================
 
+    headless_argument = DeclareLaunchArgument(
+        'headless',
+        default_value='False',
+        description='Run Gazebo without its GUI'
+    )
+
     enable_planner_argument = DeclareLaunchArgument(
         'enable_planner',
         default_value='true',
@@ -474,6 +487,7 @@ def generate_launch_description():
     # =========================================================
 
     return LaunchDescription([
+        headless_argument,
         enable_planner_argument,
         trajectory_argument,
         run_name_argument,

@@ -344,6 +344,11 @@ def build_robot_launch_spec(
                     _bool_text(
                         show_rviz
                     ),
+
+                "show_map":
+                    _bool_text(
+                        show_map
+                    ),
             },
         )
 

@@ -91,7 +91,7 @@ class StartupConfig:
 
     show_rviz: bool = True
 
-    # Sydney shoreline / mission map in RViz.
+    # Standalone Sydney shoreline / mission live map.
     show_map: bool = True
 
     # ---------------------------------------------------------

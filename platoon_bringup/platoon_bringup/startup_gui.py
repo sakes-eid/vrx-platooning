@@ -566,7 +566,7 @@ class StartupGUI:
 
         ttk.Label(
             tuning,
-            text="Trials:",
+            text="Optimization trials:",
         ).grid(
             row=1,
             column=0,
@@ -615,7 +615,9 @@ class StartupGUI:
         self.tuning_note = ttk.Label(
             tuning,
             text=(
-                "Tuning uses the fixed Standard Stress course."
+                "Tuning uses the selected saved mission. "
+                "One seed validation run is added before "
+                "the optimization trials."
             ),
         )
 
@@ -784,15 +786,12 @@ class StartupGUI:
             == "tuning"
         )
 
-        # Tuning always uses Standard Stress.
+        # Tuning uses one frozen saved mission so the seed
+        # and every optimization trial run identical geometry.
         if tuning:
 
             self.mission_source.set(
-                "new"
-            )
-
-            self.mission_type.set(
-                "stress"
+                "saved"
             )
 
             self.new_radio.configure(
@@ -808,7 +807,7 @@ class StartupGUI:
             )
 
             self.saved_combo.configure(
-                state="disabled"
+                state="readonly"
             )
 
             self.save_check.configure(
@@ -882,13 +881,9 @@ class StartupGUI:
             )
         )
 
-        # RViz map.
+        # Sydney live map is independent of RViz.
         self.map_check.configure(
-            state=(
-                "normal"
-                if self.show_rviz.get()
-                else "disabled"
-            )
+            state="normal"
         )
 
         # Logging.
@@ -1073,11 +1068,51 @@ class StartupGUI:
             if config.run_mode == "tuning":
 
                 config.mission_source = (
-                    "new"
+                    "saved"
+                )
+
+                label = (
+                    self.saved_mission.get()
+                )
+
+                if (
+                    label
+                    not in self.saved_items
+                ):
+
+                    raise ValueError(
+                        "Select a valid saved mission "
+                        "for tuning."
+                    )
+
+                item = (
+                    self.saved_items[
+                        label
+                    ]
+                )
+
+                definition = (
+                    item[
+                        "definition"
+                    ]
+                )
+
+                config.saved_mission_name = (
+                    definition.name
+                )
+
+                config.saved_mission_file = str(
+                    item[
+                        "path"
+                    ]
                 )
 
                 config.mission_type = (
-                    "stress"
+                    definition.mission_type
+                )
+
+                config.mission_parameters = (
+                    definition.to_dict()
                 )
 
                 config.save_after_accept = (
@@ -1190,12 +1225,8 @@ class StartupGUI:
                 self.show_rviz.get()
             )
 
-            config.show_map = (
-                bool(
-                    self.show_map.get()
-                )
-                and
-                config.show_rviz
+            config.show_map = bool(
+                self.show_map.get()
             )
 
             # ---------------------------------------------

@@ -29,6 +29,10 @@ def launch_system(context):
         'show_rviz'
     )
 
+    show_map = LaunchConfiguration(
+        'show_map'
+    )
+
     follower_spacing = float(
         LaunchConfiguration(
             'follower_spacing'
@@ -650,6 +654,26 @@ def launch_system(context):
 
     actions.append(
         Node(
+            package='platoon_monitor',
+            executable='live_map',
+            name='sydney_live_map',
+            output='screen',
+            condition=IfCondition(show_map),
+            parameters=[{
+                'refresh_period': 5.0,
+                'path_topic': '/planner/reference_path',
+                'robot_topics': [
+                    '/r1/vehicle_state',
+                    '/r2/vehicle_state',
+                    '/r3/vehicle_state',
+                ],
+                'use_sim_time': True,
+            }],
+        )
+    )
+
+    actions.append(
+        Node(
             package='rviz2',
             executable='rviz2',
             condition=IfCondition(show_rviz),
@@ -753,6 +777,11 @@ def generate_launch_description():
 
         DeclareLaunchArgument(
             'show_rviz',
+            default_value='True',
+        ),
+
+        DeclareLaunchArgument(
+            'show_map',
             default_value='True',
         ),
 
