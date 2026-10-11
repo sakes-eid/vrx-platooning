@@ -66,8 +66,8 @@ BASE_CONTROLLER = {
     "brake_kd": 10.647182804717701,
 
     "catchup_distance": 6.0,
-    "catchup_release_margin": 0.15,
     "catchup_min_speed": 1.20,
+
     "max_distance_speed_correction": 0.70,
 
     # Heading/guidance stage. These are controller parameters rather
@@ -82,14 +82,6 @@ BASE_CONTROLLER = {
 BASE_PLANNER = {
     "historical_preview_decel": 0.18,
     "historical_preview_max_speed": 1.50,
-
-    # Guidance-only catch-up smoothing.
-    "catchup_distance": 6.0,
-    "catchup_release_margin": 0.15,
-    "catchup_control_spacing": 0.80,
-    "catchup_smoothing_passes": 2.0,
-    "catchup_max_smoothing_shift": 0.50,
-    "catchup_curve_tangent_scale": 0.40,
 }
 
 
@@ -1744,12 +1736,6 @@ def gap_space(trial, controller, planner):
             trial,
             name,
         )
-
-    # Planner and controller must switch CATCHUP at the same
-    # physical gap.
-    planner["catchup_distance"] = (
-        controller["catchup_distance"]
-    )
 
     return controller, planner
 
