@@ -274,6 +274,25 @@ class FollowerPidController(Node):
             # later self-near loop branches are ineligible.
             'guidance_search_distance': 6.0,
 
+            # During CATCHUP the follower does not steer from the
+            # local breadcrumb tangent. It instead aims at a virtual
+            # LOS point substantially farther along the reconstructed
+            # path. This suppresses steering response to residual
+            # predecessor waviness.
+            'catchup_los_lookahead': 8.0,
+
+            # Adaptive LOS:
+            #
+            # Straight route -> use the long configured lookahead.
+            # Tight curvature -> shorten the lookahead so the
+            # vessel follows the corner instead of cutting inside.
+            #
+            # Units for curvature thresholds are rad/m.
+            'los_min_lookahead': 4.0,
+            'los_curvature_preview_distance': 12.0,
+            'los_full_lookahead_curvature': 0.03,
+            'los_min_lookahead_curvature': 0.16,
+
             # V2.2:
             # 5 m formation distance is measured bumper-to-bumper
             # ALONG the unsmoothed breadcrumb path.
@@ -290,13 +309,21 @@ class FollowerPidController(Node):
             'parking_reverse_clearance': 4.5,
 
             'catchup_distance': 6.0,
-            'catchup_release_margin': 0.15,
             'catchup_min_speed': 1.20,
 
             # Extra longitudinal PID authority is used only while
             # the follower is genuinely in catch-up. Normal
             # formation-following gains remain unchanged.
             'catchup_speed_gain_scale': 1.50,
+
+            # CATCHUP speed is independent of predecessor speed,
+            # but it must remain subordinate to the follower's
+            # OWN ability to stay on its breadcrumb trajectory.
+            #
+            # Below the "full" thresholds, full catch-up speed is
+            # allowed. Between full and slow thresholds, speed is
+            # progressively reduced. Beyond the slow threshold,
+            # only catchup_min_tracking_scale remains.
 
             # CATCHUP has no absolute software speed ceiling.
             # Instead it continuously requests this much speed
@@ -406,9 +433,6 @@ class FollowerPidController(Node):
         self.speed_previous = 0.0
 
         self.last_follow_target_speed = None
-
-        # CATCHUP / FOLLOWING hysteresis.
-        self.catchup_active = False
 
         self.distance_integral = 0.0
         self.distance_previous = 0.0
@@ -1210,6 +1234,473 @@ class FollowerPidController(Node):
 
         return path[-1]
 
+    def adaptive_los_lookahead(
+        self,
+        cumulative,
+        projection_s,
+    ):
+        """
+        Choose LOS distance from the curvature of the path ahead.
+
+        The path is sampled spatially rather than using waypoint
+        indices, so the calculation is independent of planner
+        sampling density.
+
+        A nearly straight route receives the configured maximum
+        lookahead. Tight curvature progressively reduces the
+        distance toward los_min_lookahead.
+
+        The result can never extend beyond the available
+        predecessor history.
+        """
+
+        if (
+            not self.path
+            or len(self.path) < 2
+            or not cumulative
+        ):
+            return max(
+                0.5,
+                self.los_min_lookahead,
+            )
+
+        available = max(
+            0.0,
+            cumulative[-1]
+            - projection_s,
+        )
+
+        if available <= 0.05:
+            return available
+
+        maximum = min(
+            max(
+                0.5,
+                self.catchup_los_lookahead,
+            ),
+            available,
+        )
+
+        minimum = min(
+            maximum,
+            max(
+                0.5,
+                self.los_min_lookahead,
+            ),
+        )
+
+        preview = min(
+            available,
+            max(
+                minimum,
+                self.los_curvature_preview_distance,
+            ),
+        )
+
+        # ----------------------------------------------------
+        # Sample headings approximately every 1 m.
+        #
+        # We use the maximum LOCAL heading-rate ahead rather than
+        # only comparing the beginning and end. This is important
+        # on the stress course because an S-turn could otherwise
+        # have a small net heading change despite containing two
+        # sharp bends.
+        # ----------------------------------------------------
+
+        sample_step = 1.0
+
+        headings = []
+        distances = []
+
+        s = projection_s
+
+        preview_end = min(
+            cumulative[-1],
+            projection_s + preview,
+        )
+
+        while (
+            s
+            < preview_end - 0.10
+        ):
+
+            s2 = min(
+                preview_end,
+                s + sample_step,
+            )
+
+            a = self.point_at_path_s(
+                self.path,
+                cumulative,
+                s,
+            )
+
+            b = self.point_at_path_s(
+                self.path,
+                cumulative,
+                s2,
+            )
+
+            if (
+                a is not None
+                and b is not None
+            ):
+
+                dx = b[0] - a[0]
+                dy = b[1] - a[1]
+
+                segment = math.hypot(
+                    dx,
+                    dy,
+                )
+
+                if segment >= 0.10:
+
+                    headings.append(
+                        math.atan2(
+                            dy,
+                            dx,
+                        )
+                    )
+
+                    distances.append(
+                        segment
+                    )
+
+            s = s2
+
+        if len(headings) < 2:
+            return maximum
+
+        maximum_curvature = 0.0
+
+        for i in range(
+            1,
+            len(headings),
+        ):
+
+            heading_change = abs(
+                wrap_pi(
+                    headings[i]
+                    - headings[i - 1]
+                )
+            )
+
+            local_distance = max(
+                0.10,
+                0.5
+                * (
+                    distances[i]
+                    + distances[i - 1]
+                ),
+            )
+
+            curvature = (
+                heading_change
+                / local_distance
+            )
+
+            maximum_curvature = max(
+                maximum_curvature,
+                curvature,
+            )
+
+        low = max(
+            0.0,
+            self.los_full_lookahead_curvature,
+        )
+
+        high = max(
+            low + 1e-6,
+            self.los_min_lookahead_curvature,
+        )
+
+        if maximum_curvature <= low:
+
+            return maximum
+
+        if maximum_curvature >= high:
+
+            return minimum
+
+        # Linear interpolation:
+        #
+        # low curvature  -> maximum lookahead
+        # high curvature -> minimum lookahead
+        fraction = (
+            maximum_curvature
+            - low
+        ) / (
+            high - low
+        )
+
+        return (
+            maximum
+            - fraction
+            * (
+                maximum - minimum
+            )
+        )
+
+
+    def catchup_los_guidance(self):
+        """
+        Line-of-Sight guidance used only during CATCHUP.
+
+        The follower is first projected onto the planner-provided
+        reconstructed path. A virtual target is then placed farther
+        along that path.
+
+        Steering toward this distant target causes short wavelength
+        path oscillations to have much less influence on heading.
+
+        Normal FOLLOWING continues to use follow_curve_guidance().
+        """
+
+        if (
+            self.follower is None
+            or len(self.path) < 2
+        ):
+            return None
+
+        cumulative = (
+            self.path_cumulative_lengths(
+                self.path
+            )
+        )
+
+        px = float(
+            self.follower.x
+        )
+
+        py = float(
+            self.follower.y
+        )
+
+        best = None
+        best_distance = float('inf')
+
+        # Search only the chronological local beginning of the
+        # path so a looping trajectory cannot capture a later
+        # self-near branch.
+        search_distance = max(
+            self.guidance_search_distance,
+            self.catchup_los_lookahead,
+        )
+
+        search_segment_count = (
+            len(self.path) - 1
+        )
+
+        for i in range(
+            len(cumulative)
+        ):
+            if (
+                cumulative[i]
+                > search_distance
+            ):
+                search_segment_count = max(
+                    1,
+                    i,
+                )
+                break
+
+        for i in range(
+            search_segment_count
+        ):
+
+            a = self.path[i]
+            b = self.path[i + 1]
+
+            dx = (
+                b[0] - a[0]
+            )
+
+            dy = (
+                b[1] - a[1]
+            )
+
+            length2 = (
+                dx * dx
+                + dy * dy
+            )
+
+            if length2 < 1e-12:
+                continue
+
+            projection = (
+                (px - a[0]) * dx
+                + (py - a[1]) * dy
+            ) / length2
+
+            projection = clamp(
+                projection,
+                0.0,
+                1.0,
+            )
+
+            qx = (
+                a[0]
+                + projection * dx
+            )
+
+            qy = (
+                a[1]
+                + projection * dy
+            )
+
+            d = math.hypot(
+                px - qx,
+                py - qy,
+            )
+
+            if d < best_distance:
+
+                segment_length = (
+                    math.sqrt(
+                        length2
+                    )
+                )
+
+                best_distance = d
+
+                best = (
+                    i,
+                    qx,
+                    qy,
+                    cumulative[i]
+                    + projection
+                    * segment_length,
+                )
+
+        if best is None:
+            return None
+
+        (
+            segment_index,
+            qx,
+            qy,
+            projection_s,
+        ) = best
+
+        # -----------------------------------------------------
+        # Virtual LOS target.
+        # -----------------------------------------------------
+
+        los_lookahead = (
+            self.adaptive_los_lookahead(
+                cumulative,
+                projection_s,
+            )
+        )
+
+        target_s = (
+            projection_s
+            + los_lookahead
+        )
+
+        target = self.point_at_path_s(
+            self.path,
+            cumulative,
+            target_s,
+        )
+
+        if target is None:
+            return None
+
+        desired_heading = math.atan2(
+            target[1] - py,
+            target[0] - px,
+        )
+
+        # -----------------------------------------------------
+        # Diagnostics:
+        # recover the local path tangent and signed CTE.
+        #
+        # These values are published for logging only.
+        # They do NOT add another steering correction during LOS.
+        # -----------------------------------------------------
+
+        half_window = max(
+            0.25,
+            self.follow_tangent_half_window,
+        )
+
+        before = self.point_at_path_s(
+            self.path,
+            cumulative,
+            projection_s - half_window,
+        )
+
+        after = self.point_at_path_s(
+            self.path,
+            cumulative,
+            projection_s + half_window,
+        )
+
+        tx = (
+            after[0] - before[0]
+        )
+
+        ty = (
+            after[1] - before[1]
+        )
+
+        tangent_length = math.hypot(
+            tx,
+            ty,
+        )
+
+        if tangent_length < 1e-6:
+
+            i = min(
+                len(self.path) - 2,
+                segment_index,
+            )
+
+            tx = (
+                self.path[i + 1][0]
+                - self.path[i][0]
+            )
+
+            ty = (
+                self.path[i + 1][1]
+                - self.path[i][1]
+            )
+
+            tangent_length = math.hypot(
+                tx,
+                ty,
+            )
+
+        if tangent_length < 1e-6:
+            return None
+
+        tx /= tangent_length
+        ty /= tangent_length
+
+        tangent_heading = math.atan2(
+            ty,
+            tx,
+        )
+
+        nx = -ty
+        ny = tx
+
+        cross_track = (
+            (px - qx) * nx
+            + (py - qy) * ny
+        )
+
+        return (
+            wrap_pi(
+                desired_heading
+            ),
+            tangent_heading,
+            cross_track,
+        )
+
+
     def follow_curve_guidance(self):
         """
         Project R2 onto the smooth breadcrumb curve and use the
@@ -1634,7 +2125,19 @@ class FollowerPidController(Node):
         feedforward=0.0,
         speed_gain_scale=1.0,
     ):
-        guidance = self.follow_curve_guidance()
+        # Use one continuous guidance architecture throughout
+        # normal platoon tracking.
+        #
+        # CATCHUP and FOLLOWING differ longitudinally, but they no
+        # longer switch between LOS and local-tangent steering.
+        #
+        # The LOS target is automatically clamped to the end of the
+        # available predecessor history. Therefore, as formation is
+        # recovered, the effective lookahead naturally becomes no
+        # longer than the available predecessor separation.
+        guidance = (
+            self.catchup_los_guidance()
+        )
 
         if guidance is None:
             self.stop()
@@ -1933,62 +2436,6 @@ class FollowerPidController(Node):
     # Main control
     # ---------------------------------------------------------
 
-    def update_catchup_phase(self):
-        if self.path_gap is None:
-            return False
-
-        enter_gap = max(
-            self.catchup_distance,
-            self.formation_distance,
-        )
-
-        exit_gap = min(
-            enter_gap - 0.05,
-            self.formation_distance
-            + self.catchup_release_margin,
-        )
-
-        previous = self.catchup_active
-
-        if self.catchup_active:
-            if self.path_gap <= exit_gap:
-                self.catchup_active = False
-        else:
-            if self.path_gap >= enter_gap:
-                self.catchup_active = True
-
-        changed = (
-            previous
-            != self.catchup_active
-        )
-
-        if changed:
-
-            # Do not carry longitudinal integral memory from one
-            # fundamentally different speed policy into the other.
-            self.speed_integral = 0.0
-
-            self.distance_integral = 0.0
-            self.distance_previous = (
-                self.path_gap
-                - self.formation_distance
-            )
-
-            self.last_follow_target_speed = None
-
-            phase = (
-                'CATCHUP'
-                if self.catchup_active
-                else 'FOLLOWING'
-            )
-
-            self.get_logger().info(
-                f'{self.follower_id} longitudinal phase -> '
-                f'{phase}; gap={self.path_gap:.2f} m'
-            )
-
-        return changed
-
     def historical_speed_recommended_callback(self, msg):
         value = float(msg.data)
 
@@ -2064,33 +2511,26 @@ class FollowerPidController(Node):
                 self.stop()
                 return
 
-            phase_changed = (
-                self.update_catchup_phase()
+            correction = self.distance_pid(
+                self.path_gap,
+                dt,
+            )
+
+            target_speed = (
+                self.predecessor.speed
+                + correction
             )
 
             feedforward = 0.0
             speed_gain_scale = 1.0
 
-            if self.catchup_active:
-
-                # -------------------------------------------------
-                # CATCHUP:
-                #
-                # Speed is intentionally independent of the
-                # predecessor. If R2 slows for a corner while R3 is
-                # far behind, R3 does NOT inherit that slowdown.
-                #
-                # follow_max_speed is the follower's own configured
-                # pursuit target (GUI-derived for normal runs).
-                #
-                # The follower's OWN heading alignment inside
-                # track_breadcrumb_curve() may still reduce forward
-                # propulsion when it is not pointing along the path.
-                # -------------------------------------------------
-
+            if (
+                self.path_gap
+                >= self.catchup_distance
+            ):
                 target_speed = max(
+                    target_speed,
                     self.catchup_min_speed,
-                    self.follow_max_speed,
                 )
 
                 feedforward = (
@@ -2101,70 +2541,38 @@ class FollowerPidController(Node):
                     self.catchup_speed_gain_scale
                 )
 
-            else:
+            target_speed = clamp(
+                target_speed,
+                0.0,
+                self.follow_max_speed,
+            )
 
-                # -------------------------------------------------
-                # FOLLOWING:
-                #
-                # Once formation is recovered, longitudinal speed
-                # again follows the predecessor plus the bounded
-                # 5 m gap correction.
-                # -------------------------------------------------
-
-                correction = self.distance_pid(
-                    self.path_gap,
-                    dt,
+            # Historical preview is disabled during catchup.
+            if (
+                self.path_gap < self.catchup_distance
+                and self.historical_speed_recommended is not None
+                and self.historical_speed_recommended_time is not None
+            ):
+                preview_age = (
+                    self.get_clock().now().nanoseconds * 1e-9
+                    - self.historical_speed_recommended_time
                 )
 
-                target_speed = (
-                    self.predecessor.speed
-                    + correction
-                )
-
-                target_speed = clamp(
-                    target_speed,
-                    0.0,
-                    self.follow_max_speed,
-                )
-
-                # Historical speed preview belongs only to normal
-                # formation following. It must never slow CATCHUP.
-                if (
-                    self.historical_speed_recommended is not None
-                    and
-                    self.historical_speed_recommended_time is not None
-                ):
-
-                    preview_age = (
-                        self.get_clock().now().nanoseconds * 1e-9
-                        - self.historical_speed_recommended_time
+                if preview_age <= 0.5:
+                    preview_cap = clamp(
+                        self.historical_speed_recommended
+                        + max(
+                            0.0,
+                            correction,
+                        ),
+                        0.0,
+                        self.follow_max_speed,
                     )
 
-                    if preview_age <= 0.5:
-
-                        preview_cap = clamp(
-                            self.historical_speed_recommended
-                            + max(
-                                0.0,
-                                correction,
-                            ),
-                            0.0,
-                            self.follow_max_speed,
-                        )
-
-                        target_speed = min(
-                            target_speed,
-                            preview_cap,
-                        )
-
-            if phase_changed:
-
-                # Prevent a derivative kick on the first cycle of
-                # the new speed policy.
-                self.speed_previous = (
-                    target_speed
-                    - self.follower.speed
-                )
+                    target_speed = min(
+                        target_speed,
+                        preview_cap,
+                    )
 
             self.track_breadcrumb_curve(
                 target_speed,

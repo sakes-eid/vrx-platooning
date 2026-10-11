@@ -272,18 +272,32 @@ class FollowerPlanner(Node):
             'curve_backtrack_points': 4.0,
             'passed_point_margin': 0.05,
 
+            # --------------------------------------------------
+            # CATCHUP route reconstruction.
+            #
+            # FOLLOWING continues to use the existing precise
+            # breadcrumb curve.
+            #
+            # During CATCHUP only, dense predecessor breadcrumbs
+            # are reduced to low-frequency route control points
+            # and fitted with a cubic B-spline. This suppresses
+            # small predecessor steering oscillations instead of
+            # passing them downstream to the next vessel.
+            #
+            # Raw breadcrumbs are NEVER modified and remain the
+            # authoritative source for formation-gap measurement.
+            # --------------------------------------------------
+
+            'catchup_distance': 6.0,
+            'catchup_route_spacing': 1.0,
+            'catchup_bspline_samples_per_segment': 4.0,
+
             # CATCHUP guidance uses the same raw predecessor
             # breadcrumb history but constructs a substantially
             # smoother steering centerline.
             #
             # These affect GUIDANCE ONLY. Raw breadcrumbs remain
             # authoritative for along-path formation distance.
-            'catchup_distance': 6.0,
-            'catchup_release_margin': 0.15,
-            'catchup_control_spacing': 0.80,
-            'catchup_smoothing_passes': 2.0,
-            'catchup_max_smoothing_shift': 0.50,
-            'catchup_curve_tangent_scale': 0.40,
 
             # Breadcrumb hierarchy:
             # acquire the correct trail segment ONCE while the
@@ -372,11 +386,6 @@ class FollowerPlanner(Node):
         # Once R2 passes a breadcrumb, this index never moves back.
         self.follower_progress_index = 0
         self.progress_acquired = False
-
-        # Longitudinal catch-up state is mirrored locally so the
-        # planner can switch guidance smoothing without modifying
-        # the raw breadcrumb history.
-        self.catchup_active = False
 
         self.mode = self.FOLLOW
         self.previous_mode = None
@@ -1388,193 +1397,226 @@ class FollowerPlanner(Node):
         msg.data = measurement
         self.path_gap_pub.publish(msg)
 
-    def update_catchup_state(self):
-        """
-        Planner-side mirror of follower CATCHUP state.
-
-        Enter at catchup_distance and leave only after the gap
-        returns slightly closer to the requested formation gap.
-        This prevents rapid switching between the normal and
-        catch-up guidance curves.
-        """
-        gap = self.path_gap_measurement()
-
-        if gap is None:
-            return
-
-        enter_gap = max(
-            self.catchup_distance,
-            self.formation_distance,
-        )
-
-        exit_gap = min(
-            enter_gap - 0.05,
-            self.formation_distance
-            + self.catchup_release_margin,
-        )
-
-        previous = self.catchup_active
-
-        if self.catchup_active:
-            if gap <= exit_gap:
-                self.catchup_active = False
-        else:
-            if gap >= enter_gap:
-                self.catchup_active = True
-
-        if previous != self.catchup_active:
-            phase = (
-                'CATCHUP'
-                if self.catchup_active
-                else 'FOLLOWING'
-            )
-
-            self.get_logger().info(
-                f'{self.follower_id} guidance -> '
-                f'{phase}; gap={gap:.2f} m'
-            )
-
-    def build_catchup_control_points(
+    def catchup_route_control_points(
         self,
         points,
     ):
         """
-        Build a low-frequency steering centerline from the raw
-        predecessor trail.
+        Reconstruct the low-frequency route followed by the
+        predecessor.
 
-        1. Spatially thin very dense breadcrumbs.
-        2. Apply repeated neighbour averaging.
-        3. Bound displacement from the retained real breadcrumb.
+        IMPORTANT:
+        This does NOT select individual breadcrumbs.
 
-        The source breadcrumb deque is never modified.
+        Dense breadcrumbs are accumulated into arc-length windows,
+        and each window is represented by its mean position.
+
+        Therefore short left/right steering oscillations tend to
+        cancel instead of being propagated downstream.
+
+        Raw breadcrumbs remain untouched for formation-gap
+        measurement.
         """
+
         if len(points) <= 2:
             return list(points)
 
-        spacing = max(
-            0.20,
-            self.catchup_control_spacing,
+        window_length = max(
+            0.5,
+            self.catchup_route_spacing,
         )
 
-        thinned = [
+        result = [
             points[0]
         ]
 
-        for point in points[1:-1]:
-            if (
-                distance(
-                    thinned[-1],
-                    point,
+        bucket = []
+        travelled = 0.0
+        previous = points[0]
+
+        for point in points[1:]:
+
+            travelled += distance(
+                previous,
+                point,
+            )
+
+            previous = point
+
+            bucket.append(
+                point
+            )
+
+            if travelled >= window_length:
+
+                mean_x = sum(
+                    p[0] for p in bucket
+                ) / len(bucket)
+
+                mean_y = sum(
+                    p[1] for p in bucket
+                ) / len(bucket)
+
+                mean_point = (
+                    mean_x,
+                    mean_y,
                 )
-                >= spacing
-            ):
-                thinned.append(point)
 
+                if distance(
+                    result[-1],
+                    mean_point,
+                ) >= 0.10:
+
+                    result.append(
+                        mean_point
+                    )
+
+                bucket = []
+                travelled = 0.0
+
+        # Preserve the actual newest route endpoint.
         if distance(
-            thinned[-1],
+            result[-1],
             points[-1],
-        ) > 0.01:
-            thinned.append(
-                points[-1]
-            )
-        else:
-            thinned[-1] = (
+        ) >= 0.10:
+
+            result.append(
                 points[-1]
             )
 
-        if len(thinned) <= 2:
-            return thinned
+        return result
 
-        original = list(
-            thinned
-        )
 
-        smoothed = list(
-            thinned
-        )
+    def catchup_bspline(self, points):
+        """
+        Uniform cubic B-spline through sparse route control points.
 
-        passes = max(
-            0,
+        Unlike the normal interpolating breadcrumb curve, this
+        spline does NOT pass through every predecessor breadcrumb.
+        Small predecessor zig-zags are therefore filtered instead
+        of being reproduced by the follower.
+
+        Repeated endpoint control points make the generated curve
+        start and finish at the available historical route ends.
+        """
+
+        if len(points) <= 2:
+            return list(points)
+
+        samples = max(
+            2,
             int(round(
-                self.catchup_smoothing_passes
+                self.catchup_bspline_samples_per_segment
             )),
         )
 
-        max_shift = max(
-            0.0,
-            self.catchup_max_smoothing_shift,
+        # Cubic B-spline requires four consecutive control points.
+        # Triple endpoint padding preserves the usable endpoints.
+        padded = (
+            [points[0], points[0], points[0]]
+            + list(points)
+            + [points[-1], points[-1], points[-1]]
         )
 
-        for _ in range(passes):
+        curve = []
 
-            updated = [
-                smoothed[0]
-            ]
+        for i in range(
+            len(padded) - 3
+        ):
 
-            for i in range(
-                1,
-                len(smoothed) - 1,
-            ):
-                candidate = (
-                    0.25 * smoothed[i - 1][0]
-                    + 0.50 * smoothed[i][0]
-                    + 0.25 * smoothed[i + 1][0],
+            p0 = padded[i]
+            p1 = padded[i + 1]
+            p2 = padded[i + 2]
+            p3 = padded[i + 3]
 
-                    0.25 * smoothed[i - 1][1]
-                    + 0.50 * smoothed[i][1]
-                    + 0.25 * smoothed[i + 1][1],
+            for step in range(samples):
+
+                u = (
+                    step
+                    / float(samples)
                 )
 
-                # Never allow smoothing to cut substantially away
-                # from the real historical trajectory.
-                dx = (
-                    candidate[0]
-                    - original[i][0]
-                )
+                u2 = u * u
+                u3 = u2 * u
 
-                dy = (
-                    candidate[1]
-                    - original[i][1]
-                )
+                b0 = (
+                    1.0
+                    - 3.0 * u
+                    + 3.0 * u2
+                    - u3
+                ) / 6.0
 
-                shift = math.hypot(
-                    dx,
-                    dy,
+                b1 = (
+                    4.0
+                    - 6.0 * u2
+                    + 3.0 * u3
+                ) / 6.0
+
+                b2 = (
+                    1.0
+                    + 3.0 * u
+                    + 3.0 * u2
+                    - 3.0 * u3
+                ) / 6.0
+
+                b3 = (
+                    u3
+                ) / 6.0
+
+                point = (
+                    b0 * p0[0]
+                    + b1 * p1[0]
+                    + b2 * p2[0]
+                    + b3 * p3[0],
+
+                    b0 * p0[1]
+                    + b1 * p1[1]
+                    + b2 * p2[1]
+                    + b3 * p3[1],
                 )
 
                 if (
-                    max_shift > 0.0
-                    and shift > max_shift
+                    not curve
+                    or distance(
+                        curve[-1],
+                        point,
+                    ) >= 0.01
                 ):
-                    scale = (
-                        max_shift / shift
+                    curve.append(
+                        point
                     )
 
-                    candidate = (
-                        original[i][0]
-                        + dx * scale,
-
-                        original[i][1]
-                        + dy * scale,
-                    )
-
-                updated.append(
-                    candidate
-                )
-
-            updated.append(
-                smoothed[-1]
+        if (
+            not curve
+            or distance(
+                curve[-1],
+                points[-1],
+            ) >= 0.01
+        ):
+            curve.append(
+                points[-1]
             )
 
-            smoothed = updated
+        return curve
 
-        return smoothed
 
-    def smooth_curve(
-        self,
-        points,
-        tangent_scale=None,
-    ):
+    def catchup_guidance_active(self):
+        """
+        Use the same physical gap threshold as the controller.
+
+        No speed policy is changed here. This function selects only
+        which geometric path representation is published.
+        """
+
+        gap = self.path_gap_measurement()
+
+        return (
+            gap is not None
+            and gap >= self.catchup_distance
+        )
+
+
+    def smooth_curve(self, points):
         """
         Interpolating cubic Hermite / Catmull-Rom-style curve.
 
@@ -1589,14 +1631,7 @@ class FollowerPlanner(Node):
             int(round(self.curve_samples_per_segment)),
         )
 
-        if tangent_scale is None:
-            tangent_scale = (
-                self.curve_tangent_scale
-            )
-        else:
-            tangent_scale = float(
-                tangent_scale
-            )
+        tangent_scale = self.curve_tangent_scale
 
         tangents = []
 
@@ -1691,21 +1726,19 @@ class FollowerPlanner(Node):
         if len(control_points) < 2:
             return None
 
-        if self.catchup_active:
+        if self.catchup_guidance_active():
 
-            catchup_points = (
-                self.build_catchup_control_points(
+            catchup_control = (
+                self.catchup_route_control_points(
                     control_points
                 )
             )
 
-            return self.smooth_curve(
-                catchup_points,
-                tangent_scale=(
-                    self.catchup_curve_tangent_scale
-                ),
+            return self.catchup_bspline(
+                catchup_control
             )
 
+        # Normal FOLLOWING remains exactly as before.
         return self.smooth_curve(
             control_points
         )
@@ -1953,10 +1986,6 @@ class FollowerPlanner(Node):
         # acquisition begins only after genuine history is long enough.
         if not self.release_bootstrap_active:
             self.update_follower_progress()
-
-        # Decide which GUIDANCE representation should be used.
-        # This does not alter the unsmoothed distance measurement.
-        self.update_catchup_state()
 
         # V2.2: unsmoothed breadcrumb arc-length formation gap.
         self.publish_path_gap()

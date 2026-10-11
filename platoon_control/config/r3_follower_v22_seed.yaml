@@ -21,4 +21,8 @@
     speed_ki: 44.09953488498377
     follow_speed_integral_limit: 12.0
     speed_kp: 114.29069944122205
-    catchup_release_margin: 0.15
+    catchup_los_lookahead: 10.371
+    los_min_lookahead: 4.0
+    los_curvature_preview_distance: 12.0
+    los_full_lookahead_curvature: 0.03
+    los_min_lookahead_curvature: 0.16
