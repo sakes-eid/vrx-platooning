@@ -21,66 +21,53 @@ Clone the repository into a ROS 2 workspace:
 ```bash
 mkdir -p ~/vrx_ws/src
 cd ~/vrx_ws/src
-
 git clone https://github.com/sakes-eid/vrx-platooning.git
 ```
 
 The project also requires the **VRX simulator** and its dependencies.
 
-After the required packages are present:
+Build the workspace:
 
 ```bash
 cd ~/vrx_ws
-
 source /opt/ros/jazzy/setup.bash
-
 rosdep install --from-paths src --ignore-src -r -y
-
 colcon build --symlink-install
-
 source install/setup.bash
 ```
 
-For the current complete R1 experiment:
+The recommended entry point is now the one-terminal startup application:
 
 ```bash
 cd ~/vrx_ws
 source /opt/ros/jazzy/setup.bash
 source install/setup.bash
-
-ros2 launch platoon_bringup leader_stress_full.launch.py
+ros2 run platoon_bringup platoon_startup
 ```
 
-For the current tuned R1 + R2 visual experiment:
+The startup GUI configures the run before launch. It supports:
 
-```bash
-cd ~/vrx_ws
-source /opt/ros/jazzy/setup.bash
-source install/setup.bash
+- one, two, or three WAM-Vs;
+- Test or Tuning mode;
+- new or saved missions;
+- Stress, Straight, Curve, and Coverage missions;
+- mission preview / approval and saved-mission reuse;
+- maximum leader speed and follower spacing;
+- headless or visible Gazebo;
+- RViz and live-map toggles;
+- logging and output-directory configuration;
+- automatic preflight checks;
+- reset / relaunch of a configured session.
 
-ros2 launch platoon_bringup follower_stress_visual.launch.py \
-  controller_params_file:=~/vrx_ws/src/vrx_platooning/platoon_control/config/r2_follower_v22_tuned.yaml \
-  planner_params_file:=~/vrx_ws/src/vrx_platooning/platoon_planner/config/r2_follower_v22_tuned.yaml \
-  follower_id:=r2 predecessor_id:=r1
-```
-
-For the current three-robot visual experiment:
-
-```bash
-cd ~/vrx_ws
-source /opt/ros/jazzy/setup.bash
-source install/setup.bash
-
-ros2 launch platoon_bringup three_robot_stress_visual.launch.py
-```
-
-This launches the chained platoon:
+The chained three-robot architecture is:
 
 ```text
 R1 -> R2 -> R3
 ```
 
-R1 is the frozen leader, R2 uses its final V2.2 tune, and R3 follows R2 without access to `/planner/reference_path`.
+R3 receives only predecessor-chain information from R2 and does not subscribe to `/planner/reference_path`.
+
+The older direct launch files remain useful for debugging and isolated validation, but `platoon_startup` is the normal top-level entry point.
 
 ---
 
@@ -107,11 +94,13 @@ R1 is the currently validated leader implementation.
 
 `r1_stress_autotune_v3.py` is the latest R1 tuning implementation. Earlier versions such as `r1_stress_autotune.py` and `r1_stress_autotune_v2.py` are retained for development history but should not be considered the current tuner.
 
+Current high-speed validation also includes three important implementation corrections: the GUI-selected leader speed is propagated into the planner/controller stack, GPS-derived velocity is differentiated using the sensor timestamp rather than callback arrival time, and the controller uses the simulated WAM-V thrust envelope while preserving differential-turn authority. These changes removed the earlier artificial 2 m/s ceiling and velocity spikes without changing the fixed-straight thruster-angle requirement.
+
 ---
 
 ### R2 — Follower
 
-R2 now uses the **V2.2 path-gap architecture**. The longitudinal formation controller regulates an along-path bumper gap on the predecessor's unsmoothed breadcrumb history, while the smoothed breadcrumb curve is used only for lateral guidance. Exact oriented hull clearance is reserved for collision warning / avoidance.
+R2 uses the **V2.2 path-gap architecture** for longitudinal formation control. The authoritative spacing signal is still the along-path bumper gap measured on the predecessor's unsmoothed breadcrumb history. Lateral guidance has since been upgraded: the follower controller now uses continuous **Line-of-Sight (LOS) guidance** in both CATCHUP and FOLLOWING instead of switching back to local-tangent steering. During catch-up, dense predecessor breadcrumbs are spatially averaged and fitted with a cubic B-spline to suppress inherited steering waviness. Exact oriented hull clearance remains reserved for collision warning / avoidance.
 
 The current tuned R2 files are:
 
@@ -128,7 +117,42 @@ The current tuned R2 files are:
 | Combined R1/R2 RViz config | `platoon_bringup/rviz/r1_r2_stress.rviz` |
 | Adaptive follower autotuner | `platoon_tuning/platoon_tuning/follower_stress_autotune_v22.py` |
 
-The V2.2 adaptive tuner uses the hierarchy:
+### Current follower guidance
+
+The current follower geometry/guidance stack is:
+
+```text
+raw predecessor breadcrumbs
+    -> authoritative progress / 5 m path-gap measurement
+
+catch-up guidance path
+    -> arc-length window averaging
+    -> cubic B-spline route reconstruction
+
+normal following path
+    -> precise local smooth breadcrumb curve
+
+both longitudinal phases
+    -> the same LOS steering law
+    -> curvature-adaptive lookahead
+```
+
+Current LOS configuration:
+
+```text
+R2 maximum lookahead = 8.0 m
+R3 maximum lookahead = 10.371 m
+minimum lookahead    = 4.0 m
+curvature preview    = 12.0 m
+full-lookahead kappa = 0.03 rad/m
+min-lookahead kappa  = 0.16 rad/m
+```
+
+Using one LOS steering architecture in both CATCHUP and FOLLOWING removed the choppy heading changes caused by switching between LOS and tangent guidance. Curvature-adaptive lookahead then removed the inside-corner cutting seen with a fixed long R3 lookahead.
+
+### Historical V2.2 tuning baseline
+
+The V2.2 adaptive tuner used the hierarchy:
 
 ```text
 GAP -> HEADING / GUIDANCE -> SPEED -> BRAKING
@@ -265,71 +289,56 @@ R2 brakes and holds behind R1. R3 receives R2 mission state and then brakes and 
 
 A complete visual three-robot Gazebo run was completed successfully before R3 autotuning.
 
-### Current R3 tuning checkpoint
+### Current adaptive-LOS guidance checkpoint
 
-R3 uses the V2.3 Optuna tuner in strict hierarchical mode:
+The first R3 V2.3 Optuna study remains useful historical tuning evidence, but it is **not the current final controller reference**. Since that study, the state estimator, actuator envelope, high-speed plumbing, catch-up path reconstruction, and follower guidance architecture have changed.
 
-```text
-GAP until locked -> HEADING until locked -> SPEED until locked
-```
+The current guidance architecture is now treated as the working baseline:
 
-BRAKE is already locked from the first 30-trial study, so it is skipped unless later degradation reopens it. There is no JOINT stage. Locked stages are still checked after accepted candidates; if a later accepted controller degrades an earlier locked stage, tuning returns to that stage.
+- R2 and R3 use the same generic follower controller.
+- Both use LOS steering continuously in CATCHUP and FOLLOWING.
+- R2 uses an 8 m maximum LOS lookahead.
+- R3 uses a 10.371 m maximum LOS lookahead.
+- Both reduce lookahead toward 4 m as upcoming path curvature increases.
+- R2 catch-up route reconstruction uses 2 m spatial averaging windows.
+- R3 catch-up route reconstruction uses 4 m windows to suppress downstream propagation of R2 steering motion.
+- Raw breadcrumbs remain untouched for the 5 m path-gap calculation.
 
-The tuner intentionally performs no separate initial or final verification run. The supplied R2-derived R3 seed is protected until a candidate actually satisfies an acceptance condition.
+The guidance redesign was developed in stages. A predecessor-independent maximum-speed catch-up experiment caused R3 to depart from the route and was rejected. Stronger breadcrumb smoothing reduced visual waviness but did not remove it. Continuous LOS guidance removed the oscillatory steering, and curvature-adaptive lookahead then removed R3's inside-corner cutting. The latest visual result is slightly outside-biased on some turns but consistent through the complete difficult geometry.
 
-Study:
-
-```text
-r3_cyclic_v23_01
-```
-
-After the first 30 optimization trials:
-
-```text
-BRAKE   = LOCKED
-GAP     = OPEN
-HEADING = OPEN
-SPEED   = OPEN
-```
-
-Current best accepted result:
+A recent tracking checkpoint with the adaptive LOS geometry produced:
 
 ```text
-Trial                    = 23
-Stage                    = HEADING
-Score                    = 31.6835
+R2 steady FOLLOWING
+    mean path gap       = 4.992 m
+    path-gap RMSE       = 0.458 m
+    CTE RMSE            = 1.016 m
+    no collision warning / avoidance activation
 
-Mean path gap            = 5.192 m
-Path-gap RMSE            = 1.012 m
-Path-gap P95 abs error   = 2.670 m
-Path-gap bias            = +0.192 m
-Initial catch-up         = 33.9 s
-Lost-gap time            = 26.0 s
-Lost-gap episodes        = 2
-
-CTE RMSE                 = 1.314 m
-CTE P95                  = 2.778 m
-Maximum abs CTE          = 3.193 m
-Heading RMSE             = 5.888 deg
-
-Speed RMSE               = 0.440 m/s
-Speed P95 abs error      = 0.827 m/s
-
-Terminal speed           = 0.026 m/s
-Terminal path-gap error  = 0.093 m
-Formation settle time    = 1.10 s
-
-Minimum hull clearance   = 2.449 m
-Collision warnings       = 0
-Avoidance activations    = 0
-Collision                = false
+R3 steady FOLLOWING
+    mean path gap       = 4.939 m
+    path-gap RMSE       = 0.508 m
+    CTE RMSE            = 0.729 m
+    no collision warning / avoidance activation
 ```
 
-This is an intermediate tuning checkpoint, not the final R3 tune. Only the braking stage has formally locked so far.
+That particular checkpoint was stopped before terminal SUCCESS, so these numbers are documented as **tracking-phase guidance evidence**, not as a completed final mission result.
+
+The next tuning task is deliberately longitudinal only:
+
+```text
+1. freeze planner + adaptive LOS guidance
+2. retune R2 gap / speed dynamics
+3. freeze R2
+4. retune R3 gap / speed dynamics against frozen R2
+5. only then reconsider higher independent CATCHUP speed
+```
+
+The earlier `r3_cyclic_v23_01` 30-trial study (BRAKE locked; GAP/HEADING/SPEED open) is retained in the history documentation as the pre-guidance-redesign tuning checkpoint.
 
 ---
 
-## Available R2 Launch Modes
+## Available R2 Launch Modes## Available R2 Launch Modes
 
 Several launch files are provided because different stages of follower development require different levels of instrumentation.
 
@@ -641,7 +650,7 @@ platoon_bringup/launch/three_robot_r3_tuning.launch.py
 
 with R1 and R2 frozen while only R3 is optimized.
 
-V2.3 adds cyclic stage scheduling, locked-stage degradation checks, checkpoint/resume, robust stale-process cleanup, a simulation-time stall watchdog, and successful-summary terminal detection to avoid waiting indefinitely on a terminal callback race.
+V2.3 supports strict hierarchical stage tuning, locked-stage degradation checks, checkpoint/resume, robust stale-process cleanup, a simulation-time stall watchdog, successful-summary terminal detection, and a protected **seed validation run before optimization**. The next use of V2.3 will start from the frozen adaptive-LOS guidance and retune longitudinal behavior rather than re-optimizing the guidance architecture.
 
 ---
 
