@@ -57,14 +57,38 @@ def launch_trial(context):
         }],
     )
 
+    mission_file = os.environ.get(
+        'PLATOON_TUNING_MISSION_FILE',
+        '',
+    ).strip()
+
+    planner_executable = (
+        'saved_mission_planner'
+        if mission_file
+        else 'stress_course_planner'
+    )
+
+    planner_runtime = {
+        'use_sim_time': True,
+    }
+
+    if mission_file:
+        planner_runtime.update({
+            'mission_file': mission_file,
+            'require_approval': False,
+        })
+
     planner = Node(
         package='platoon_planner',
-        executable='stress_course_planner',
+        executable=planner_executable,
         name='trajectory_planner',
         output='screen',
         parameters=[
-            ParameterFile(planner_params, allow_substs=True),
-            {'use_sim_time': True},
+            ParameterFile(
+                planner_params,
+                allow_substs=True,
+            ),
+            planner_runtime,
         ],
     )
 

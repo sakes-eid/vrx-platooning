@@ -20,7 +20,10 @@ from platoon_planner.mission_storage import (
 
 class StartupGUI:
 
-    def __init__(self):
+    def __init__(
+        self,
+        initial_config=None,
+    ):
 
         self.result = None
 
@@ -113,7 +116,15 @@ class StartupGUI:
 
         self._build()
         self._load_saved_missions()
+
+        if initial_config is not None:
+            self._apply_config(
+                initial_config
+            )
+
         self._refresh()
+
+        # Always use a fresh run name when the GUI reopens.
         self._update_run_name()
 
         self.root.protocol(
@@ -700,6 +711,14 @@ class StartupGUI:
 
         ttk.Button(
             buttons,
+            text="RESET",
+            command=self._reset,
+        ).pack(
+            side="left",
+        )
+
+        ttk.Button(
+            buttons,
             text="Cancel",
             command=self._cancel,
         ).pack(
@@ -718,6 +737,138 @@ class StartupGUI:
     # =========================================================
     # Dynamic state
     # =========================================================
+
+    def _apply_config(
+        self,
+        config,
+    ):
+
+        self.robot_count.set(
+            config.robot_count
+        )
+
+        self.mission_source.set(
+            config.mission_source
+        )
+
+        self.mission_type.set(
+            config.mission_type
+        )
+
+        self.save_after_accept.set(
+            bool(
+                config.save_after_accept
+            )
+        )
+
+        self.save_name.set(
+            config.save_mission_name
+            or ""
+        )
+
+        self.run_mode.set(
+            config.run_mode
+        )
+
+        self.headless.set(
+            bool(
+                config.headless
+            )
+        )
+
+        self.show_rviz.set(
+            bool(
+                config.show_rviz
+            )
+        )
+
+        self.show_map.set(
+            bool(
+                config.show_map
+            )
+        )
+
+        self.max_speed.set(
+            str(
+                config.max_speed
+            )
+        )
+
+        self.follower_spacing.set(
+            str(
+                config.follower_spacing
+                if config.follower_spacing
+                is not None
+                else 5.0
+            )
+        )
+
+        self.logging_enabled.set(
+            bool(
+                config.logging_enabled
+            )
+        )
+
+        self.results_dir.set(
+            str(
+                config.results_dir
+            )
+        )
+
+        target_labels = {
+            "r1": "R1",
+            "r2": "R2 <- R1",
+            "r3": "R3 <- R2",
+        }
+
+        self.tuning_target.set(
+            target_labels.get(
+                config.tuning_target,
+                "R1",
+            )
+        )
+
+        self.tuning_trials.set(
+            ""
+            if config.tuning_trials is None
+            else str(
+                config.tuning_trials
+            )
+        )
+
+        self.tuning_timeout.set(
+            ""
+            if config.tuning_time_limit_sec is None
+            else str(
+                config.tuning_time_limit_sec
+            )
+        )
+
+        if config.saved_mission_name:
+
+            for label, item in (
+                self.saved_items.items()
+            ):
+
+                if (
+                    item["definition"].name
+                    == config.saved_mission_name
+                ):
+
+                    self.saved_mission.set(
+                        label
+                    )
+
+                    break
+
+    def _reset(self):
+
+        self._apply_config(
+            StartupConfig()
+        )
+
+        self._refresh()
+        self._update_run_name()
 
     def _configuration_changed(self):
 
@@ -1323,6 +1474,10 @@ class StartupGUI:
         return self.result
 
 
-def collect_configuration_gui():
+def collect_configuration_gui(
+    initial_config=None,
+):
 
-    return StartupGUI().run()
+    return StartupGUI(
+        initial_config=initial_config,
+    ).run()

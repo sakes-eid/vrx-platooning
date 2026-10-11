@@ -54,6 +54,17 @@ class SavedMissionPlanner(StressCoursePlanner):
                 "mission_file parameter is required."
             )
 
+        self.declare_parameter(
+            "require_approval",
+            True,
+        )
+
+        self.require_approval = bool(
+            self.get_parameter(
+                "require_approval"
+            ).value
+        )
+
         self.get_logger().info(
             "Saved mission planner waiting for "
             "live /r1/vehicle_state."
@@ -169,20 +180,31 @@ class SavedMissionPlanner(StressCoursePlanner):
                 )
             )
 
-            decision = (
-                preview_and_approve(
-                    mission=mission,
-                    raw_grid=raw_grid,
-                    safe_grid=safe_grid,
-                    metadata=metadata,
-                    r1_start_ned=(
-                        start_north,
-                        start_east,
-                    ),
-                    important_points=None,
-                    allow_modify=False,
+            if self.require_approval:
+
+                decision = (
+                    preview_and_approve(
+                        mission=mission,
+                        raw_grid=raw_grid,
+                        safe_grid=safe_grid,
+                        metadata=metadata,
+                        r1_start_ned=(
+                            start_north,
+                            start_east,
+                        ),
+                        important_points=None,
+                        allow_modify=False,
+                    )
                 )
-            )
+
+            else:
+
+                decision = "accept"
+
+                print(
+                    "Mission approval skipped "
+                    "(non-interactive tuning run)."
+                )
 
             if decision == "cancel":
 

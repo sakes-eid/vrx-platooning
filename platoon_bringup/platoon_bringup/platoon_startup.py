@@ -746,29 +746,46 @@ def main():
         collect_configuration_gui,
     )
 
-    config = (
-        collect_configuration_gui()
-    )
-
-    if config is None:
-        print("Startup cancelled.")
-        return
-
-    print_summary(
-        config
-    )
-
-    run_preflight(
-        config
-    )
-
     from platoon_bringup.master_run import (
         run_configured_session,
     )
 
-    run_configured_session(
-        config
-    )
+    previous_config = None
+
+    while True:
+
+        config = (
+            collect_configuration_gui(
+                initial_config=previous_config,
+            )
+        )
+
+        if config is None:
+
+            print(
+                "Startup cancelled."
+            )
+
+            return
+
+        print_summary(
+            config
+        )
+
+        run_preflight(
+            config
+        )
+
+        run_configured_session(
+            config
+        )
+
+        previous_config = config
+
+        print()
+        print(
+            "Run finished. Reopening configuration..."
+        )
 
 
 if __name__ == "__main__":

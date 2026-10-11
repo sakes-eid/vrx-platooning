@@ -60,6 +60,11 @@ def launch_system(context):
         ).perform(context)
     )
 
+    tuning_mission_file = os.environ.get(
+        'PLATOON_TUNING_MISSION_FILE',
+        '',
+    ).strip()
+
     follower_id = LaunchConfiguration(
         'follower_id'
     ).perform(context)
@@ -207,7 +212,11 @@ def launch_system(context):
     actions.append(
         Node(
             package='platoon_planner',
-            executable='stress_course_planner',
+            executable=(
+                'saved_mission_planner'
+                if tuning_mission_file
+                else 'stress_course_planner'
+            ),
             name='trajectory_planner',
             output='screen',
             parameters=[
@@ -216,9 +225,20 @@ def launch_system(context):
                     'config',
                     'planner.yaml',
                 ),
-                {
-                    'use_sim_time': True,
-                },
+                (
+                    {
+                        'use_sim_time': True,
+                        'mission_file':
+                            tuning_mission_file,
+                        'require_approval':
+                            False,
+                    }
+                    if tuning_mission_file
+                    else
+                    {
+                        'use_sim_time': True,
+                    }
+                ),
             ],
         )
     )
