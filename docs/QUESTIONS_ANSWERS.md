@@ -567,13 +567,33 @@ This signal is used by the distance PID.
 
 ### Lateral guidance information
 
-The same breadcrumb history is smoothed into a local curve.
+The predecessor breadcrumb history is also used to create the follower's steering route, but the longitudinal and lateral representations remain intentionally separate.
 
-The smoothed path is used only for heading / cross-track guidance.
+Current guidance architecture:
 
-This separation prevents path smoothing from corrupting the longitudinal spacing measurement.
+    raw predecessor breadcrumbs
+        -> authoritative path progress / 5 m path-gap measurement
 
-### Safety information
+    CATCHUP lateral route
+        -> arc-length spatial averaging
+        -> cubic B-spline reconstruction
+
+    FOLLOWING lateral route
+        -> precise local smooth breadcrumb curve
+
+The controller uses **Line-of-Sight (LOS) guidance in both CATCHUP and FOLLOWING**. It projects the follower onto the planner-provided route and aims toward a virtual point farther along the path.
+
+The LOS lookahead is reduced as upcoming curvature increases. This keeps the long-lookahead straight-line stability without cutting the inside of tight turns.
+
+Current limits are approximately:
+
+    R2 maximum LOS lookahead = 8.0 m
+    R3 maximum LOS lookahead = 10.371 m
+    minimum LOS lookahead    = 4.0 m
+
+This separation prevents guidance smoothing from corrupting the longitudinal spacing measurement and prevents small predecessor steering oscillations from being copied directly downstream.
+
+### Safety information### Safety information
 
 Exact oriented WAM-V rectangles are used to calculate minimum physical hull clearance.
 
@@ -589,47 +609,69 @@ STATUS: COMPLETE.
 
 ## Q23. Develop the follower controller.
 
-The current R2 controller contains four main functions:
+The current generic follower controller is:
+
+    proactive_follower_controller_v22.py
+
+and is reused for both:
+
+    R2 <- R1
+    R3 <- R2
+
+It contains four main control functions:
 
     gap / distance PID
-    heading PID + cross-track guidance
+    LOS-based heading PID
     speed PID
     terminal braking PID
 
-The normal FOLLOW speed command is based on:
+### Longitudinal control
 
-    predecessor speed
-        +
-    distance-PID correction
+During normal FOLLOWING:
 
-During larger initial separation, a CATCHUP mode raises the requested follower speed.
+    target follower speed
+      = predecessor speed
+      + bounded distance-PID correction
 
-The controller also uses proactive historical speed information from the predecessor path to reduce speed before previously observed slow sections.
+The distance PID acts on the 5 m along-path bumper gap.
 
-The current tuned R2 configuration is stored in:
+CATCHUP retains additional longitudinal authority and feedforward, but the recent predecessor-independent maximum-speed experiments were rejected because the higher speed amplified tracking instability before the guidance redesign was complete.
 
-    platoon_control/config/r2_follower_v22_tuned.yaml
+The next tuning stage will retune the longitudinal gap / speed dynamics after the LOS geometry is frozen.
 
-Current selected controller parameters include:
+### Lateral control
+
+The follower no longer switches between LOS in CATCHUP and local-tangent steering in FOLLOWING.
+
+One continuous LOS steering architecture is used in both phases.
+
+The follower:
+
+    1. projects onto the current planner route;
+    2. chooses a virtual LOS point ahead;
+    3. reduces lookahead as upcoming curvature increases;
+    4. converts LOS heading error into differential thrust.
+
+Current configured LOS values:
+
+    R2 maximum lookahead = 8.0 m
+    R3 maximum lookahead = 10.371 m
+    minimum lookahead    = 4.0 m
+    curvature preview    = 12.0 m
+
+The heading PID remains:
+
+    R2 / R3 seed
+        Kp = 928.3642353153681
+        Ki = 5.105477736635173
+        Kd = 98.93066529065382
+
+The active R2 longitudinal seed remains:
 
     Gap PID
         Kp = 1.254616395479059
         Ki = 0.07691598273776513
         Kd = 0.25770214280663706
-
-    Heading PID
-        Kp = 928.3642353153681
-        Ki = 5.105477736635173
-        Kd = 98.93066529065382
-
-    Cross-track heading gain
-        0.2805635257284035
-
-    Follow tangent half window
-        0.40204986097476825
-
-    Lookahead distance
-        4.736355241980624 m
 
     Speed PID
         Kp = 114.29069944122205
@@ -641,26 +683,19 @@ Current selected controller parameters include:
         Ki = 60.634764417119634
         Kd = 10.647182804717701
 
-The adaptive follower tuner uses the hierarchy:
+These longitudinal gains are now treated as **pre-retuning seeds**, because the speed plumbing, actuator envelope and LOS guidance changes allow harder acceleration/deceleration than the original V2.2 tuning environment.
 
-    GAP -> HEADING / GUIDANCE -> SPEED -> BRAKING
+The V2.3 follower tuner validates its seed on the selected mission before optimization and then follows the strict hierarchy:
 
-A stage locks once its acceptance threshold is reached. Later accepted changes continue to monitor locked stages and reopen them if they drift outside threshold.
+    GAP -> HEADING -> SPEED
 
-The 36-trial study exhausted its trial budget with:
+with BRAKE reopened only if degradation requires it.
 
-    GAP     = LOCKED
-    HEADING = OPEN
-    SPEED   = OPEN
-    BRAKE   = OPEN
-
-The selected final trial is therefore the best current validated R2 baseline, not a claim that every optimizer gate was reached.
-
-STATUS: COMPLETE for the implemented R2 controller.
+STATUS: CONTROLLER ARCHITECTURE COMPLETE; LONGITUDINAL RETUNING PENDING.
 
 ---
 
-## Q24. Verify that the distance between the two robots converges to 5 m.
+## Q24. Verify that the distance between the two robots converges to 5 m.## Q24. Verify that the distance between the two robots converges to 5 m.
 
 The V2.2 follower was evaluated on the completed 289.5 s stress-course trial.
 
@@ -755,6 +790,8 @@ The final report must therefore distinguish the two quantities explicitly:
 The generated PDF-defined d12 plot is retained as evidence rather than being misrepresented as a 5 m convergence plot.
 
 STATUS: COMPLETE WITH DOCUMENTED DISTANCE-DEFINITION DISCREPANCY.
+
+NOTE: the numerical Q24 dataset above is the completed historical two-robot V2.2 validation. The current follower guidance and actuator/speed envelope have since been upgraded. The 5 m bumper-gap definition is unchanged, but final longitudinal numbers will be regenerated after the new R2/R3 retuning pass.
 
 
 ---
@@ -913,35 +950,37 @@ STATUS: COMPLETE.
 
 ## Q28. Implement the leader-follower strategy.
 
-The implemented chain is:
+The implemented information chain is:
 
     R1 -> R2 -> R3
 
 R1 follows the global/reference trajectory.
 
-R2 follows R1 using R1 vehicle state and R1 breadcrumb history.
+R2 follows R1 using R1 vehicle state and chronological R1 breadcrumb history.
 
-R3 follows R2 using R2 vehicle state and R2 breadcrumb history.
+R3 follows R2 using R2 vehicle state and chronological R2 breadcrumb history. R3 has no global reference-path input.
 
 For both follower pairs:
 
     raw predecessor breadcrumb history
-        -> longitudinal progress / 5 m path-gap measurement
+        -> chronological progress
+        -> 5 m along-path bumper-gap measurement
 
-    smoothed local breadcrumb curve
-        -> lateral / heading guidance
+    lateral route
+        -> catch-up spatial averaging / cubic B-spline when required
+        -> precise local smooth route in normal following
+
+    follower controller
+        -> continuous LOS steering in CATCHUP and FOLLOWING
+        -> curvature-adaptive lookahead
+        -> heading PID / differential thrust
 
     exact oriented hull geometry
         -> collision warning / avoidance only
 
-The follower controller contains:
+The key anti-string-oscillation design choice is that R3 does not attempt to reproduce every short-period steering oscillation made by R2. Its catch-up route is reconstructed from lower-frequency spatial averages, and LOS guidance looks ahead along the route.
 
-    gap PID
-    heading PID + cross-track correction
-    speed PID
-    terminal braking PID
-
-Thruster steering angles remain fixed straight. Turning is produced only by differential left/right thrust.
+The thruster steering angles remain fixed straight. Turning is produced only by differential left/right thrust.
 
 STATUS: COMPLETE.
 
@@ -949,9 +988,9 @@ STATUS: COMPLETE.
 
 ## Q29. Make Robot 2 follow Robot 1.
 
-R2 continues to use the final frozen V2.2 follower configuration already validated in Q19-Q24.
+R2 follows R1 using the generic V2.2 follower implementation.
 
-Current R2 result:
+The original 36-trial V2.2 result remains the historical two-robot tuning baseline:
 
     mean path gap              = 4.973 m
     path-gap RMSE              = 0.173 m
@@ -961,9 +1000,24 @@ Current R2 result:
     minimum hull clearance     = 3.457 m
     collision                  = false
 
-During three-robot development R2 was deliberately frozen so that R3 tuning could not improve its score by changing upstream R1/R2 behavior.
+Since that study, R2 guidance has been upgraded to continuous curvature-adaptive LOS and the speed / actuator envelope has changed.
 
-STATUS: COMPLETE.
+A recent adaptive-LOS stress tracking checkpoint produced:
+
+    mean path gap              = 4.992 m
+    path-gap bias              = -0.008 m
+    path-gap RMSE              = 0.458 m
+    path-gap P95 abs error     = 0.994 m
+    CTE RMSE                   = 1.016 m
+    minimum hull clearance     = 2.939 m
+    collision warnings         = 0
+    avoidance activations      = 0
+
+This checkpoint was stopped before terminal SUCCESS and is used only as tracking-phase evidence.
+
+The guidance architecture is now frozen. R2's next task is longitudinal gap / speed PID retuning for the new acceleration and deceleration behavior.
+
+STATUS: FOLLOWING COMPLETE; GUIDANCE FROZEN; LONGITUDINAL RETUNING PENDING.
 
 ---
 
@@ -974,7 +1028,11 @@ R3 uses the same generic follower implementation as R2 but is configured with:
     follower_id    = r3
     predecessor_id = r2
 
-R3 has no global/reference path input.
+R3 does not subscribe to:
+
+    /planner/reference_path
+
+Its state, route, release and terminal information are all chained through R2.
 
 A synchronized release mechanism allows R3 to begin with R2:
 
@@ -984,145 +1042,209 @@ A synchronized release mechanism allows R3 to begin with R2:
     R3 uses:
         release_mode = predecessor_release_bootstrap
 
-The release bootstrap is temporary and does not contaminate the authoritative raw R2 breadcrumb history.
+Bootstrap guidance remains temporary and does not contaminate the authoritative raw R2 breadcrumb history.
 
-Once sufficient genuine R2 history is available, R3 switches to normal chronological breadcrumb following.
+After initial acquisition, progress is chronological through R2's real breadcrumb history. This prevents nonlocal path jumps at self-near portions of the stress course.
 
-Follower progress was also restricted to chronological local predecessor history after initial acquisition, preventing incorrect path jumps where the stress trajectory passes near itself.
+### R3 anti-waviness guidance redesign
 
-A complete visual three-robot Gazebo run was performed successfully after these corrections.
+High-speed testing showed that directly tracking R2's short-period steering motion can amplify oscillation downstream.
 
-R3 is currently being tuned with V2.3. After the first 30 optimization trials:
+The current solution is:
 
-    BRAKE   = LOCKED
-    GAP     = OPEN
-    HEADING = OPEN
-    SPEED   = OPEN
+    raw R2 breadcrumbs
+        -> 4 m arc-length averaging windows during CATCHUP
+        -> cubic B-spline route reconstruction
+        -> LOS steering
 
-Current best accepted R3 trial:
+LOS is used continuously in both CATCHUP and FOLLOWING.
 
-    Trial 23
-    Stage = HEADING
-    Score = 31.6835
+R3 maximum LOS lookahead:
 
-Current best headline metrics:
+    10.371 m
 
-    mean path gap              = 5.192 m
-    path-gap RMSE              = 1.012 m
-    path-gap P95 abs error     = 2.670 m
-    initial catch-up           = 33.9 s
-    lost-gap time              = 26.0 s
-    lost-gap episodes          = 2
+Minimum lookahead on high-curvature geometry:
 
-    CTE RMSE                   = 1.314 m
-    heading RMSE               = 5.888 deg
+    4.0 m
 
-    speed RMSE                 = 0.440 m/s
+The lookahead is reduced according to upcoming route curvature.
 
-    terminal speed             = 0.026 m/s
-    terminal path-gap error    = 0.093 m
-    formation settle time      = 1.10 s
+A fixed long LOS removed waviness but initially cut inside tight turns. Curvature-adaptive LOS corrected that behavior. Current visual testing shows R3 following consistently through the stress course, with a small repeatable outside offset on some turns rather than inside-corner cutting or left/right oscillation.
 
-    minimum hull clearance     = 2.449 m
-    collision                  = false
+Latest adaptive-LOS tracking checkpoint:
 
-The controller architecture and R3 <- R2 following behavior are complete, but R3 tuning is not yet frozen.
+    mean path gap              = 4.939 m
+    path-gap bias              = -0.061 m
+    path-gap RMSE              = 0.508 m
+    path-gap P95 abs error     = 0.973 m
+    maximum abs gap error      = 1.376 m
+    CTE RMSE                   = 0.729 m
+    heading RMSE               = 4.776 deg
+    minimum hull clearance     = 3.257 m
+    collision warnings         = 0
+    avoidance activations      = 0
 
-STATUS: COMPLETE FOR ARCHITECTURE/FOLLOWING; TUNING STILL IN PROGRESS.
+The checkpoint was stopped before terminal SUCCESS, so these values are tracking-phase evidence only.
+
+The earlier 30-trial V2.3 result (BRAKE locked, GAP/HEADING/SPEED open) is retained as historical evidence from the pre-LOS architecture and is not treated as the final R3 tune.
+
+STATUS: R3 <- R2 FOLLOWING AND GUIDANCE COMPLETE; LONGITUDINAL RETUNING PENDING.
 
 ---
 
 ## Q31. Test platooning on a straight trajectory.
 
-The three-robot system has already traversed the long straight portions of the combined stress trajectory in visual and automated tuning runs.
+A dedicated three-robot straight validation has now been run with the current continuous-LOS controller architecture.
 
-During these tests:
+The chained information structure remained:
 
-    R1 followed the reference trajectory
-    R2 followed R1
-    R3 followed R2
+    R1 -> R2 -> R3
 
-and the chain remained operational through the straight sections.
+with R3 receiving no global reference path.
 
-However, the final R3 configuration has not yet been frozen.
+Steady FOLLOWING results from the dedicated straight test included:
 
-Therefore the dedicated quantitative straight-platooning evidence required for the final report should be generated after R3 tuning is complete.
+R2 <- R1:
 
-That final evidence should include:
+    mean path gap              = 4.918 m
+    path-gap bias              = -0.082 m
+    path-gap RMSE              = 0.376 m
+    path-gap P95 abs error     = 0.755 m
+    maximum abs gap error      = 1.497 m
+    CTE RMSE                   = 1.018 m
+    heading RMSE               = 6.466 deg
+    collision warnings         = 0
+    avoidance activations      = 0
 
-    trajectories of R1, R2 and R3
-    d12(t)
-    d23(t)
-    e12(t)
-    e23(t)
-    convergence time
-    mean / maximum / RMSE errors
-    minimum physical hull clearances
+R3 <- R2:
 
-STATUS: FUNCTIONALLY TESTED; FINAL QUANTITATIVE REPORT EVIDENCE PENDING.
+    mean path gap              = 4.861 m
+    path-gap bias              = -0.139 m
+    path-gap RMSE              = 0.665 m
+    path-gap P95 abs error     = 1.350 m
+    maximum abs gap error      = 3.085 m
+    CTE RMSE                   = 1.236 m
+    heading RMSE               = 3.032 deg
+    collision warnings         = 0
+    avoidance activations      = 0
+
+This confirms that the three-robot chain operates on a dedicated straight mission with the current guidance architecture.
+
+Final report plots should still be regenerated after longitudinal retuning so the submitted numbers correspond to the final controller gains.
+
+STATUS: QUANTITATIVELY TESTED; FINAL POST-RETUNE REPORT EVIDENCE PENDING.
 
 ---
 
 ## Q32. Test platooning on a curved trajectory.
 
-The combined stress trajectory contains multiple curved sections, including tight turns, connected turns and hairpins.
+The three-robot system has been tested on the full stress course containing tight turns, connected turns, self-near loops and hairpins.
 
-The complete three-robot system has already been exercised through these sections during visual validation and R3 tuning.
+The main curved-path development issue was not collision but downstream steering amplification:
 
-A major R3 development requirement was specifically to prevent breadcrumb-history jumps where different parts of the curved trajectory pass close to each other.
+    R2 small steering oscillation
+        ->
+    R3 reproduces the waviness
+        ->
+    larger R3 lateral oscillation
 
-After the chronological/local breadcrumb corrections, the self-near curved section was visually validated successfully.
+Breadcrumb smoothing alone reduced but did not remove the effect.
 
-As with Q31, the final quantitative curved-platooning evidence should be regenerated after R3 tuning is frozen.
+Continuous LOS guidance removed the oscillatory steering. A fixed long R3 lookahead then produced inside-corner cutting, so the LOS lookahead was made curvature-adaptive.
 
-The final analysis should compare straight and curved behavior using:
+Current curved guidance behavior:
 
-    d12(t)
-    d23(t)
-    e12(t)
-    e23(t)
-    follower path-gap errors
-    leader tracking error
-    minimum physical separation
-    convergence / lost-gap behavior
+    straight / gentle geometry
+        -> long LOS lookahead for stability
 
-STATUS: FUNCTIONALLY TESTED; FINAL QUANTITATIVE REPORT EVIDENCE PENDING.
+    tight curvature
+        -> shorter LOS lookahead
+
+    CATCHUP <-> FOLLOWING
+        -> no change in steering law
+        -> LOS remains active continuously
+
+The latest adaptive-LOS stress checkpoint showed visually consistent R3 tracking without the previous corner cutting. R3 drifted slightly outside R2 on some turns, but the offset was repeatable and the trajectory remained stable throughout the difficult geometry.
+
+Tracking-phase results:
+
+R2 <- R1:
+
+    mean path gap              = 4.992 m
+    path-gap RMSE              = 0.458 m
+    CTE RMSE                   = 1.016 m
+    minimum hull clearance     = 2.939 m
+    collision warnings         = 0
+    avoidance activations      = 0
+
+R3 <- R2:
+
+    mean path gap              = 4.939 m
+    path-gap RMSE              = 0.508 m
+    CTE RMSE                   = 0.729 m
+    minimum hull clearance     = 3.257 m
+    collision warnings         = 0
+    avoidance activations      = 0
+
+This run was stopped before terminal SUCCESS, so it is a guidance/tracking checkpoint rather than final mission-completion evidence.
+
+The guidance architecture is now frozen. The remaining work is longitudinal PID retuning and then regeneration of the final Q31/Q32 figures and metrics.
+
+STATUS: CURVED GUIDANCE FUNCTIONALLY AND QUANTITATIVELY TESTED; FINAL POST-RETUNE REPORT EVIDENCE PENDING.
 
 ---
 
 # Current conclusion
 
-R1 is frozen as the validated leader.
-
-R2 is frozen as the current V2.2 tuned first follower.
-
-R3 chained following is implemented and visually validated:
+The implemented platoon remains:
 
     R1 -> R2 -> R3
 
-The current three-robot architecture satisfies the implementation requirements of Q25-Q30.
+R1 is the validated leader.
 
-Q31 and Q32 have been functionally exercised on the combined stress course, but their final dedicated quantitative evidence remains pending until R3 tuning is frozen.
+The follower architecture now separates three concerns:
 
-The first R3 V2.3 study completed 30 optimization trials. Only the braking stage is formally locked at this checkpoint; gap, heading/guidance and speed remain open.
+    raw chronological breadcrumbs
+        -> 5 m along-path bumper-gap control
+
+    reconstructed / smooth predecessor route
+        -> lateral path representation
+
+    continuous curvature-adaptive LOS
+        -> steering guidance
+
+The major R3 waviness problem has been resolved by avoiding direct reproduction of R2's short-period steering motion and by using one LOS steering law in both CATCHUP and FOLLOWING.
+
+The fixed-long-lookahead corner-cutting problem was subsequently removed with curvature-adaptive LOS.
+
+Current guidance status:
+
+    R2 guidance: frozen
+    R3 guidance: frozen
+    collision safety: retained
+    chronological breadcrumb hierarchy: retained
+    terminal hold architecture: retained
+
+Current tuning status:
+
+    original R2 V2.2 tuning = historical baseline
+    original R3 V2.3 study  = historical pre-LOS checkpoint
+    current R2 longitudinal PID = retuning pending
+    current R3 longitudinal PID = retuning pending after R2 freezes
 
 Current next step:
 
-    continue R3 V2.3 tuning from the existing checkpoint
-
-Current tuning order:
-
-    GAP until locked
-      ->
-    HEADING until locked
-      ->
-    SPEED until locked
-
-BRAKE is already locked and JOINT tuning is disabled.
+    retune R2 gap / speed control
+        ->
+    freeze R2
+        ->
+    retune R3 gap / speed control
+        ->
+    regenerate final straight / curved evidence
 
 Final reporting must continue to distinguish:
 
-    control variable:
+    implemented control variable:
         5 m along-path bumper-to-bumper gap
 
 from:
@@ -1131,4 +1253,9 @@ from:
         Euclidean reference-point d12(t)
         Euclidean reference-point d23(t)
 
-Do not claim that the Euclidean reference-point distances converge to 5 m unless the formation definition is changed and validated accordingly.
+For a straight aligned pair, the current geometry makes a 5 m bumper gap correspond to approximately:
+
+    10.371 m reference-point separation
+
+The documentation must therefore not claim that Euclidean reference-point distance itself converges to 5 m.
+
