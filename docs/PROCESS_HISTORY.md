@@ -2703,3 +2703,308 @@ The JOINT stage is no longer scheduled.
 Locked-stage degradation monitoring is retained. If an accepted later-stage controller pushes an earlier locked stage outside its threshold, that stage is reopened and immediately becomes active again.
 
 The existing Optuna study and checkpoint remain valid; tuning resumes from the 30 completed trials rather than starting a new study.
+
+---
+
+# 2026-10-11 — Unified Startup, High-Speed Corrections, and Adaptive LOS Follower Guidance
+
+## Unified one-terminal startup
+
+The normal project entry point was consolidated into:
+
+    ros2 run platoon_bringup platoon_startup
+
+The startup application opens a Tkinter configuration GUI and then launches the selected session.
+
+The GUI now covers:
+
+    robot count: 1 / 2 / 3
+    run mode: Test / Tuning
+    mission source: new / saved
+    mission type: Stress / Straight / Curve / Coverage
+    editable run name
+    leader maximum speed
+    follower spacing
+    headless / visible Gazebo
+    RViz toggle
+    live-map toggle
+    logging and results directory
+    tuning target / trial budget
+    reset / relaunch
+
+New missions can be previewed before execution and saved for later reuse. Saved missions can also be selected for tuning. Automatic preflight checks run before the simulation is started.
+
+The LIGHT simulation profile remains the normal control-development profile.
+
+---
+
+## GUI speed-plumbing correction
+
+A GUI value such as:
+
+    R1 maximum speed = 3.0 m/s
+
+was initially not authoritative through the complete stack.
+
+Historical defaults in the R1 planner/controller could still impose a 2.0 m/s ceiling.
+
+The startup runner now propagates the selected speed through:
+
+    PLATOON_GUI_LEADER_MAX_SPEED
+
+R1 uses the selected value directly.
+
+Follower ceilings retain extra pursuit headroom:
+
+    R2 = R1 maximum + 0.8 m/s
+    R3 = R1 maximum + 1.6 m/s
+
+This removed the unintended 2 m/s software ceiling.
+
+---
+
+## GPS velocity-estimation correction
+
+At higher simulation load the displayed vehicle speed could jump unrealistically because velocity was being differentiated using ROS callback execution time.
+
+Callback delivery can be delayed or bursty when Gazebo real-time factor is low.
+
+The state estimator was corrected to differentiate GPS position using:
+
+    NavSatFix.header.stamp
+
+rather than callback arrival time.
+
+Duplicate / out-of-order measurements are ignored, and large timestamp discontinuities reset the velocity filter instead of differentiating across the gap.
+
+After this correction:
+
+    R1/R2 speed traces stopped showing large callback-timing spikes
+    R1/R2 spacing became visually consistent
+    downstream follower behavior became much easier to diagnose
+
+This correction is retained.
+
+---
+
+## WAM-V thrust-envelope correction
+
+Earlier project limits such as 700 N / 900 N forward thrust and 1000 N total thrust were artificial software limits rather than the simulated WAM-V's positive actuator capability.
+
+The current controller uses approximately:
+
+    maximum positive thrust per thruster = +2353.53 N
+    reverse limit                         = -1000 N
+    maximum differential turn term       = 400 N
+
+The controller preserves yaw authority by reserving actuator headroom for differential thrust before allocating the remaining forward command.
+
+An experimental increase of the turn limit to 1000 N made R2 visibly more oscillatory and was rejected. The tuned 400 N turn limit remains.
+
+R1 subsequently demonstrated approximately 3 m/s operation while maintaining stable path tracking.
+
+---
+
+## Failed high-speed CATCHUP experiments
+
+The first attempt to make CATCHUP completely independent of predecessor speed allowed the follower to pursue its own maximum speed too aggressively.
+
+Observed result:
+
+    R2 became increasingly snakey
+    R3 accelerated strongly
+    R3 eventually departed from the intended predecessor route
+
+A later heading / CTE speed governor stopped the outright route departure but still amplified predecessor waviness downstream.
+
+This branch of the catch-up redesign was therefore rejected.
+
+The stable longitudinal CATCHUP behavior was restored before continuing work on lateral guidance.
+
+Lesson:
+
+    predecessor-independent speed cannot be solved safely
+    before the follower guidance is stable at the higher speed
+
+---
+
+## Catch-up route reconstruction
+
+The raw predecessor breadcrumb history remains authoritative for:
+
+    chronological progress
+    5 m along-path bumper-gap measurement
+
+It is never overwritten by guidance smoothing.
+
+For CATCHUP steering only, dense breadcrumbs are converted into a lower-frequency route.
+
+The final reconstruction sequence is:
+
+    dense predecessor breadcrumbs
+        ->
+    arc-length windows
+        ->
+    mean position per window
+        ->
+    cubic B-spline
+
+Current spatial windows:
+
+    R2 = 2.0 m
+    R3 = 4.0 m
+
+The larger R3 window intentionally suppresses small closed-loop steering oscillations from R2 so that they are not reproduced and amplified downstream.
+
+This reconstruction visibly smoothed the planned R3 route, but residual waviness remained when the controller still reacted strongly to local path geometry.
+
+---
+
+## Continuous LOS guidance
+
+A Line-of-Sight guidance mode was introduced for follower breadcrumb tracking.
+
+The follower projects onto the planner path and steers toward a virtual point farther along the route rather than continuously aligning to the immediate local tangent.
+
+Initial fixed LOS configuration:
+
+    R2 lookahead = 8 m
+    R3 lookahead = 12 m
+
+This removed the previous strong left/right waviness. In several sections R3 became visually more stable than R2.
+
+The next issue appeared at tight turns:
+
+    long R3 LOS lookahead
+        ->
+    smooth trajectory
+        ->
+    inside-corner cutting
+
+The controller was then changed so LOS is used continuously in BOTH:
+
+    CATCHUP
+    FOLLOWING
+
+Only the longitudinal speed policy changes between those states. The steering architecture no longer jumps between LOS and tangent guidance when the gap crosses the CATCHUP threshold.
+
+---
+
+## Curvature-adaptive LOS
+
+To preserve the straight-line stability of a long LOS target without cutting tight turns, the lookahead is now reduced according to upcoming path curvature.
+
+Current configuration:
+
+    R2 maximum LOS lookahead      = 8.0 m
+    R3 maximum LOS lookahead      = 10.371 m
+    minimum LOS lookahead         = 4.0 m
+    curvature preview distance    = 12.0 m
+    full-lookahead curvature      = 0.03 rad/m
+    minimum-lookahead curvature   = 0.16 rad/m
+
+The value:
+
+    10.371 m
+
+also corresponds to the approximate reference-point separation of two straight aligned WAM-Vs at the implemented 5 m bumper gap:
+
+    5.000 + 2.822 + 2.549 = 10.371 m
+
+Visual stress-course testing after the adaptive change showed:
+
+    R3 no longer cuts inside the tight turns
+    R3 remains consistent throughout the course
+    a small repeatable outside offset remains on some turns
+    the previous left/right oscillation does not return
+
+The slight outside offset is currently accepted as a guidance characteristic to be evaluated after longitudinal retuning rather than being chased with another immediate steering redesign.
+
+---
+
+## Latest adaptive-LOS tracking checkpoint
+
+The latest stress-course checkpoint was stopped before terminal SUCCESS, so it is not recorded as a completed mission result.
+
+Its steady FOLLOWING tracking data are still useful for the guidance checkpoint.
+
+R2:
+
+    mean path gap              = 4.9916 m
+    path-gap bias              = -0.0084 m
+    path-gap RMSE              = 0.4584 m
+    path-gap P95 abs error     = 0.9935 m
+    maximum abs gap error      = 1.5356 m
+    heading RMSE               = 7.3948 deg
+    cross-track RMSE           = 1.0164 m
+    minimum hull clearance     = 2.9393 m
+    collision warnings         = 0
+    avoidance activations      = 0
+
+R3:
+
+    mean path gap              = 4.9386 m
+    path-gap bias              = -0.0614 m
+    path-gap RMSE              = 0.5080 m
+    path-gap P95 abs error     = 0.9727 m
+    maximum abs gap error      = 1.3763 m
+    heading RMSE               = 4.7761 deg
+    cross-track RMSE           = 0.7287 m
+    minimum hull clearance     = 3.2571 m
+    collision warnings         = 0
+    avoidance activations      = 0
+
+Interpretation:
+
+    lateral guidance is now sufficiently stable to freeze
+    remaining formation error is mainly longitudinal / dynamic
+    R2 and R3 speed / gap PID behavior should be retuned for the
+    new higher-acceleration operating envelope
+
+---
+
+## V2.3 tuner correction
+
+The follower V2.3 tuner now validates the supplied seed configuration on the selected mission before optimization.
+
+Current policy:
+
+    validate protected seed
+        ->
+    GAP until locked
+        ->
+    HEADING until locked
+        ->
+    SPEED until locked
+        ->
+    BRAKE only if reopened
+
+The earlier documentation statement that V2.3 performs no initial verification run is obsolete.
+
+---
+
+## Current freeze / next step
+
+Frozen for the next stage:
+
+    R1 planner / controller architecture
+    GPS timestamp velocity estimator
+    WAM-V thrust envelope
+    turn-priority actuator allocation
+    raw breadcrumb path-gap definition
+    chronological breadcrumb hierarchy
+    catch-up route reconstruction
+    continuous LOS steering
+    curvature-adaptive LOS parameters
+    terminal hold architecture
+
+Next work:
+
+    1. retune R2 longitudinal gap / speed dynamics
+    2. freeze R2
+    3. retune R3 longitudinal gap / speed dynamics
+    4. regenerate final straight / curved report evidence
+    5. only then reconsider faster predecessor-independent CATCHUP
+
+The rejected high-speed catch-up experiments are retained in this history as development evidence but are not part of the current control policy.
+
