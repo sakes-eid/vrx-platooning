@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import math
+import os
 from typing import List, Tuple
 
 import rclpy
@@ -116,6 +117,32 @@ class StressCoursePlanner(Node):
         for name, default in defaults.items():
             self.declare_parameter(name, default)
             setattr(self, name, float(self.get_parameter(name).value))
+
+        # GUI-selected R1 speed is authoritative during runs
+        # started from platoon_startup, including tuning trials.
+        gui_speed_text = os.environ.get(
+            "PLATOON_GUI_LEADER_MAX_SPEED",
+            "",
+        ).strip()
+
+        if gui_speed_text:
+
+            gui_speed = float(
+                gui_speed_text
+            )
+
+            if gui_speed <= 0.0:
+                raise ValueError(
+                    "PLATOON_GUI_LEADER_MAX_SPEED "
+                    "must be > 0"
+                )
+
+            self.max_speed = gui_speed
+
+            self.get_logger().info(
+                f"GUI R1 planner max speed: "
+                f"{self.max_speed:.2f} m/s"
+            )
 
         qos = QoSProfile(depth=1)
         qos.durability = DurabilityPolicy.TRANSIENT_LOCAL

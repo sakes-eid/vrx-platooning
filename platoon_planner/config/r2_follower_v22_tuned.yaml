@@ -2,3 +2,9 @@
   ros__parameters:
     historical_preview_decel: 0.2646349942459316
     historical_preview_max_speed: 3.0
+    catchup_distance: 5.345285289922457
+    catchup_release_margin: 0.15
+    catchup_control_spacing: 0.8
+    catchup_smoothing_passes: 2.0
+    catchup_max_smoothing_shift: 0.5
+    catchup_curve_tangent_scale: 0.4

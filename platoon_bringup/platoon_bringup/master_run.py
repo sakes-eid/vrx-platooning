@@ -350,6 +350,19 @@ def _run_tuning(
     )
     print("=" * 60)
 
+    if not config.saved_mission_file:
+        raise RuntimeError(
+            "Tuning requires a saved mission."
+        )
+
+    tuning_env = os.environ.copy()
+
+    tuning_env[
+        "PLATOON_TUNING_MISSION_FILE"
+    ] = str(
+        config.saved_mission_file
+    )
+
     process = None
 
     try:
@@ -357,6 +370,7 @@ def _run_tuning(
         process = subprocess.Popen(
             command,
             start_new_session=True,
+            env=tuning_env,
         )
 
         return_code = (
@@ -532,6 +546,19 @@ def _run_new_test_mission(
 def run_configured_session(
     config,
 ):
+
+    # One authoritative speed selected by the GUI.
+    #
+    # R1 uses this value directly.
+    # R2 uses leader + 0.8 m/s ceiling.
+    # R3 uses leader + 1.6 m/s ceiling.
+    #
+    # Child ros2/launch/tuner processes inherit this environment.
+    os.environ[
+        "PLATOON_GUI_LEADER_MAX_SPEED"
+    ] = str(
+        float(config.max_speed)
+    )
 
     if config.run_mode == "tuning":
 

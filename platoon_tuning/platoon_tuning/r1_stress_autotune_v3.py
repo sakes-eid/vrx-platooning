@@ -83,6 +83,8 @@ BASE_CONTROLLER = {
     'speed_ki': 18.383775431748894,
     'speed_kd': 49.388692087475725,
 
+    'speed_integral_limit': 60.0,
+
     'brake_kp': 177.8935198208073,
     'brake_ki': 60.634764417119634,
     'brake_kd': 10.647182804717701,
@@ -90,11 +92,12 @@ BASE_CONTROLLER = {
     'heading_slowdown_angle': 0.8,
 
     'max_planner_speed': 2.0,
-    'max_forward_thrust': 700.0,
+    'max_forward_thrust': 2353.53,
     'max_turn_thrust': 400.0,
-    'max_total_thrust': 1000.0,
+    'max_total_thrust': 2353.53,
+    'min_total_thrust': -1000.0,
 
-    'max_brake_thrust': 500.0,
+    'max_brake_thrust': 1000.0,
     'stop_speed_tolerance': 0.05,
 
     'recovery_target_speed': 0.25,
@@ -599,6 +602,7 @@ def cleanup_leftovers():
         'leader_stress_tuning.launch.py',
         'gz sim.*sydney_regatta',
         'platoon_planner.*/stress_course_planner',
+        'platoon_planner.*/saved_mission_planner',
         'platoon_control.*/leader_stress_controller',
         'platoon_state.*/multi_vehicle_state',
         'platoon_logging.*/r1_stress_logger',
@@ -1051,17 +1055,24 @@ def run_trial(
             text=True,
         )
 
-        monitor = monitor_trial(
-            proc=proc,
-            csv_path=csv_path,
-            live_score_path=live_score_path,
-            wall_timeout=wall_timeout,
-            label=progress_label,
-            best_score=best_score,
-            **early_stop_args,
-        )
+        try:
 
-        terminate_group(proc)
+            monitor = monitor_trial(
+                proc=proc,
+                csv_path=csv_path,
+                live_score_path=live_score_path,
+                wall_timeout=wall_timeout,
+                label=progress_label,
+                best_score=best_score,
+                **early_stop_args,
+            )
+
+        finally:
+
+            # Critical for Ctrl+C:
+            # the trial launch runs in its own process group.
+            # Always terminate it before unwinding the tuner.
+            terminate_group(proc)
 
     reason = monitor['reason']
 

@@ -15,7 +15,7 @@ leader_pid_controller:
     speed_kp: 77.49640833032895
     speed_ki: 40.0
     speed_kd: 49.19260599818982
-    speed_integral_limit: 10.0
+    speed_integral_limit: 60.0
     heading_kp: 1388.5269897997275
     heading_ki: 26.45969942764789
     heading_kd: 201.59814882921654
@@ -24,7 +24,7 @@ leader_pid_controller:
     brake_ki: 60.634764417119634
     brake_kd: 10.647182804717701
     brake_integral_limit: 1.0
-    max_brake_thrust: 500.0
+    max_brake_thrust: 1000.0
     stop_speed_tolerance: 0.05
     recovery_target_speed: 0.25
     recovery_brake_distance: 0.75
@@ -33,6 +33,7 @@ leader_pid_controller:
     recovery_max_forward_thrust: 250.0
     recovery_max_turn_thrust: 250.0
     hold_duration: 5.0
-    max_forward_thrust: 700.0
+    max_forward_thrust: 2353.53
     max_turn_thrust: 400.0
-    max_total_thrust: 1000.0
+    max_total_thrust: 2353.53
+    min_total_thrust: -1000.0

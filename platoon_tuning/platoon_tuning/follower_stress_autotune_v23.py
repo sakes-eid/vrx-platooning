@@ -66,6 +66,7 @@ BASE_CONTROLLER = {
     "brake_kd": 10.647182804717701,
 
     "catchup_distance": 6.0,
+    "catchup_release_margin": 0.15,
     "catchup_min_speed": 1.20,
     "max_distance_speed_correction": 0.70,
 
@@ -81,6 +82,14 @@ BASE_CONTROLLER = {
 BASE_PLANNER = {
     "historical_preview_decel": 0.18,
     "historical_preview_max_speed": 1.50,
+
+    # Guidance-only catch-up smoothing.
+    "catchup_distance": 6.0,
+    "catchup_release_margin": 0.15,
+    "catchup_control_spacing": 0.80,
+    "catchup_smoothing_passes": 2.0,
+    "catchup_max_smoothing_shift": 0.50,
+    "catchup_curve_tangent_scale": 0.40,
 }
 
 
@@ -1155,11 +1164,12 @@ def cleanup_leftovers():
     # failure.
     patterns = [
         "ros2 launch platoon_bringup three_robot_r3_tuning.launch.py",
-        "follower_stress_tuning.launch.py",
-        "follower_stress_pathgap_v22.launch.py",
-        "follower_stress_visual.launch.py",
+        "ros2 launch platoon_bringup follower_stress_tuning.launch.py",
+        "ros2 launch platoon_bringup follower_stress_pathgap_v22.launch.py",
+        "ros2 launch platoon_bringup follower_stress_visual.launch.py",
         "gz sim.*sydney_regatta",
         "platoon_planner.*/stress_course_planner",
+        "platoon_planner.*/saved_mission_planner",
         "platoon_control.*/leader_stress_controller",
         "platoon_planner.*/proactive_follower_planner_v21",
         "platoon_planner.*/proactive_follower_planner_v22",
@@ -1291,6 +1301,11 @@ def monitor_trial(
     last_score_check_sim = -999.0
     bad_streak = 0
     last_partial = None
+
+    # Divergence guards are meaningful only after the follower
+    # has actually acquired the requested formation gap.
+    acquisition_band_start = None
+    acquisition_confirmed = False
 
     last_seen_sim_t = None
     last_sim_progress_wall = started
@@ -1440,6 +1455,40 @@ def monitor_trial(
             "follower_target_speed_mps",
         )
 
+        # Confirm acquisition using the same target band used by
+        # the scorer. Before this point a large CTE can simply be
+        # the follower joining a curved/custom predecessor trail.
+        if not acquisition_confirmed:
+
+            in_acquisition_band = (
+                math.isfinite(path_gap)
+                and abs(
+                    path_gap - TARGET_GAP_M
+                ) <= ACQUISITION_BAND_M
+            )
+
+            if in_acquisition_band:
+
+                if acquisition_band_start is None:
+                    acquisition_band_start = sim_t
+
+                elif (
+                    sim_t - acquisition_band_start
+                    >= ACQUISITION_HOLD_S
+                ):
+
+                    acquisition_confirmed = True
+
+                    print(
+                        f"  [{label}] formation acquired; "
+                        "divergence guards enabled",
+                        flush=True,
+                    )
+
+            else:
+
+                acquisition_band_start = None
+
         if (
             sim_t - last_print_sim >= 1.0
             or parse_bool(
@@ -1516,7 +1565,8 @@ def monitor_trial(
         ])
 
         if (
-            len(recent_cte) >= 40
+            acquisition_confirmed
+            and len(recent_cte) >= 40
             and max(recent_cte) > 6.0
         ):
             print(
@@ -1540,7 +1590,8 @@ def monitor_trial(
         ])
 
         if (
-            len(recent_heading) >= 40
+            acquisition_confirmed
+            and len(recent_heading) >= 40
             and sum(v > 1.40 for v in recent_heading)
             >= int(0.80 * len(recent_heading))
         ):
@@ -1693,6 +1744,12 @@ def gap_space(trial, controller, planner):
             trial,
             name,
         )
+
+    # Planner and controller must switch CATCHUP at the same
+    # physical gap.
+    planner["catchup_distance"] = (
+        controller["catchup_distance"]
+    )
 
     return controller, planner
 
@@ -1893,19 +1950,26 @@ def run_trial(
             text=True,
         )
 
-        monitor = monitor_trial(
-            proc=proc,
-            run_dir=run_dir,
-            trial_name=trial_name,
-            live_score_path=live_score_path,
-            wall_timeout=wall_timeout,
-            label=progress_label,
-            best_score=best_score,
-            sim_timeout=sim_timeout,
-            **early_stop_args,
-        )
+        try:
 
-        terminate_group(proc)
+            monitor = monitor_trial(
+                proc=proc,
+                run_dir=run_dir,
+                trial_name=trial_name,
+                live_score_path=live_score_path,
+                wall_timeout=wall_timeout,
+                label=progress_label,
+                best_score=best_score,
+                sim_timeout=sim_timeout,
+                **early_stop_args,
+            )
+
+        finally:
+
+            # Critical for Ctrl+C:
+            # the trial launch runs in its own process group.
+            # Always terminate it before unwinding the tuner.
+            terminate_group(proc)
 
     csv_path = locate_trial_csv(
         run_dir,
@@ -2429,9 +2493,12 @@ def main():
             checkpoint_path.read_text()
         )
 
-        # V2.3 has no initial verification run. seed_done is kept
-        # only for checkpoint-schema compatibility.
-        seed_done = True
+        seed_done = bool(
+            checkpoint.get(
+                "seed_done",
+                False,
+            )
+        )
 
         next_schedule_index = int(
             checkpoint.get(
@@ -2479,9 +2546,9 @@ def main():
             )
 
     else:
-        # The supplied YAML is only the starting working point.
-        # V2.3 deliberately performs NO separate seed-validation run.
-        seed_done = True
+        # The supplied YAML is the protected starting point.
+        # Validate it on the selected mission before optimization.
+        seed_done = False
         next_schedule_index = 0
 
         completed_optimization_trials = 0
@@ -2649,7 +2716,7 @@ def main():
         f"Thresholds  : {THRESHOLD_PROFILE}"
     )
     print(
-        "Verification: NONE (initial/final)"
+        "Verification: SEED before optimization"
     )
     print(
         f"Lock confirm: "
@@ -2682,6 +2749,183 @@ def main():
         "============================================================"
     )
     print()
+
+    # -------------------------------------------------------
+    # Validate protected reference seed.
+    # -------------------------------------------------------
+
+    if not seed_done:
+
+        seed_name = (
+            f"{args.study_name}_seed"
+        )
+
+        print(
+            f"[seed] {seed_name}",
+            flush=True,
+        )
+
+        try:
+
+            seed = run_trial(
+                workspace=workspace,
+                launch_file=args.launch_file,
+                results_root=trials_root,
+                active_dir=active_dir,
+                bad_runs_path=bad_runs_path,
+                trial_name=seed_name,
+                stage_name="seed",
+                follower_id=args.follower_id,
+                predecessor_id=args.predecessor_id,
+                follower_spacing=args.follower_spacing,
+                controller_values=controller_best,
+                planner_values=planner_best,
+                wall_timeout=args.wall_timeout,
+                progress_label="seed",
+                best_score=float("inf"),
+                sim_timeout=args.sim_timeout,
+                early_stop_args={
+                    **early_stop_args,
+                    # Never score-prune the reference baseline.
+                    "early_stop_enabled": False,
+                },
+            )
+
+        except KeyboardInterrupt:
+
+            cleanup_leftovers()
+
+            write_checkpoint(
+                checkpoint_path,
+                seed_done=False,
+                next_schedule_index=next_schedule_index,
+                completed_optimization_trials=(
+                    completed_optimization_trials
+                ),
+                best_score=best_global_score,
+                best_controller=controller_best,
+                best_planner=planner_best,
+                best_result=best_global_result,
+            )
+
+            print(
+                "\nPAUSED during seed validation.",
+                flush=True,
+            )
+
+            return
+
+        if not seed.get(
+            "success",
+            False,
+        ):
+
+            raise SystemExit(
+                "Seed validation failed on the selected "
+                "mission. Optimization will not start. "
+                f"Reason={seed.get('termination_reason')}/"
+                f"{seed.get('reason')}"
+            )
+
+        # The known starting configuration is now the protected
+        # reference against which candidates are evaluated.
+        seed["accepted"] = True
+
+        best_global_score = float(
+            seed["score"]
+        )
+
+        best_global_result = seed
+
+        seed_done = True
+
+        # If the starting controller already satisfies GAP,
+        # there is no reason to destroy it by retuning GAP.
+        if stage_pass(
+            "gap",
+            seed,
+        ):
+
+            pass_streak["gap"] = (
+                LOCK_CONFIRM_RUNS
+            )
+
+            locked["gap"] = True
+
+            print(
+                "  LOCK gap: seed already satisfies "
+                "the shared gap threshold",
+                flush=True,
+            )
+
+        for stage_name in STAGE_HIERARCHY:
+
+            seed[
+                f"{stage_name}_locked"
+            ] = locked[
+                stage_name
+            ]
+
+        append_history(
+            history_path,
+            trial_number=0,
+            result=seed,
+        )
+
+        write_yaml(
+            out / "best_controller.yaml",
+            f"/{args.follower_id}/"
+            "follower_controller",
+            controller_best,
+        )
+
+        write_yaml(
+            out / "best_planner.yaml",
+            f"/{args.follower_id}/"
+            "follower_planner",
+            planner_best,
+        )
+
+        (
+            out
+            / "best_trial_result.json"
+        ).write_text(
+            json.dumps(
+                best_global_result,
+                indent=2,
+                sort_keys=True,
+            )
+        )
+
+        write_checkpoint(
+            checkpoint_path,
+            seed_done=True,
+            next_schedule_index=next_schedule_index,
+            completed_optimization_trials=(
+                completed_optimization_trials
+            ),
+            best_score=best_global_score,
+            best_controller=controller_best,
+            best_planner=planner_best,
+            best_result=best_global_result,
+        )
+
+        next_stage, _ = (
+            next_scheduled_stage(
+                locked,
+                next_schedule_index,
+            )
+        )
+
+        write_adaptive_state(
+            next_stage
+        )
+
+        print(
+            f"[seed] score={best_global_score:.4f} | "
+            f"gap_pass={stage_pass('gap', seed)}",
+            flush=True,
+        )
 
     # -------------------------------------------------------
     # Strict hierarchical adaptive optimization.

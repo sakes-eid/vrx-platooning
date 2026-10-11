@@ -2,6 +2,7 @@ import math
 
 import rclpy
 from rclpy.node import Node
+from rclpy.time import Time
 
 from sensor_msgs.msg import NavSatFix, Imu
 
@@ -208,15 +209,51 @@ class MultiVehicleState(Node):
 
         now = self.get_clock().now()
 
+        # -----------------------------------------------------
+        # Velocity must be derived from SENSOR sample time,
+        # not callback execution time.
+        #
+        # Under a slow / heavily loaded simulation callbacks may
+        # be delivered unevenly or in bursts. Using ROS "now"
+        # for differentiation then creates false velocity spikes.
+        #
+        # NavSatFix.header.stamp belongs to the actual GPS sample
+        # and therefore remains valid even when callback delivery
+        # is delayed.
+        # -----------------------------------------------------
+
+        stamp_valid = (
+            msg.header.stamp.sec != 0
+            or msg.header.stamp.nanosec != 0
+        )
+
+        if stamp_valid:
+            sample_time = Time.from_msg(
+                msg.header.stamp
+            )
+        else:
+            # Defensive fallback for a sensor that supplies no
+            # timestamp.
+            sample_time = now
+
         if (
             self.previous_time is not None
             and self.previous_x is not None
+            and self.previous_y is not None
         ):
+
             dt = (
-                now - self.previous_time
+                sample_time
+                - self.previous_time
             ).nanoseconds * 1e-9
 
-            if 0.001 < dt < 1.0:
+            # Ignore duplicate/out-of-order measurements.
+            # They must not corrupt the velocity estimate.
+            if dt <= 0.001:
+                return
+
+            if dt < 1.0:
+
                 raw_vx = (
                     x - self.previous_x
                 ) / dt
@@ -237,9 +274,16 @@ class MultiVehicleState(Node):
                     + (1.0 - a) * self.vy
                 )
 
+            else:
+                # Large timestamp discontinuity: restart the
+                # velocity filter rather than differentiating
+                # across a long missing interval.
+                self.vx = 0.0
+                self.vy = 0.0
+
         self.previous_x = x
         self.previous_y = y
-        self.previous_time = now
+        self.previous_time = sample_time
 
         speed = math.hypot(
             self.vx,
@@ -256,7 +300,9 @@ class MultiVehicleState(Node):
 
         state = VehicleState()
 
-        state.header.stamp = now.to_msg()
+        state.header.stamp = (
+            sample_time.to_msg()
+        )
         state.header.frame_id = 'world_ned'
 
         state.x = float(x)

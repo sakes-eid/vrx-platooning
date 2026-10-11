@@ -1,4 +1,5 @@
 import math
+import os
 
 import rclpy
 
@@ -276,7 +277,7 @@ class LeaderPIDController(Node):
                 49.19260599818982,
 
             'speed_integral_limit':
-                3.0,
+                60.0,
 
             # -------------------------------------------------
             # Heading PID
@@ -315,20 +316,23 @@ class LeaderPIDController(Node):
             # -------------------------------------------------
 
             'max_forward_thrust':
-                700.0,
+                2353.53,
 
             'max_turn_thrust':
                 400.0,
 
             'max_total_thrust':
-                1000.0,
+                2353.53,
+
+            'min_total_thrust':
+                -1000.0,
 
             # -------------------------------------------------
             # Braking
             # -------------------------------------------------
 
             'max_brake_thrust':
-                500.0,
+                1000.0,
 
             'stop_speed_tolerance':
                 0.05,
@@ -500,6 +504,12 @@ class LeaderPIDController(Node):
             ).value
         )
 
+        self.min_total_thrust = float(
+            self.get_parameter(
+                'min_total_thrust'
+            ).value
+        )
+
         self.max_brake_thrust = float(
             self.get_parameter(
                 'max_brake_thrust'
@@ -559,6 +569,34 @@ class LeaderPIDController(Node):
                 'max_planner_speed'
             ).value
         )
+
+        # The historical default is 2.0 m/s, but a GUI-launched
+        # mission must obey the speed selected by the user.
+        gui_speed_text = os.environ.get(
+            "PLATOON_GUI_LEADER_MAX_SPEED",
+            "",
+        ).strip()
+
+        if gui_speed_text:
+
+            gui_speed = float(
+                gui_speed_text
+            )
+
+            if gui_speed <= 0.0:
+                raise ValueError(
+                    "PLATOON_GUI_LEADER_MAX_SPEED "
+                    "must be > 0"
+                )
+
+            self.max_planner_speed = (
+                gui_speed
+            )
+
+            self.get_logger().info(
+                f"GUI R1 controller speed ceiling: "
+                f"{self.max_planner_speed:.2f} m/s"
+            )
 
         self.waypoint_capture_radius = float(
             self.get_parameter(
@@ -1536,18 +1574,64 @@ class LeaderPIDController(Node):
             - speed
         )
 
-        forward_command = (
+        raw_forward_command = (
             self.speed_pid.update(
                 speed_error,
                 dt,
             )
         )
 
-        forward_command = clamp(
-            forward_command,
-            0.0,
+        # -----------------------------------------------------
+        # Actuator-authority allocation.
+        #
+        # Differential thrust has priority over additional
+        # forward thrust. Without this reserve:
+        #
+        #   left  = forward + turn
+        #   right = forward - turn
+        #
+        # can saturate one thruster and silently reduce the
+        # requested turning moment.
+        #
+        # Keep enough headroom that BOTH mixed commands remain
+        # inside max_total_thrust.
+        # -----------------------------------------------------
+
+        forward_authority_limit = min(
             self.max_forward_thrust,
+            max(
+                0.0,
+                self.max_total_thrust
+                - abs(turn_command),
+            ),
         )
+
+        forward_command = clamp(
+            raw_forward_command,
+            0.0,
+            forward_authority_limit,
+        )
+
+        # -----------------------------------------------------
+        # Saturation anti-windup.
+        #
+        # If more positive speed thrust was requested than the
+        # actuators can provide while preserving yaw authority,
+        # undo this cycle's positive integral accumulation.
+        # -----------------------------------------------------
+
+        if (
+            raw_forward_command
+            > forward_authority_limit + 1e-6
+            and speed_error > 0.0
+        ):
+
+            self.speed_pid.integral = clamp(
+                self.speed_pid.integral
+                - speed_error * dt,
+                -self.speed_pid.integral_limit,
+                self.speed_pid.integral_limit,
+            )
 
         # -----------------------------------------------------
         # ORIGINAL heading-misalignment slowdown.
@@ -2410,34 +2494,29 @@ class LeaderPIDController(Node):
         right_thrust,
     ):
 
+        # Physical VRX WAM-V actuator envelope:
+        #
+        #   forward: +2353.53 N per thruster
+        #   reverse: -1000.00 N per thruster
+        #
+        # Keep these asymmetric. Gazebo's reverse limit is not
+        # equal to its forward limit.
         left_thrust = clamp(
             left_thrust,
-            -self.max_total_thrust,
+            self.min_total_thrust,
             self.max_total_thrust,
         )
 
         right_thrust = clamp(
             right_thrust,
-            -self.max_total_thrust,
+            self.min_total_thrust,
             self.max_total_thrust,
         )
 
-        # =====================================================
         # Professor requirement:
-        #
-        # Thruster azimuth remains fixed straight.
-        #
-        # Steering is performed only through differential
-        # thrust.
-        # =====================================================
-
-        zero_position = (
-            Float64()
-        )
-
-        zero_position.data = (
-            0.0
-        )
+        # steering angles remain fixed straight.
+        zero_position = Float64()
+        zero_position.data = 0.0
 
         self.left_position_publisher.publish(
             zero_position
@@ -2447,22 +2526,12 @@ class LeaderPIDController(Node):
             zero_position
         )
 
-        # =====================================================
-        # Thrust
-        # =====================================================
-
-        left_message = (
-            Float64()
-        )
-
+        left_message = Float64()
         left_message.data = float(
             left_thrust
         )
 
-        right_message = (
-            Float64()
-        )
-
+        right_message = Float64()
         right_message.data = float(
             right_thrust
         )
@@ -2474,8 +2543,6 @@ class LeaderPIDController(Node):
         self.right_thrust_publisher.publish(
             right_message
         )
-
-    # ---------------------------------------------------------
 
     def publish_zero_thrust(self):
 

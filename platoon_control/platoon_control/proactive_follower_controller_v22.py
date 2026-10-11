@@ -1,4 +1,5 @@
 import math
+import os
 
 import rclpy
 from rclpy.node import Node
@@ -289,12 +290,23 @@ class FollowerPidController(Node):
             'parking_reverse_clearance': 4.5,
 
             'catchup_distance': 6.0,
+            'catchup_release_margin': 0.15,
             'catchup_min_speed': 1.20,
 
             # Extra longitudinal PID authority is used only while
             # the follower is genuinely in catch-up. Normal
             # formation-following gains remain unchanged.
             'catchup_speed_gain_scale': 1.50,
+
+            # CATCHUP has no absolute software speed ceiling.
+            # Instead it continuously requests this much speed
+            # above the follower's OWN current velocity.
+            #
+            # This prevents a distant follower from inheriting
+            # temporary predecessor slowdowns while still
+            # allowing its own heading alignment to reduce
+            # propulsion when necessary.
+
 
             'follow_max_speed': 3.00,
             'max_distance_speed_correction': 0.70,
@@ -317,10 +329,11 @@ class FollowerPidController(Node):
             'terminal_settle_hold': 0.50,
             'parking_hold_time': 1.0,
 
-            'max_forward_thrust': 900.0,
+            'max_forward_thrust': 2353.53,
             'max_turn_thrust': 400.0,
-            'max_total_thrust': 1000.0,
-            'max_brake_thrust': 500.0,
+            'max_total_thrust': 2353.53,
+            'min_total_thrust': -1000.0,
+            'max_brake_thrust': 1000.0,
             'avoidance_thrust': 260.0,
         }
 
@@ -333,6 +346,42 @@ class FollowerPidController(Node):
                 name,
                 float(self.get_parameter(name).value),
             )
+
+        # Keep follower speed headroom relative to the GUI R1
+        # maximum. This is a ceiling only; normal formation
+        # control still decides the actual requested speed.
+        gui_speed_text = os.environ.get(
+            "PLATOON_GUI_LEADER_MAX_SPEED",
+            "",
+        ).strip()
+
+        if gui_speed_text:
+
+            leader_max_speed = float(
+                gui_speed_text
+            )
+
+            margins = {
+                "r2": 0.8,
+                "r3": 1.6,
+            }
+
+            margin = margins.get(
+                self.follower_id
+            )
+
+            if margin is not None:
+
+                self.follow_max_speed = (
+                    leader_max_speed
+                    + margin
+                )
+
+                self.get_logger().info(
+                    f"GUI {self.follower_id.upper()} "
+                    f"speed ceiling: "
+                    f"{self.follow_max_speed:.2f} m/s"
+                )
 
         self.parking_align_tolerance = math.radians(
             self.parking_align_tolerance_deg
@@ -357,6 +406,9 @@ class FollowerPidController(Node):
         self.speed_previous = 0.0
 
         self.last_follow_target_speed = None
+
+        # CATCHUP / FOLLOWING hysteresis.
+        self.catchup_active = False
 
         self.distance_integral = 0.0
         self.distance_previous = 0.0
@@ -1030,14 +1082,16 @@ class FollowerPidController(Node):
                 self.terminal_settled = True
 
     def publish_thrusters(self, left, right):
+
         left = clamp(
             left,
-            -self.max_total_thrust,
+            self.min_total_thrust,
             self.max_total_thrust,
         )
+
         right = clamp(
             right,
-            -self.max_total_thrust,
+            self.min_total_thrust,
             self.max_total_thrust,
         )
 
@@ -1049,6 +1103,8 @@ class FollowerPidController(Node):
         msg.data = float(right)
         self.right_pub.publish(msg)
 
+        # Professor requirement:
+        # steering angles remain fixed straight.
         pos = Float64()
         pos.data = 0.0
 
@@ -1692,16 +1748,58 @@ class FollowerPidController(Node):
             + self.speed_kd * speed_derivative
         )
 
-        forward = (
+        raw_forward = (
             speed_gain_scale * pid_forward
             + feedforward
         )
 
-        forward = clamp(
-            forward,
-            0.0,
+        # -----------------------------------------------------
+        # Preserve differential-thrust authority.
+        #
+        # FOLLOW may demand substantial forward thrust during
+        # catch-up. If forward + turn is simply clipped at the
+        # individual thruster limit, the requested heading
+        # correction is lost exactly when the follower needs it.
+        #
+        # Give turn authority priority and use only the remaining
+        # actuator range for forward propulsion.
+        # -----------------------------------------------------
+
+        forward_authority_limit = min(
             self.max_forward_thrust,
+            max(
+                0.0,
+                self.max_total_thrust
+                - abs(turn),
+            ),
         )
+
+        forward = clamp(
+            raw_forward,
+            0.0,
+            forward_authority_limit,
+        )
+
+        # -----------------------------------------------------
+        # Saturation anti-windup.
+        #
+        # Do not keep accumulating positive speed integral when
+        # propulsion is already limited by available actuator
+        # authority.
+        # -----------------------------------------------------
+
+        if (
+            raw_forward
+            > forward_authority_limit + 1e-6
+            and speed_error > 0.0
+        ):
+
+            self.speed_integral = clamp(
+                self.speed_integral
+                - speed_error * dt,
+                -self.follow_speed_integral_limit,
+                self.follow_speed_integral_limit,
+            )
 
         self.publish_thrusters(
             forward + turn,
@@ -1835,6 +1933,62 @@ class FollowerPidController(Node):
     # Main control
     # ---------------------------------------------------------
 
+    def update_catchup_phase(self):
+        if self.path_gap is None:
+            return False
+
+        enter_gap = max(
+            self.catchup_distance,
+            self.formation_distance,
+        )
+
+        exit_gap = min(
+            enter_gap - 0.05,
+            self.formation_distance
+            + self.catchup_release_margin,
+        )
+
+        previous = self.catchup_active
+
+        if self.catchup_active:
+            if self.path_gap <= exit_gap:
+                self.catchup_active = False
+        else:
+            if self.path_gap >= enter_gap:
+                self.catchup_active = True
+
+        changed = (
+            previous
+            != self.catchup_active
+        )
+
+        if changed:
+
+            # Do not carry longitudinal integral memory from one
+            # fundamentally different speed policy into the other.
+            self.speed_integral = 0.0
+
+            self.distance_integral = 0.0
+            self.distance_previous = (
+                self.path_gap
+                - self.formation_distance
+            )
+
+            self.last_follow_target_speed = None
+
+            phase = (
+                'CATCHUP'
+                if self.catchup_active
+                else 'FOLLOWING'
+            )
+
+            self.get_logger().info(
+                f'{self.follower_id} longitudinal phase -> '
+                f'{phase}; gap={self.path_gap:.2f} m'
+            )
+
+        return changed
+
     def historical_speed_recommended_callback(self, msg):
         value = float(msg.data)
 
@@ -1910,26 +2064,33 @@ class FollowerPidController(Node):
                 self.stop()
                 return
 
-            correction = self.distance_pid(
-                self.path_gap,
-                dt,
-            )
-
-            target_speed = (
-                self.predecessor.speed
-                + correction
+            phase_changed = (
+                self.update_catchup_phase()
             )
 
             feedforward = 0.0
             speed_gain_scale = 1.0
 
-            if (
-                self.path_gap
-                >= self.catchup_distance
-            ):
+            if self.catchup_active:
+
+                # -------------------------------------------------
+                # CATCHUP:
+                #
+                # Speed is intentionally independent of the
+                # predecessor. If R2 slows for a corner while R3 is
+                # far behind, R3 does NOT inherit that slowdown.
+                #
+                # follow_max_speed is the follower's own configured
+                # pursuit target (GUI-derived for normal runs).
+                #
+                # The follower's OWN heading alignment inside
+                # track_breadcrumb_curve() may still reduce forward
+                # propulsion when it is not pointing along the path.
+                # -------------------------------------------------
+
                 target_speed = max(
-                    target_speed,
                     self.catchup_min_speed,
+                    self.follow_max_speed,
                 )
 
                 feedforward = (
@@ -1940,37 +2101,70 @@ class FollowerPidController(Node):
                     self.catchup_speed_gain_scale
                 )
 
-            target_speed = clamp(
-                target_speed,
-                0.0,
-                self.follow_max_speed,
-            )
+            else:
 
-            # V2.1 proactive preview:
-            # keep catch-up unchanged; otherwise preview may only
-            # reduce the existing reactive speed command.
-            if (
-                self.path_gap < self.catchup_distance
-                and self.historical_speed_recommended is not None
-                and self.historical_speed_recommended_time is not None
-            ):
-                preview_age = (
-                    self.get_clock().now().nanoseconds * 1e-9
-                    - self.historical_speed_recommended_time
+                # -------------------------------------------------
+                # FOLLOWING:
+                #
+                # Once formation is recovered, longitudinal speed
+                # again follows the predecessor plus the bounded
+                # 5 m gap correction.
+                # -------------------------------------------------
+
+                correction = self.distance_pid(
+                    self.path_gap,
+                    dt,
                 )
 
-                if preview_age <= 0.5:
-                    preview_cap = clamp(
-                        self.historical_speed_recommended
-                        + max(0.0, correction),
-                        0.0,
-                        self.follow_max_speed,
+                target_speed = (
+                    self.predecessor.speed
+                    + correction
+                )
+
+                target_speed = clamp(
+                    target_speed,
+                    0.0,
+                    self.follow_max_speed,
+                )
+
+                # Historical speed preview belongs only to normal
+                # formation following. It must never slow CATCHUP.
+                if (
+                    self.historical_speed_recommended is not None
+                    and
+                    self.historical_speed_recommended_time is not None
+                ):
+
+                    preview_age = (
+                        self.get_clock().now().nanoseconds * 1e-9
+                        - self.historical_speed_recommended_time
                     )
 
-                    target_speed = min(
-                        target_speed,
-                        preview_cap,
-                    )
+                    if preview_age <= 0.5:
+
+                        preview_cap = clamp(
+                            self.historical_speed_recommended
+                            + max(
+                                0.0,
+                                correction,
+                            ),
+                            0.0,
+                            self.follow_max_speed,
+                        )
+
+                        target_speed = min(
+                            target_speed,
+                            preview_cap,
+                        )
+
+            if phase_changed:
+
+                # Prevent a derivative kick on the first cycle of
+                # the new speed policy.
+                self.speed_previous = (
+                    target_speed
+                    - self.follower.speed
+                )
 
             self.track_breadcrumb_curve(
                 target_speed,
@@ -1978,6 +2172,7 @@ class FollowerPidController(Node):
                 feedforward=feedforward,
                 speed_gain_scale=speed_gain_scale,
             )
+
             return
 
         if self.mode in (
